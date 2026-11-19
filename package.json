@@ -9,8 +9,8 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "node scripts/fetch-data.mjs && astro dev",
-    "build": "node scripts/fetch-data.mjs && astro build && node scripts/check-bundle-size.mjs",
+    "dev": "node scripts/fetch-data.mjs && node scripts/build-history.mjs && astro dev",
+    "build": "node scripts/fetch-data.mjs && node scripts/build-history.mjs && astro build && node scripts/check-bundle-size.mjs",
     "preview": "astro preview",
     "lint": "eslint .",
     "typecheck": "astro check",
@@ -18,7 +18,7 @@
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "data": "node scripts/fetch-data.mjs"
+    "data": "node scripts/fetch-data.mjs && node scripts/build-history.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "6.1.6",

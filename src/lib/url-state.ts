@@ -6,6 +6,7 @@
 // and dropped if it does not fit; sanitiseState then drops values the data
 // does not know. Nothing from the URL is ever rendered as HTML.
 import { emptyFilters, FACETS, type Facet, type Filters } from './filters';
+import { MONTH } from './history';
 import type { TallyData } from './types';
 
 export interface MapPosition {
@@ -35,12 +36,14 @@ export interface ViewState {
   list: string[];
   /** How chosen capabilities combine: any of them, or only places where all overlap. */
   capMatch: CapMatch;
+  /** Month shown by the growth slider (YYYY-MM); null means the latest. */
+  month: string | null;
 }
 
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any' };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -107,6 +110,8 @@ export function fromQuery(query: string): ViewState {
   state.list = list(p.get('list'), ID);
   // Overlap needs two or more capabilities.
   if (p.get('capmatch') === 'all' && state.filters.cap.length >= 2) state.capMatch = 'all';
+  const month = p.get('month');
+  if (month && MONTH.test(month)) state.month = month;
   return state;
 }
 
@@ -126,6 +131,7 @@ export function toQuery(state: ViewState): string {
   if (state.page > 1) add('page', String(state.page));
   if (state.list.length) add('list', state.list.join(','));
   if (state.capMatch === 'all' && state.filters.cap.length >= 2) add('capmatch', 'all');
+  if (state.month) add('month', state.month);
   return parts.join('&');
 }
 
