@@ -21,6 +21,8 @@ import CapMatchToggle from './CapMatchToggle';
 import ClustersPanel from './ClustersPanel';
 import { clusterMembers, eventMarkers, regionBounds, today, upcoming, type ClustersData, type EventsData, type RegionsData } from '../lib/clusters';
 import OverseasList from './OverseasList';
+import NearPanel from './NearPanel';
+import { findPlace } from '../lib/near';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
 import type { Company } from '../lib/types';
 
@@ -57,7 +59,13 @@ export default function Explorer() {
       .catch(() => setSitesFailed(true));
   }, []);
   const site = useMemo(() => sitesData?.sites.find((x) => x.id === state.site) ?? null, [sitesData, state.site]);
-  const ring = useMemo(() => (site ? ringPolygon(site, state.radius) : null), [site, state.radius]);
+  // One location filter at a time: a chosen defence site, or a typed place.
+  const place = site ? null : state.near;
+  const location = useMemo(
+    () => (site ? { lat: site.lat, lon: site.lon, miles: state.radius, name: site.name } : place ? { lat: place.lat, lon: place.lon, miles: state.within, name: place.name } : null),
+    [site, state.radius, place, state.within],
+  );
+  const ring = useMemo(() => (location ? ringPolygon(location, location.miles) : null), [location]);
 
   // Clusters and their upcoming events, built from the data repo. Boundaries
   // are a committed file, fetched only once the overlay or a cluster is chosen.
@@ -132,15 +140,15 @@ export default function Explorer() {
   const overlapPending = overlapOn && !binning;
   const lastFiltered = useRef<Company[] | null>(null);
   const filtered = useMemo(() => {
-    const near = site ? companiesNearSite(facetFiltered, site, state.radius) : facetFiltered;
+    const near = location ? companiesNearSite(facetFiltered, location, location.miles) : facetFiltered;
     if (!overlapOn) return near;
     if (!binning) return lastFiltered.current ?? near;
     return binning.overlapCompanies(near, state.filters.cap);
-  }, [overlapOn, binning, facetFiltered, state.filters.cap, site, state.radius]);
+  }, [overlapOn, binning, facetFiltered, state.filters.cap, location]);
   lastFiltered.current = filtered;
   const onMap = useMemo(() => filtered.filter(isLocated).length, [filtered]);
   const inCluster = cluster?.membership ? ` in the ${cluster.name} cluster` : '';
-  const within = `${inCluster}${site ? ` within ${state.radius} miles of ${site.name}` : ''}`;
+  const within = `${inCluster}${location ? ` within ${location.miles} miles of ${location.name}` : ''}`;
   const places = useMemo(
     () => (overlapOn && binning ? binning.binCompanies(filtered, binning.OVERLAP_RESOLUTION).length : 0),
     [overlapOn, binning, filtered],
@@ -182,7 +190,8 @@ export default function Explorer() {
     // A new search replaces the selection, including any chosen cluster.
     const reset = { cell: null, sel: [], area: null, page: 1, cluster: null };
     if (answer.kind === 'filters') {
-      setState((s) => ({ ...s, ...reset, filters: answer.filters, capMatch: answer.capMatch, site: answer.site, radius: answer.radius, q: '', matrix: { ...s.matrix, page: 1 } }));
+      // A site from the search replaces a typed place; otherwise the place stays.
+      setState((s) => ({ ...s, ...reset, filters: answer.filters, capMatch: answer.capMatch, site: answer.site, radius: answer.radius, near: answer.site ? null : s.near, q: '', matrix: { ...s.matrix, page: 1 } }));
       setReveal((n) => n + 1);
       setSearchMessage(`Search set these filters: ${answer.labels.join(', ')}.`);
     } else {
@@ -193,6 +202,29 @@ export default function Explorer() {
       );
     }
     setSearching(false);
+  };
+
+  // Near-me search: the typed place goes to postcodes.io only on Find.
+  const [nearMessage, setNearMessage] = useState('');
+  const [finding, setFinding] = useState(false);
+  const findNear = async (text: string) => {
+    setFinding(true);
+    setNearMessage('Finding the place.');
+    const result = await findPlace(text);
+    const typed = text.replace(/\s+/g, ' ').trim();
+    if (result.kind === 'found') {
+      setState((s) => ({ ...s, near: result.place, site: null, cell: null, sel: [], area: null, page: 1, matrix: { ...s.matrix, page: 1 } }));
+      setNearMessage('');
+    } else if (result.kind === 'invalid') {
+      setNearMessage('Type a full postcode, the first part of one, or a town or city name, using letters, numbers, spaces, hyphens, full stops and apostrophes.');
+    } else if (result.kind === 'not-found') {
+      setNearMessage(`We could not find ${typed}. Try a full postcode, the first part of one, or a town or city name.`);
+    } else if (result.kind === 'outside') {
+      setNearMessage(`${typed} is outside the UK area Tally maps.`);
+    } else {
+      setNearMessage('The place finder (postcodes.io) could not be reached. Please try again.');
+    }
+    setFinding(false);
   };
 
   const byId = useMemo(() => new Map((data?.companies ?? []).map((c) => [c.id, c])), [data]);
@@ -261,6 +293,7 @@ export default function Explorer() {
           sites={state.sites ? (sitesData?.sites ?? null) : site ? [site] : null}
           chosenSite={site?.id ?? null}
           ring={ring}
+          place={place}
           clusterRegions={regionFeatures}
           clusterEvents={markers}
           clusterFocus={clusterFocus}
@@ -283,6 +316,18 @@ export default function Explorer() {
             update({ area, cell: null, sel: [], matrix: { ...state.matrix, page: 1 } });
           }}
         />
+        <NearPanel
+          place={place}
+          radius={state.within}
+          busy={finding}
+          message={nearMessage || (place ? `Showing companies within ${state.within} miles of ${place.name}.` : '')}
+          onFind={(text) => void findNear(text)}
+          onRadius={(within) => update({ within, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } })}
+          onClear={() => {
+            setNearMessage('');
+            update({ near: null, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } });
+          }}
+        />
         {(sitesData || sitesFailed) && (
           <SitesPanel
             data={sitesData}
@@ -291,7 +336,10 @@ export default function Explorer() {
             site={site}
             radius={state.radius}
             onShow={(sites) => update({ sites })}
-            onSite={(id) => update({ site: id, cell: null, sel: [], area: null, page: 1, matrix: { ...state.matrix, page: 1 } })}
+            onSite={(id) => {
+              if (id) setNearMessage('');
+              update({ site: id, near: id ? null : state.near, cell: null, sel: [], area: null, page: 1, matrix: { ...state.matrix, page: 1 } });
+            }}
             onRadius={(radius) => update({ radius, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } })}
           />
         )}
