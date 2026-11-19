@@ -31,6 +31,13 @@ for (let attempt = 1; attempt <= 12 && response.status === 404; attempt++) {
   await new Promise((resolve) => setTimeout(resolve, 5000));
   response = await fetch(url, { redirect: 'follow' });
 }
+// A redeploy over an earlier preview can keep serving the old version for a
+// little while; retry until the headers match this build, for up to a minute.
+const csp = expected['Content-Security-Policy'];
+for (let attempt = 1; attempt <= 12 && response.status === 200 && response.headers.get('Content-Security-Policy') !== csp; attempt++) {
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+  response = await fetch(url, { redirect: 'follow' });
+}
 
 const failures = [];
 if (response.status !== 200) failures.push(`expected status 200, got ${response.status}`);
