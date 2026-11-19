@@ -54,10 +54,46 @@ function catalogFor(env: Env): Promise<Catalog> {
 }
 
 /** Reads {"q": "..."}; returns the trimmed text, or an error response. */
+/** Largest request body read, in bytes; a query of the maximum length fits well inside it. */
+const MAX_BODY_BYTES = 2048;
+
+/** Reads the body as text, stopping once it passes the cap. Returns null when it is too large. */
+async function readCapped(request: Request): Promise<string | null> {
+  if (!request.body) return '';
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_BODY_BYTES) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  const joined = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    joined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(joined);
+}
+
 async function readQuery(request: Request): Promise<string | Response> {
+  // Only JSON is accepted, so a cross-site page cannot send a form or plain-text post
+  // without a CORS preflight, which this route never answers.
+  const type = (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+  if (type !== 'application/json') return json({ error: 'unsupported-media-type' }, 415);
+  const declared = Number(request.headers.get('content-length') ?? '0');
+  if (declared > MAX_BODY_BYTES) return json({ error: 'too-large' }, 413);
+  const raw = await readCapped(request);
+  if (raw === null) return json({ error: 'too-large' }, 413);
   let body: unknown;
   try {
-    body = await request.json();
+    body = JSON.parse(raw);
   } catch {
     return json({ error: 'bad-request' }, 400);
   }

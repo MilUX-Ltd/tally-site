@@ -19,9 +19,9 @@
     "not_found_handling": "404-page",
     "run_worker_first": ["/api/*"]
   },
-  "vars": {
-    "SEARCH_DAILY_BUDGET": "300"
-  },
+  "keep_vars": true,
+  // The daily search budget is a dashboard variable (SEARCH_DAILY_BUDGET), not kept here.
+  // Without it the route falls back to keyword search.
   "ratelimits": [
     { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } }
   ],
@@ -32,9 +32,6 @@
   // Worker Previews do not inherit the top-level vars and bindings; each
   // preview gets its own Durable Object namespace.
   "previews": {
-    "vars": {
-      "SEARCH_DAILY_BUDGET": "300"
-    },
     "ratelimits": [
       { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
     ],
