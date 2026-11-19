@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   await useOfflineMap(page);
 });
 
-test('overlap mode reads clearly, leaves the URL with one capability and is noted in the CSV', async ({ page }) => {
+test('overlap mode reads clearly, leaves the URL with one capability and names the CSV for it', async ({ page }) => {
   await page.goto('/?cap=cyber,data&capmatch=all&list=example-cyber-defence');
   await waitForMap(page);
   const count = page.locator('#result-count');
@@ -14,9 +14,10 @@ test('overlap mode reads clearly, leaves the URL with one capability and is note
   await expect(count).not.toContainText('0 companies');
 
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /download csv/i }).click()]);
+  expect(download.suggestedFilename()).toBe('tally-shortlist-overlap.csv');
   const lines = readFileSync(await download.path(), 'utf8').split(/\r?\n/).filter(Boolean);
-  expect(lines).toHaveLength(3);
-  expect(lines[2]).toMatch(/^Note: downloaded in overlap mode.*Cyber; Data,+$/);
+  expect(lines).toHaveLength(2);
+  expect(lines[1].startsWith('Example Cyber Defence,')).toBe(true);
 
   await page.locator('summary', { hasText: 'Cyber, data and software' }).click();
   await page.getByRole('checkbox', { name: 'Data', exact: true }).uncheck();

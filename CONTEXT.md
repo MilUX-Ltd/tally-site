@@ -62,5 +62,5 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | Memberships | Membership labels, separated by "; " |
    | Summary | One-paragraph summary |
 
-   When the shortlist is downloaded in overlap mode, a last row records it: the Name column starts `Note:` and names the chosen capabilities; the other columns are empty.
+   Downloaded in overlap mode, the file is named `tally-shortlist-overlap.csv`; its content is the same.
 4. **Routes.** `/` (explorer), `/about`, `/countries`, `/events`, `/404`.

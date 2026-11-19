@@ -13,7 +13,7 @@ import { fromQuery, roundPosition, sanitiseState, toQuery, type ViewState } from
 import Matrix from './Matrix';
 import Shortlist from './Shortlist';
 import CapMatchToggle from './CapMatchToggle';
-import { addToShortlist, overlapNote, removeFromShortlist } from '../lib/shortlist';
+import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
 import type { Company } from '../lib/types';
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -125,7 +125,7 @@ export default function Explorer() {
           taxonomy={data.taxonomy}
           shareUrl={shareUrl}
           onRemove={removeFromList}
-          note={overlapOn ? overlapNote(state.filters.cap, data.taxonomy) : undefined}
+          overlap={overlapOn}
         />
       </aside>
       <div class="explorer-main">

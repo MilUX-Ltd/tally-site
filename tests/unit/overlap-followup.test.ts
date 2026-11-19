@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { slimData } from '../../scripts/fetch-data.mjs';
 import { emptyFilters } from '../../src/lib/filters';
-import { CSV_COLUMNS, overlapNote, shortlistCsv } from '../../src/lib/shortlist';
+import { CSV_COLUMNS, shortlistCsv, shortlistFilename } from '../../src/lib/shortlist';
 import type { TallyData } from '../../src/lib/types';
 import { defaultState, fromQuery, sanitiseState, toQuery } from '../../src/lib/url-state';
 
@@ -27,19 +27,12 @@ describe('overlap mode needs two capabilities', () => {
   });
 });
 
-describe('shortlist CSV note', () => {
-  const companies = data.companies.slice(0, 2);
-  const lines = (text: string) => text.split('\r\n').filter(Boolean);
-
-  it('is unchanged without a note', () => {
-    expect(lines(shortlistCsv(companies, data.taxonomy))).toHaveLength(3);
-  });
-
-  it('records overlap mode in a last row', () => {
-    const note = overlapNote(['cyber', 'data'], data.taxonomy);
-    expect(note).toBe('Note: downloaded in overlap mode; showing places where all of these capabilities are found: Cyber; Data');
-    const out = lines(shortlistCsv(companies, data.taxonomy, note));
-    expect(out).toHaveLength(4);
-    expect(out[3]).toBe(`${note}${','.repeat(CSV_COLUMNS.length - 1)}`);
+describe('shortlist download name', () => {
+  it('says when overlap mode was on, without changing the CSV', () => {
+    expect(shortlistFilename(false)).toBe('tally-shortlist.csv');
+    expect(shortlistFilename(true)).toBe('tally-shortlist-overlap.csv');
+    const lines = shortlistCsv(data.companies.slice(0, 2), data.taxonomy).split('\r\n').filter(Boolean);
+    expect(lines).toHaveLength(3);
+    expect(lines[0].split(',')).toEqual([...CSV_COLUMNS]);
   });
 });
