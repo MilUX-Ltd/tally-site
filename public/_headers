@@ -11,3 +11,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), fullscreen=(self)
   X-Frame-Options: DENY
+
+# The RSS feed is a static file; serve it as RSS rather than generic XML.
+/new/feed.xml
+  Content-Type: application/rss+xml; charset=utf-8

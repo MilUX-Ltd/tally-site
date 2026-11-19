@@ -100,8 +100,12 @@ export function recentAdditions(companies: Company[], added: Record<string, stri
 const XML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
 /** Escapes text for an XML text node or attribute, and drops characters XML 1.0 forbids. */
 export const xmlEscape = (text: string) =>
-  // eslint-disable-next-line no-control-regex
-  text.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, '').replace(/[&<>"']/g, (ch) => XML_ESCAPES[ch]);
+  text
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F￾￿]/g, '')
+    // A lone surrogate is not a character XML can carry; a valid pair is kept.
+    .replace(/\p{Cs}/gu, '')
+    .replace(/[&<>"']/g, (ch) => XML_ESCAPES[ch]);
 
 const rfc822 = (iso: string) => new Date(iso).toUTCString();
 

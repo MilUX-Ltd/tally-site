@@ -52,3 +52,17 @@ describe('register wording parity', () => {
     expect(compare(site, gatePattern(GATE.replace('re.I,', '0,')))).toEqual(['case sensitivity differs']);
   });
 });
+
+describe('feed text', () => {
+  it('drops lone surrogates and keeps valid pairs', async () => {
+    const { xmlEscape } = await import('../../src/lib/new-companies');
+    expect(xmlEscape('A\uD800B\uDC00C \u{1F680} & D')).toBe('ABC \u{1F680} &amp; D');
+  });
+});
+
+describe('feed headers', () => {
+  const headers = readFileSync(new URL('../../public/_headers', import.meta.url), 'utf8');
+  it('serves the feed as RSS', () => {
+    expect(headers).toMatch(/^\/new\/feed\.xml\n\s+Content-Type: application\/rss\+xml; charset=utf-8$/m);
+  });
+});
