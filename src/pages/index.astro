@@ -1,9 +1,20 @@
 ---
 import Base from '../layouts/Base.astro';
 ---
-<Base title="Tally: UK defence capability" description="An open map and directory of UK defence capability. Public information, free to use.">
-  <h1>Tally</h1>
-  <p>An open map and directory of UK defence capability. Public information, free to use.</p>
-  <p>Coming soon. Until then, the directory is at <a href="https://github.com/MilUX-Ltd/tally">github.com/MilUX-Ltd/tally</a>.</p>
-  <p>Built by <a href="https://milux.co.uk">MilUX</a>. This was built with AI. If you would like to know more, please get in touch.</p>
+<Base title="Tally: UK defence capability" description="An open map and directory of UK defence capability. Public information, free to use." wide>
+  <header class="site-header">
+    <h1>Tally</h1>
+    <p>An open map and directory of UK defence capability. Public information, free to use. Choose capabilities and other filters to see where companies are, then select an area of the map to list them.</p>
+  </header>
+  <div id="explorer">
+    <p class="notice">Loading companies.</p>
+    <noscript><p>The map and filters need JavaScript. The full directory is also on <a href="https://github.com/MilUX-Ltd/tally">GitHub</a>.</p></noscript>
+  </div>
+  <footer class="site-footer">
+    <p>Company data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from public sources, under CC BY 4.0.</p>
+    <p>Built by <a href="https://milux.co.uk">MilUX</a>. This was built with AI. If you would like to know more, please <a href="https://milux.co.uk/contact/">get in touch</a>.</p>
+  </footer>
 </Base>
+<script>
+  import '../scripts/explorer';
+</script>

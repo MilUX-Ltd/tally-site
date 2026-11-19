@@ -9,7 +9,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
-  use: { baseURL: 'http://127.0.0.1:4321' },
+  use: { baseURL: 'http://127.0.0.1:4331' },
   projects: [
     {
       name: 'chromium',
@@ -21,8 +21,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'TALLY_DATA_SOURCE=fixture npm run build && npm run preview -- --host 127.0.0.1',
-    url: 'http://127.0.0.1:4321',
+    // --ignore-lock keeps the preview server in the foreground under coding agents.
+    command: 'TALLY_DATA_SOURCE=fixture npm run build && npm run preview -- --host 127.0.0.1 --port 4331 --ignore-lock',
+    url: 'http://127.0.0.1:4331',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
   },

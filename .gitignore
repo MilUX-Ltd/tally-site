@@ -10,3 +10,4 @@ test-results/
 .DS_Store
 .claude/hooks/UNLOCK
 .claude/settings.local.json
+public/data/

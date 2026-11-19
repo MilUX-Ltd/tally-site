@@ -9,15 +9,16 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
+    "dev": "node scripts/fetch-data.mjs && astro dev",
+    "build": "node scripts/fetch-data.mjs && astro build && node scripts/check-bundle-size.mjs",
     "preview": "astro preview",
     "lint": "eslint .",
     "typecheck": "astro check",
     "check:public": "node scripts/check-public-terms.mjs",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "data": "node scripts/fetch-data.mjs"
   },
   "dependencies": {
     "@astrojs/preact": "6.1.6",

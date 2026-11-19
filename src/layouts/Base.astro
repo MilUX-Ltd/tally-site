@@ -3,8 +3,9 @@ import '../styles/base.css';
 interface Props {
   title: string;
   description: string;
+  wide?: boolean;
 }
-const { title, description } = Astro.props;
+const { title, description, wide = false } = Astro.props;
 ---
 <!doctype html>
 <html lang="en-GB">
@@ -16,7 +17,7 @@ const { title, description } = Astro.props;
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <main id="main">
+    <main id="main" class:list={{ wide }}>
       <slot />
     </main>
   </body>

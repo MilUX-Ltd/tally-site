@@ -21,6 +21,14 @@ describe('security headers baseline', () => {
     expect(line, `${name} missing`).toBeDefined();
     expect(line).toContain(fragment);
   });
+  it('allows the map tile host for connect and images only', () => {
+    const csp = headers.split('\n').find((l) => l.trim().startsWith('Content-Security-Policy:')) ?? '';
+    const directives = csp.replace('Content-Security-Policy:', '').split(';').map((d) => d.trim());
+    const withHost = directives.filter((d) => d.includes('https://tiles.openfreemap.org')).map((d) => d.split(' ')[0]);
+    expect(withHost.sort()).toEqual(['connect-src', 'img-src']);
+    const thirdParty = csp.match(/https:\/\/[a-z0-9.-]+/g) ?? [];
+    expect(new Set(thirdParty)).toEqual(new Set(['https://tiles.openfreemap.org']));
+  });
   it('never allows inline script', () => {
     expect(headers).not.toContain("'unsafe-inline'");
     expect(headers).not.toContain("'unsafe-eval'");
