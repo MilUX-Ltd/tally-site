@@ -43,7 +43,8 @@ test('the cluster map button draws every area labelled and fades the companies',
   await expect(checkbox).toBeChecked();
   await expect.poll(() => featureCount(page, 'cluster-regions')).toBe(16);
   await expect.poll(() => featureCount(page, 'cluster-labels')).toBe(16);
-  await expect.poll(() => hexOpacity(page)).toBe(0.25);
+  // Fade amended from 0.25 to 0.1 for legibility, after review.
+  await expect.poll(() => hexOpacity(page)).toBe(0.1);
 
   await page.keyboard.press('Enter');
   await expect(button).toHaveAttribute('aria-pressed', 'false');
@@ -63,7 +64,8 @@ test('companies can be brought back on top', async ({ page }) => {
   await waitForMap(page);
   const onTop = page.getByRole('checkbox', { name: 'Show companies on top' });
   await expect(onTop).not.toBeChecked();
-  await expect.poll(() => hexOpacity(page)).toBe(0.25);
+  // Fade amended from 0.25 to 0.1 for legibility, after review.
+  await expect.poll(() => hexOpacity(page)).toBe(0.1);
   await onTop.focus();
   await page.keyboard.press('Space');
   await expect(onTop).toBeChecked();
