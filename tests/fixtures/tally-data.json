@@ -251,7 +251,8 @@
     "ew/elint",
     "rf",
     "sensors",
-    "size-small"
+    "size-small",
+    "mbr-scrdsc"
    ],
    "summary": "Example EW Systems is a synthetic company used only in tests.",
    "body": "# Example EW Systems\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
@@ -301,7 +302,8 @@
     "c2/situational-awareness",
     "integration",
     "mbr-ads",
-    "size-medium"
+    "size-medium",
+    "mbr-scrdsc"
    ],
    "summary": "Example Harbour Systems is a synthetic company used only in tests.",
    "body": "# Example Harbour Systems\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
@@ -325,7 +327,8 @@
     "human-factors",
     "consultancy",
     "mbr-ciehf",
-    "size-micro"
+    "size-micro",
+    "mbr-scrdsc"
    ],
    "summary": "Example Human Factors is a synthetic company used only in tests.",
    "body": "# Example Human Factors\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
