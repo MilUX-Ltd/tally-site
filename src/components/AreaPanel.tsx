@@ -7,15 +7,17 @@ import type { Company } from '../lib/types';
 interface Props {
   companies: Company[];
   onClear: () => void;
+  /** Move focus to the heading when the list changes (after a user pick). */
+  focus?: boolean;
   actions?: (company: Company) => ComponentChildren;
 }
 
-export default function AreaPanel({ companies, onClear, actions }: Props) {
+export default function AreaPanel({ companies, onClear, actions, focus = true }: Props) {
   const heading = useRef<HTMLHeadingElement>(null);
   const key = companies.map((c) => c.id).join(',');
   useEffect(() => {
-    heading.current?.focus();
-  }, [key]);
+    if (focus) heading.current?.focus();
+  }, [key, focus]);
   const n = companies.length;
   return (
     <section class="area" aria-label="Companies in this area">

@@ -9,14 +9,11 @@ import { BRAND_SCALE, colourScale, type LegendEntry } from '../lib/colour';
 import { isLocated } from '../lib/filters';
 import { ATTRIBUTION, FONT, STYLE_URL, UK_BOUNDS } from '../lib/map-config';
 import type { Company } from '../lib/types';
+import type { MapPosition } from '../lib/url-state';
 
 export type Binning = typeof import('../lib/binning');
 
-export interface MapPosition {
-  zoom: number;
-  lat: number;
-  lon: number;
-}
+export type { MapPosition };
 
 interface Props {
   companies: Company[];
