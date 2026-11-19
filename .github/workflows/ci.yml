@@ -30,6 +30,8 @@ jobs:
         run: npm ci
       - name: Public-terms guard
         run: npm run check:public
+      - name: Register wording matches the data repo gate
+        run: npm run check:register
       - name: Lint
         run: npm run lint
       - name: Type-check

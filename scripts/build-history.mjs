@@ -118,6 +118,27 @@ export function addedDates(companies, snapshots) {
   return out;
 }
 
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Refuses added dates that look wrong, so a rewritten or truncated data repo
+ * history never dates the whole directory as new. Throws when the mainline has
+ * no commits, or when more than half of the dated companies were first listed
+ * in the seven days up to the newest added date.
+ * @param {Record<string, string>} added id to ISO date
+ * @param {number} mainlineCommits first-parent commits read
+ */
+export function assertAddedDatesSane(added, mainlineCommits) {
+  if (!mainlineCommits) throw new Error('the data repo mainline has no commits touching tally-data.json; refusing to date companies');
+  const times = Object.values(added).map((d) => new Date(d).getTime());
+  if (!times.length) throw new Error('no company could be dated from the data repo history; refusing to write added dates');
+  const newest = Math.max(...times);
+  const recent = times.filter((t) => t > newest - WEEK_MS).length;
+  if (recent * 2 > times.length) {
+    throw new Error(`${recent} of ${times.length} companies would be dated in the newest week; the data repo history looks rewritten, refusing to write added dates`);
+  }
+}
+
 const companiesOf = (raw) => (Array.isArray(raw?.companies) ? raw.companies : []);
 
 function fromGit() {
@@ -197,6 +218,7 @@ async function main() {
   // (written by fetch-data.mjs, which runs first). Build-only, never served.
   const today = JSON.parse(readFileSync(new URL('tally.json', dir), 'utf8'));
   const added = fixture ? addedFromFixture() : addedDates(today.companies, fromRepo.mainline);
+  if (!fixture) assertAddedDatesSane(added, fromRepo.mainline.length);
   const missing = today.companies.length - Object.keys(added).length;
   const buildDir = new URL('../.tally/', import.meta.url);
   mkdirSync(buildDir, { recursive: true });

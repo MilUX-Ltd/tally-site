@@ -15,6 +15,7 @@
     "lint": "eslint .",
     "typecheck": "astro check",
     "check:public": "node scripts/check-public-terms.mjs",
+    "check:register": "node scripts/check-register-parity.mjs",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
