@@ -88,13 +88,17 @@ function pickPlace(results: unknown, query: string): Candidate | null {
   const candidates: Candidate[] = [];
   for (const r of results as Array<Record<string, unknown>>) {
     if (!r || typeof r !== 'object') continue;
-    const name = typeof r.name_1 === 'string' ? r.name_1.trim() : '';
     const lat = num(r.latitude);
     const lon = num(r.longitude);
-    if (!isPlaceName(name) || lat === null || lon === null) continue;
-    const names = [name, typeof r.name_2 === 'string' ? r.name_2 : ''].map(fold).filter(Boolean);
-    const exact = names.includes(q);
-    if (!exact && !names.some((n) => n.startsWith(q))) continue;
+    if (lat === null || lon === null) continue;
+    // A place may be listed under its Welsh or Gaelic name (name_1) with the
+    // English name second (name_2), or the other way round: show the name the
+    // buyer typed.
+    const names = [r.name_1, r.name_2].map((n) => (typeof n === 'string' ? n.trim() : '')).filter(isPlaceName);
+    const exactName = names.find((n) => fold(n) === q);
+    const name = exactName ?? names.find((n) => fold(n).startsWith(q));
+    if (!name) continue;
+    const exact = Boolean(exactName);
     candidates.push({ name, lat, lon, rank: rank(r.local_type), exact });
   }
   const pool = candidates.some((c) => c.exact) ? candidates.filter((c) => c.exact) : candidates;
