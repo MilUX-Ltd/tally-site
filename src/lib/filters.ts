@@ -50,13 +50,15 @@ export function filterCompanies(companies: Company[], filters: Filters): Company
 
 /**
  * A company is drawn on the UK map only when it has a point, is not an
- * overseas company, and the point is inside the UK bounds. This is the guard
+ * overseas company, its location is not region-level only, and the point is inside the UK bounds. This is the guard
  * that keeps overseas companies off the map even if the data carries a point.
  */
 export function isLocated(company: Company): company is Company & { lat: number; lon: number } {
   const { lat, lon } = company;
   if (typeof lat !== 'number' || typeof lon !== 'number') return false;
   if (company.country || company.region === 'Overseas') return false;
+  // A region-level location means the UK location is not published.
+  if (company.location_source === 'region') return false;
   const [w, s, e, n] = UK_BOUNDS;
   return lon >= w && lon <= e && lat >= s && lat <= n;
 }
