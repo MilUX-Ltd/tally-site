@@ -181,7 +181,21 @@
    "lat": 51.5072,
    "lon": -0.1276,
    "location_source": "town",
-   "country": ""
+   "country": "",
+   "certification_checks": [
+    {
+     "accreditation": "accr-ce-plus",
+     "register": "the Example certificate register",
+     "checked": "2026-10-01",
+     "link": "https://example.org/register/example-cyber-defence"
+    },
+    {
+     "accreditation": "accr-iso27001",
+     "register": "an example register",
+     "checked": "2026-10-01",
+     "link": null
+    }
+   ]
   },
   {
    "name": "Example Data Labs",
@@ -635,7 +649,15 @@
    "lat": 51.5072,
    "lon": -0.1276,
    "location_source": "town",
-   "country": ""
+   "country": "",
+   "certification_checks": [
+    {
+     "accreditation": "accr-iso27001",
+     "register": "an example register",
+     "checked": "2026-10-02",
+     "link": "javascript:alert(1)"
+    }
+   ]
   },
   {
    "name": "Example Signals Intelligence",
@@ -687,7 +709,15 @@
    "lat": 53.4808,
    "lon": -2.2426,
    "location_source": "town",
-   "country": ""
+   "country": "",
+   "certification_checks": [
+    {
+     "accreditation": "accr-ce-plus",
+     "register": "the Example certificate register",
+     "checked": "2026-10-03",
+     "link": null
+    }
+   ]
   },
   {
    "name": "Example Space Systems",

@@ -127,6 +127,47 @@ export function companyTexts(raw) {
   return Object.fromEntries(raw.companies.map((c, i) => [ids[i], companySections(c.body)]));
 }
 
+// Certification checks: a manual check of one of a company's accreditations
+// against a public register, recorded on its page in the data repo. Kept only
+// when well formed, for an accreditation the taxonomy knows and the company
+// carries; anything else is dropped, so the certification stays "Stated by the
+// company". Written to a build-only file that is never served.
+const CHECK_HTTPS = /^https:\/\/[^\s<>"\\]+$/i;
+// Negative or status wording a register name may not carry. The same list is in
+// the data repo's gate (.github/scripts/check.py, REGISTER_DENIED); keep them alike.
+const REGISTER_DENIED =
+  /\b(?:not|no|none|unverified|unconfirmed|uncertified|expired|revoked|lapsed|withdrawn|suspended|fail|failed|failure|invalid|removed|found|missing|cancelled|canceled)\b|n['\u2019]t\b/i;
+
+/** Certification checks for every company that has any, keyed by id. `today` is the build's UTC date. */
+export function certificationChecks(raw, taxonomy, today = new Date().toISOString().slice(0, 10)) {
+  if (!raw || !Array.isArray(raw.companies)) throw new Error('tally-data.json has no companies array');
+  const known = new Set(slimTaxonomy(taxonomy).accreditations.map((a) => a.slug));
+  const ids = companyIds(raw.companies);
+  const out = {};
+  raw.companies.forEach((c, i) => {
+    if (!Array.isArray(c.certification_checks)) return;
+    const tags = new Set(Array.isArray(c.tags) ? c.tags : []);
+    const seen = new Set();
+    const kept = [];
+    for (const check of c.certification_checks) {
+      if (!check || typeof check !== 'object') continue;
+      const accreditation = str(check.accreditation);
+      const register = str(check.register);
+      const checked = validDate(str(check.checked));
+      const link = check.link == null || str(check.link) === '' ? null : str(check.link);
+      if (!accreditation.startsWith('accr-') || !known.has(accreditation) || !tags.has(accreditation) || seen.has(accreditation)) continue;
+      if (register.length < 2 || register.length > 80 || [...register].some((ch) => ch.charCodeAt(0) < 0x20 || ch.charCodeAt(0) === 0x7f) || /\\|:\/\/|www\./i.test(register)) continue;
+      if (REGISTER_DENIED.test(register)) continue;
+      if (!checked || checked > today) continue;
+      if (link !== null && !CHECK_HTTPS.test(link)) continue;
+      seen.add(accreditation);
+      kept.push({ accreditation, register, checked, link });
+    }
+    if (kept.length) out[ids[i]] = kept;
+  });
+  return out;
+}
+
 // Clusters and events. Members-only events are signposts: cluster, date, this
 // fixed text and the cluster's own website. The data repo exports them that
 // way; the build checks again and refuses anything more.
@@ -252,6 +293,9 @@ async function main() {
   const clusters = slimClusters(rawClusters);
   // Past events are dropped at build, by the build's own date (UTC).
   const todayUtc = new Date().toISOString().slice(0, 10);
+  const checks = certificationChecks(raw, taxonomy, todayUtc);
+  writeFileSync(new URL('certification-checks.json', buildDir), JSON.stringify(checks));
+  console.log(`Wrote certification checks for ${Object.keys(checks).length} companies (build-only).`);
   const events = slimEvents(rawEvents, clusters, todayUtc);
   const opportunities = slimOpportunities(rawOpportunities, clusters, todayUtc);
   writeFileSync(new URL('clusters.json', dir), JSON.stringify(clusters));
