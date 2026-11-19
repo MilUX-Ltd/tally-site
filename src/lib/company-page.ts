@@ -155,13 +155,18 @@ export function companyLocation(company: Company): CompanyLocation {
   const overseas = Boolean(company.country) || company.region === 'Overseas';
   if (overseas) {
     const country = company.country;
-    const text = company.hq && (!country || company.hq.includes(country)) ? company.hq : [company.hq, country].filter(Boolean).join(', ');
+    const SHORT: Record<string, string[]> = { 'United States': ['USA', 'US', 'United States of America'], 'United Kingdom': ['UK'] };
+    const named = (hq: string, c: string) => hq.includes(c) || (SHORT[c] ?? []).some((s) => hq.split(',').map((p) => p.trim()).includes(s));
+    const text = company.hq && (!country || named(company.hq, country)) ? company.hq : [company.hq, country].filter(Boolean).join(', ');
     return { text: text || 'Outside the UK', point: null, note: 'Based outside the UK, so not on the UK map.' };
   }
   if (company.location_source === 'region') {
     return { text: company.region ? `${company.region}, United Kingdom` : 'United Kingdom', point: null, note: 'Only the region is published, so there is no point on the map.' };
   }
-  const text = [company.hq, company.postcode].filter(Boolean).join(', ') || company.region || 'Location not known';
+  // With a postcode, describe the point we place (postcode and region), not a headquarters elsewhere.
+  const text = company.postcode
+    ? [company.postcode, company.region].filter(Boolean).join(', ')
+    : [company.hq, company.region].filter(Boolean).join(', ') || 'Location not known';
   if (isLocated(company)) return { text, point: projectUk(company.lon, company.lat), note: '' };
   return { text, point: null, note: 'No published location to put on the map.' };
 }

@@ -25,6 +25,9 @@ main.wide { max-width: none; padding: 1rem; }
 @media (min-width: 60rem) { main.wide { padding: 1rem 2rem; } }
 .site-header h1 { margin: 0; }
 .site-header p { margin: 0.25rem 0 1rem; max-width: 60rem; }
+.header-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 2rem; }
+.site-nav ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; }
+.site-nav a { display: inline-block; padding: 0.25rem 0; }
 .site-footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--beige); }
 /* Shared by every page. */
 .vh {

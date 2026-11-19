@@ -5,7 +5,15 @@ import { getListedMailto } from '../lib/contact';
 ---
 <Base title="Tally: UK defence capability" description="An open map and directory of UK defence capability. Public information, free to use." wide>
   <header class="site-header">
-    <h1>Tally</h1>
+    <div class="header-row">
+      <h1>Tally</h1>
+      <nav class="site-nav" aria-label="More from Tally">
+        <ul>
+          <li><a href="/events/">Upcoming cluster events</a></li>
+          <li><a href="/opportunities/">Funding calls and opportunities</a></li>
+        </ul>
+      </nav>
+    </div>
     <p>An open map and directory of UK defence capability. Public information, free to use. Choose capabilities and other filters to see where companies are, then select an area of the map to list them. Company missing? <a href={getListedMailto()}>Get listed</a>.</p>
   </header>
   <div id="explorer">

@@ -1,0 +1,74 @@
+---
+// Funding calls and opportunities shared by the clusters, soonest deadline
+// first, built at build time from public/data/opportunities.json and
+// clusters.json (scripts/fetch-data.mjs). Past items are dropped at build.
+// Members-only items are never published. One bundled module adds the
+// cluster and kind filter; without it the full list shows.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import Base from '../layouts/Base.astro';
+import '../styles/events.css';
+import '../styles/opportunities.css';
+import { longDate, type ClustersData } from '../lib/clusters';
+import { countText, KIND_LABELS, type OpportunitiesData } from '../lib/opportunities';
+
+const read = (name: string) => JSON.parse(readFileSync(join(process.cwd(), 'public', 'data', name), 'utf8'));
+const clusters = (read('clusters.json') as ClustersData).clusters;
+const byId = new Map(clusters.map((c) => [c.id, c]));
+const todayUtc = new Date().toISOString().slice(0, 10);
+const items = (read('opportunities.json') as OpportunitiesData).opportunities.filter((o) => o.deadline === null || o.deadline >= todayUtc);
+const clusterName = (id: string) => byId.get(id)?.name ?? id;
+const used = [...new Set(items.map((o) => o.cluster))].sort((a, b) => clusterName(a).localeCompare(clusterName(b), 'en-GB'));
+---
+<Base title="Funding calls and opportunities: Tally" description="Open funding calls and opportunities shared by the UK's regional defence and security clusters." wide>
+  <header class="site-header">
+    <p><a href="/">Back to the Tally map</a> · <a href="/events/">Upcoming cluster events</a></p>
+    <h1>Funding calls and opportunities</h1>
+    <p>Open funding calls and opportunities shared by the UK's regional defence and security clusters, from their public websites and pages. Soonest deadline first. Members-only items are not listed: join a cluster for those.</p>
+  </header>
+
+  {items.length === 0 ? (
+    <p>No open funding calls or opportunities are listed at the moment.</p>
+  ) : (
+    <>
+      <form class="opp-filter" id="opp-filter" action="/opportunities" method="get" hidden>
+        <div class="field">
+          <label for="opp-cluster">Cluster</label>
+          <select id="opp-cluster" name="cluster">
+            <option value="">All clusters</option>
+            {used.map((id) => <option value={id}>{clusterName(id)}</option>)}
+          </select>
+        </div>
+        <fieldset>
+          <legend>Kind</legend>
+          <label><input type="radio" name="kind" value="" checked /> All</label>
+          <label><input type="radio" name="kind" value="funding" /> Funding calls</label>
+          <label><input type="radio" name="kind" value="opportunity" /> Opportunities</label>
+        </fieldset>
+      </form>
+      <p class="events-count" id="opp-count" role="status">{countText(items.length, items.length)}</p>
+      <p class="opp-none" id="opp-none" hidden>No funding calls or opportunities match this filter.</p>
+      <section aria-labelledby="opp-heading">
+        <h2 id="opp-heading" class="vh">All open funding calls and opportunities</h2>
+        <ul class="opp-list" id="opp-list">
+          {items.map((o) => (
+            <li class="opportunity" data-cluster={o.cluster} data-kind={o.kind}>
+              <h3><a href={o.link} rel="noopener noreferrer">{o.title}</a></h3>
+              <p class="meta">{KIND_LABELS[o.kind]} · {clusterName(o.cluster)} cluster</p>
+              <p class="deadline">{o.deadline ? <>Closes {longDate(o.deadline)}{o.time ? `, ${o.time}` : ''}</> : 'No closing date'}</p>
+              {o.summary && <p>{o.summary}</p>}
+            </li>
+          ))}
+        </ul>
+      </section>
+    </>
+  )}
+
+  <footer class="site-footer">
+    <p>Opportunity data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from the clusters' public websites and pages. Deadlines and details can change; check with the funder before you apply.</p>
+    <p>Built by <a href="https://milux.co.uk">MilUX</a>. This was built with AI. If you would like to know more, please <a href="https://milux.co.uk/contact/">get in touch</a>.</p>
+  </footer>
+</Base>
+<script>
+  import '../scripts/opportunities';
+</script>

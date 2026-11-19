@@ -10,3 +10,4 @@ How the Tally site is built, and why. Written for anyone learning the approach. 
 | [0004](0004-plain-english-search.md) | Plain-English search returns filters, never text |
 | [0005](0005-weekly-refresh.md) | A weekly refresh proposes data changes as one pull request |
 | [0006](0006-astro-preact-typescript.md) | Astro with one Preact island, TypeScript, Vitest and Playwright |
+| [0007](0007-place-lookup-with-postcodes-io.md) | Near-me search looks places up with postcodes.io from the browser |
