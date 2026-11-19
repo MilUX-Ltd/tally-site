@@ -9,13 +9,15 @@ import ResultsList from './ResultsList';
 import { emptyFilters, filterCompanies, isLocated, type Facet } from '../lib/filters';
 import { companiesInBbox } from '../lib/matrix';
 import type { TallyData } from '../lib/types';
-import { fromQuery, roundPosition, sanitiseSites, sanitiseState, toQuery, type ViewState } from '../lib/url-state';
+import { fromQuery, roundPosition, sanitiseClusters, sanitiseSites, sanitiseState, toQuery, type ViewState } from '../lib/url-state';
 import Matrix from './Matrix';
 import Shortlist from './Shortlist';
 import Growth from './Growth';
 import SitesPanel from './SitesPanel';
 import { companiesNearSite, ringPolygon, type SitesData } from '../lib/sites';
 import CapMatchToggle from './CapMatchToggle';
+import ClustersPanel from './ClustersPanel';
+import { clusterMembers, eventMarkers, regionBounds, today, upcoming, type ClustersData, type EventsData, type RegionsData } from '../lib/clusters';
 import OverseasList from './OverseasList';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
 import type { Company } from '../lib/types';
@@ -55,6 +57,49 @@ export default function Explorer() {
   const site = useMemo(() => sitesData?.sites.find((x) => x.id === state.site) ?? null, [sitesData, state.site]);
   const ring = useMemo(() => (site ? ringPolygon(site, state.radius) : null), [site, state.radius]);
 
+  // Clusters and their upcoming events, built from the data repo. Boundaries
+  // are a committed file, fetched only once the overlay or a cluster is chosen.
+  const [clustersData, setClustersData] = useState<ClustersData | null>(null);
+  const [events, setEvents] = useState<EventsData | null>(null);
+  const [regions, setRegions] = useState<RegionsData | null>(null);
+  const [clustersFailed, setClustersFailed] = useState(false);
+  useEffect(() => {
+    const get = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))));
+    Promise.all([get('/data/clusters.json'), get('/data/events.json')])
+      .then(([c, e]: [ClustersData, EventsData]) => {
+        setState((s) => sanitiseClusters(s, c.clusters.map((x) => x.id)));
+        setClustersData(c);
+        setEvents(e);
+      })
+      .catch(() => setClustersFailed(true));
+  }, []);
+  const wantRegions = state.clusters || Boolean(state.cluster);
+  useEffect(() => {
+    if (!wantRegions || regions) return;
+    fetch('/clusters/cluster-regions.geojson')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: RegionsData) => setRegions(d))
+      .catch(() => setClustersFailed(true));
+  }, [wantRegions, regions]);
+  const cluster = useMemo(() => clustersData?.clusters.find((c) => c.id === state.cluster) ?? null, [clustersData, state.cluster]);
+  const upcomingEvents = useMemo(() => (events ? upcoming(events.events, today()) : []), [events]);
+  const regionFeatures = useMemo(() => {
+    if (!regions) return null;
+    const shown = regions.features.filter((f) => state.clusters || f.properties.id === state.cluster);
+    return { type: 'FeatureCollection' as const, features: shown.map((f) => ({ ...f, properties: { ...f.properties, chosen: f.properties.id === state.cluster } })) };
+  }, [regions, state.clusters, state.cluster]);
+  const markers = useMemo(
+    () => (regions && clustersData && state.clusters ? eventMarkers(upcomingEvents, regions.features, clustersData.clusters) : null),
+    [regions, clustersData, upcomingEvents, state.clusters],
+  );
+  // A cluster opened from a URL that also holds a map position keeps that position.
+  const openedWith = useRef({ cluster: state.cluster, positioned: Boolean(state.map) });
+  const clusterFocus = useMemo(() => {
+    if (openedWith.current.positioned && state.cluster === openedWith.current.cluster) return null;
+    const feature = regions?.features.find((f) => f.properties.id === state.cluster);
+    return feature ? { key: feature.properties.id, bounds: regionBounds(feature) } : null;
+  }, [regions, state.cluster]);
+
   // Layout effect: the address changes in the same frame as the view.
   useLayoutEffect(() => {
     if (!data) return;
@@ -73,7 +118,12 @@ export default function Explorer() {
   useEffect(() => {
     if (overlapOn && !binning) import('../lib/binning').then((b) => setBinning(() => b)).catch(() => setFailed(true));
   }, [overlapOn, binning]);
-  const facetFiltered = useMemo(() => (data ? filterCompanies(data.companies, state.filters) : []), [data, state.filters]);
+  const facetFiltered = useMemo(() => {
+    if (!data) return [];
+    const all = filterCompanies(data.companies, state.filters);
+    return (cluster && clusterMembers(all, cluster)) || all;
+  }, [data, state.filters, cluster]);
+  const memberCount = useMemo(() => (data && cluster ? (clusterMembers(data.companies, cluster)?.length ?? null) : null), [data, cluster]);
   // While the hexagon module loads, keep showing the last result rather than
   // announcing that nothing matches.
   const overlapPending = overlapOn && !binning;
@@ -86,7 +136,8 @@ export default function Explorer() {
   }, [overlapOn, binning, facetFiltered, state.filters.cap, site, state.radius]);
   lastFiltered.current = filtered;
   const onMap = useMemo(() => filtered.filter(isLocated).length, [filtered]);
-  const within = site ? ` within ${state.radius} miles of ${site.name}` : '';
+  const inCluster = cluster?.membership ? ` in the ${cluster.name} cluster` : '';
+  const within = `${inCluster}${site ? ` within ${state.radius} miles of ${site.name}` : ''}`;
   const places = useMemo(
     () => (overlapOn && binning ? binning.binCompanies(filtered, binning.OVERLAP_RESOLUTION).length : 0),
     [overlapOn, binning, filtered],
@@ -169,6 +220,9 @@ export default function Explorer() {
           sites={state.sites ? (sitesData?.sites ?? null) : site ? [site] : null}
           chosenSite={site?.id ?? null}
           ring={ring}
+          clusterRegions={regionFeatures}
+          clusterEvents={markers}
+          clusterFocus={clusterFocus}
           fixedResolution={overlapOn && binning ? binning.OVERLAP_RESOLUTION : null}
           selectedCell={state.cell}
           initialPosition={state.map}
@@ -198,6 +252,19 @@ export default function Explorer() {
             onShow={(sites) => update({ sites })}
             onSite={(id) => update({ site: id, cell: null, sel: [], area: null, page: 1, matrix: { ...state.matrix, page: 1 } })}
             onRadius={(radius) => update({ radius, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } })}
+          />
+        )}
+        {(clustersData || clustersFailed) && (
+          <ClustersPanel
+            data={clustersData}
+            events={upcomingEvents}
+            regions={regions}
+            failed={clustersFailed}
+            show={state.clusters}
+            cluster={cluster}
+            memberCount={memberCount}
+            onShow={(clusters) => update({ clusters })}
+            onCluster={(id) => update({ cluster: id, cell: null, sel: [], area: null, page: 1, matrix: { ...state.matrix, page: 1 } })}
           />
         )}
         {areaCompanies && (

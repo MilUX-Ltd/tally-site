@@ -1,0 +1,125 @@
+---
+// Upcoming cluster events: a calendar and a list, built at build time from
+// public/data/events.json and clusters.json (scripts/fetch-data.mjs). Past
+// events are dropped at build. Members-only events show only the signpost
+// and a link to join the cluster. No script runs on this page.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import Base from '../layouts/Base.astro';
+import '../styles/events.css';
+import { longDate, type ClusterEvent, type ClustersData, type EventsData } from '../lib/clusters';
+
+const read = (name: string) => JSON.parse(readFileSync(join(process.cwd(), 'public', 'data', name), 'utf8'));
+const clusters = (read('clusters.json') as ClustersData).clusters;
+const byId = new Map(clusters.map((c) => [c.id, c]));
+const todayUtc = new Date().toISOString().slice(0, 10);
+const events = (read('events.json') as EventsData).events.filter((e) => e.date >= todayUtc);
+
+// Group by day, then by month for the calendar.
+const days = new Map<string, ClusterEvent[]>();
+for (const e of events) days.set(e.date, [...(days.get(e.date) ?? []), e]);
+const months = [...new Set(events.map((e) => e.date.slice(0, 7)))];
+
+const monthName = (ym: string) => new Date(`${ym}-01T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', month: 'long', year: 'numeric' });
+const WEEKDAYS = [
+  ['Mon', 'Monday'],
+  ['Tue', 'Tuesday'],
+  ['Wed', 'Wednesday'],
+  ['Thu', 'Thursday'],
+  ['Fri', 'Friday'],
+  ['Sat', 'Saturday'],
+  ['Sun', 'Sunday'],
+];
+/** Weeks of a month as rows of seven: day numbers or null, Monday first. */
+function weeks(ym: string): Array<Array<number | null>> {
+  const [y, m] = ym.split('-').map(Number);
+  const first = (new Date(Date.UTC(y, m - 1, 1)).getUTCDay() + 6) % 7;
+  const length = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const cells: Array<number | null> = [...Array(first).fill(null), ...Array.from({ length }, (_, i) => i + 1)];
+  while (cells.length % 7) cells.push(null);
+  return Array.from({ length: cells.length / 7 }, (_, i) => cells.slice(i * 7, i * 7 + 7));
+}
+const pad = (n: number) => String(n).padStart(2, '0');
+const clusterName = (id: string) => byId.get(id)?.name ?? id;
+const publicCount = events.filter((e) => e.audience === 'public').length;
+---
+<Base title="Upcoming cluster events: Tally" description="Upcoming events from the UK's regional defence and security clusters." wide>
+  <header class="site-header">
+    <p><a href="/">Back to the Tally map</a></p>
+    <h1>Upcoming cluster events</h1>
+    <p>Events from the UK's regional defence and security clusters, from their public websites and pages. Public events are listed in full. Members-only events are shown only as a date: join the cluster for details.</p>
+  </header>
+
+  {events.length === 0 ? (
+    <p>No upcoming cluster events are listed at the moment.</p>
+  ) : (
+    <>
+      <p class="events-count">{events.length} upcoming {events.length === 1 ? 'event' : 'events'}: {publicCount} public, {events.length - publicCount} for members only.</p>
+      <section class="events-calendar" aria-labelledby="calendar-heading">
+        <h2 id="calendar-heading">Calendar</h2>
+        <div class="months">
+          {months.map((ym) => (
+            <table class="month">
+              <caption>{monthName(ym)}</caption>
+              <thead>
+                <tr>{WEEKDAYS.map(([short, long]) => <th scope="col"><abbr title={long}>{short}</abbr></th>)}</tr>
+              </thead>
+              <tbody>
+                {weeks(ym).map((week) => (
+                  <tr>
+                    {week.map((d) => {
+                      if (d == null) return <td />;
+                      const date = `${ym}-${pad(d)}`;
+                      const n = days.get(date)?.length ?? 0;
+                      return n ? (
+                        <td class="has-events">
+                          <a href={`#d-${date}`}>{d}<span class="vh"> {monthName(ym)}, {n} {n === 1 ? 'event' : 'events'}</span></a>
+                        </td>
+                      ) : (
+                        <td>{d}</td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ))}
+        </div>
+      </section>
+
+      <section class="events-list" aria-labelledby="list-heading">
+        <h2 id="list-heading">All upcoming events</h2>
+        {[...days].map(([date, list]) => (
+          <div class="event-day">
+            <h3 id={`d-${date}`} tabindex="-1">{longDate(date)}</h3>
+            <ul>
+              {list.map((e) =>
+                e.audience === 'public' ? (
+                  <li class="event public">
+                    <h4>{e.link ? <a href={e.link} rel="noopener noreferrer">{e.title}</a> : e.title}</h4>
+                    <p class="meta">{[clusterName(e.cluster), e.time, e.where].filter(Boolean).join(' · ')}</p>
+                    {e.summary && <p>{e.summary}</p>}
+                    {e.link ? null : byId.get(e.cluster)?.web ? (
+                      <p><a href={byId.get(e.cluster)?.web} rel="noopener noreferrer">{clusterName(e.cluster)} cluster website</a></p>
+                    ) : null}
+                  </li>
+                ) : (
+                  <li class="event members">
+                    <h4>{clusterName(e.cluster)}</h4>
+                    <p>{e.text}</p>
+                    <p><a href={e.link} rel="noopener noreferrer">Join the cluster</a></p>
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+        ))}
+      </section>
+    </>
+  )}
+
+  <footer class="site-footer">
+    <p>Cluster and event data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from the clusters' public websites and pages. Dates and details can change; check with the organiser before you travel.</p>
+    <p>Built by <a href="https://milux.co.uk">MilUX</a>. This was built with AI. If you would like to know more, please <a href="https://milux.co.uk/contact/">get in touch</a>.</p>
+  </footer>
+</Base>
