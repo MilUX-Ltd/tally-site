@@ -1,0 +1,11 @@
+{
+ "as_of": "2020-01-01",
+ "events": [
+  {"audience": "public", "cluster": "SCRDSC", "date": "2020-01-15", "time": "10:00", "where": "Portsmouth", "title": "Fixture past showcase", "summary": "An event that has already happened.", "link": "https://example.org/past"},
+  {"audience": "public", "cluster": "SCRDSC", "date": "2099-03-10", "time": "10:00 to 16:00", "where": "Portsmouth", "title": "Fixture maritime showcase", "summary": "An open showcase of maritime technology for SMEs.", "link": "https://example.org/maritime"},
+  {"audience": "members", "cluster": "SCRDSC", "date": "2099-03-18", "text": "Members' event: join the cluster for details", "link": "https://www.southcentralrdsc.co.uk/"},
+  {"audience": "public", "cluster": "GLRDSC", "date": "2099-04-02", "time": null, "where": "Lincoln", "title": "Fixture supplier day", "summary": "Meet the buyers from regional primes.", "link": null},
+  {"audience": "members", "cluster": "WalesDSC", "date": "2099-04-20", "text": "Members' event: join the cluster for details", "link": "https://walesdsc.co.uk/"},
+  {"audience": "public", "cluster": "LRDSC", "date": "2099-04-20", "time": "12:00", "where": "Online", "title": "Fixture innovation briefing", "summary": "A short online briefing on innovation funding.", "link": "https://example.org/briefing"}
+ ]
+}

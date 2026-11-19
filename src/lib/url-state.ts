@@ -46,6 +46,10 @@ export interface ViewState {
   radius: Radius;
   /** Whether every defence site is drawn on the map. */
   sites: boolean;
+  /** Whether cluster areas and their events are drawn on the map. */
+  clusters: boolean;
+  /** Chosen cluster id; companies narrow to its recorded members. */
+  cluster: string | null;
   /** Keyword search text, set when plain-English search falls back; '' for none. */
   q: string;
 }
@@ -53,13 +57,14 @@ export interface ViewState {
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, sites: false, q: '' };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, sites: false, clusters: false, cluster: null, q: '' };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
 const ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const REGION = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
 const CELL = /^8[0-9a-f]{14}$/;
+const CLUSTER = /^[A-Za-z]{2,20}$/;
 const MAX_ITEMS = 200;
 const MAX_PAGE = 10_000;
 
@@ -134,6 +139,9 @@ export function fromQuery(query: string): ViewState {
   const radius = Number(p.get('radius'));
   if (/^\d+$/.test(p.get('radius') ?? '') && isRadius(radius)) state.radius = radius;
   if (p.get('sites') === '1') state.sites = true;
+  if (p.get('clusters') === '1') state.clusters = true;
+  const cluster = p.get('cluster');
+  if (cluster && CLUSTER.test(cluster)) state.cluster = cluster;
   state.q = keywordText(p.get('q'));
   return state;
 }
@@ -158,6 +166,8 @@ export function toQuery(state: ViewState): string {
   if (state.site) add('site', state.site);
   if (state.radius !== DEFAULT_RADIUS) add('radius', String(state.radius));
   if (state.sites) add('sites', '1');
+  if (state.clusters) add('clusters', '1');
+  if (state.cluster) add('cluster', state.cluster);
   if (state.q) add('q', state.q);
   return parts.join('&');
 }
@@ -190,4 +200,10 @@ export function sanitiseState(state: ViewState, data: TallyData): ViewState {
 export function sanitiseSites(state: ViewState, ids: Iterable<string>): ViewState {
   if (!state.site) return state;
   return new Set(ids).has(state.site) ? state : { ...state, site: null };
+}
+
+/** Drops a chosen cluster the cluster list does not know. */
+export function sanitiseClusters(state: ViewState, ids: Iterable<string>): ViewState {
+  if (!state.cluster) return state;
+  return new Set(ids).has(state.cluster) ? state : { ...state, cluster: null };
 }

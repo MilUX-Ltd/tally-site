@@ -1,5 +1,6 @@
-// Build step: fetch the public Tally data and taxonomy from MilUX-Ltd/tally,
-// slim them for the browser and write public/data/tally.json (git-ignored).
+// Build step: fetch the public Tally data, taxonomy, clusters and events from
+// MilUX-Ltd/tally, slim them for the browser and write public/data/tally.json,
+// clusters.json and events.json (git-ignored).
 // With TALLY_DATA_SOURCE=fixture it reads tests/fixtures instead, so tests
 // never touch the network.
 // Usage: node scripts/fetch-data.mjs
@@ -82,6 +83,76 @@ export function slimData(raw, taxonomy) {
   return { generated: str(raw.generated), count: companies.length, taxonomy: slimTaxonomy(taxonomy), companies };
 }
 
+// Clusters and events. Members-only events are signposts: cluster, date, this
+// fixed text and the cluster's own website. The data repo exports them that
+// way; the build checks again and refuses anything more.
+export const SIGNPOST = "Members' event: join the cluster for details";
+const CLUSTER_ID = /^[A-Za-z]{2,20}$/;
+const HEX = /^#[0-9A-Fa-f]{6}$/;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const STATUSES = new Set(['live', 'pre-launch', 'proposed']);
+const PUBLIC_KEYS = ['audience', 'cluster', 'date', 'time', 'where', 'title', 'summary', 'link'];
+const MEMBERS_KEYS = ['audience', 'cluster', 'date', 'text', 'link'];
+const https = (v) => (/^https:\/\/[^\s]+$/i.test(str(v)) ? str(v) : null);
+const orNull = (v) => str(v) || null;
+
+export function slimClusters(raw) {
+  if (!raw || !Array.isArray(raw.clusters)) throw new Error('clusters.json has no clusters array');
+  const clusters = raw.clusters.map((c) => {
+    if (!CLUSTER_ID.test(str(c.id))) throw new Error(`clusters.json: bad cluster id ${JSON.stringify(c.id)}`);
+    return {
+      id: str(c.id),
+      name: str(c.name),
+      full: str(c.full),
+      region: str(c.region),
+      regions: (Array.isArray(c.regions) ? c.regions : []).map((r) => ({ code: str(r?.code), name: str(r?.name) })).filter((r) => r.code),
+      status: STATUSES.has(str(c.status)) ? str(c.status) : 'live',
+      web: https(c.web),
+      linkedin: https(c.linkedin),
+      colour: HEX.test(str(c.colour)) ? str(c.colour) : '#586F7C',
+      membership: /^mbr-[a-z0-9-]+$/.test(str(c.membership)) ? str(c.membership) : null,
+    };
+  });
+  return { as_of: str(raw.as_of), clusters };
+}
+
+/** Upcoming events (on or after today, YYYY-MM-DD), checked against the contract and sorted by date. */
+export function slimEvents(raw, clusters, today) {
+  if (!raw || !Array.isArray(raw.events)) throw new Error('events.json has no events array');
+  const web = new Map(clusters.clusters.map((c) => [c.id, c.web]));
+  const sameKeys = (e, keys) => Object.keys(e).length === keys.length && keys.every((k) => k in e);
+  const events = [];
+  for (const e of raw.events) {
+    if (!e || !web.has(e.cluster)) throw new Error(`events.json: event for unknown cluster ${JSON.stringify(e?.cluster)}`);
+    if (!DATE.test(str(e.date)) || Number.isNaN(Date.parse(e.date))) throw new Error(`events.json: bad date ${JSON.stringify(e.date)}`);
+    if (e.audience === 'members') {
+      if (!sameKeys(e, MEMBERS_KEYS) || e.text !== SIGNPOST || !web.get(e.cluster) || e.link !== web.get(e.cluster)) {
+        throw new Error(`events.json: a members-only event for ${e.cluster} on ${e.date} carries more than the signpost; refusing to build`);
+      }
+      if (e.date >= today) events.push({ audience: 'members', cluster: e.cluster, date: e.date, text: SIGNPOST, link: e.link });
+    } else if (e.audience === 'public') {
+      if (!Object.keys(e).every((k) => PUBLIC_KEYS.includes(k))) throw new Error(`events.json: a public event carries fields outside the contract`);
+      if (!str(e.title)) throw new Error('events.json: a public event has no title');
+      if (e.date >= today) {
+        events.push({
+          audience: 'public',
+          cluster: e.cluster,
+          date: e.date,
+          time: orNull(e.time),
+          where: orNull(e.where),
+          title: str(e.title),
+          summary: orNull(e.summary),
+          link: safeLink(e.link) || null,
+        });
+      }
+    } else {
+      throw new Error(`events.json: unknown audience ${JSON.stringify(e.audience)}`);
+    }
+  }
+  events.sort((a, b) => a.date.localeCompare(b.date) || a.cluster.localeCompare(b.cluster));
+  return { as_of: str(raw.as_of), events };
+}
+
 async function fetchJson(url) {
   const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
   if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
@@ -91,14 +162,22 @@ async function fetchJson(url) {
 async function main() {
   const fixture = process.env.TALLY_DATA_SOURCE === 'fixture';
   const read = (name) => JSON.parse(readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8'));
-  const [raw, taxonomy] = fixture
-    ? [read('tally-data.json'), read('taxonomy.json')]
-    : await Promise.all([fetchJson(`${BASE}/tally-data.json`), fetchJson(`${BASE}/taxonomy.json`)]);
+  const names = ['tally-data.json', 'taxonomy.json', 'clusters.json', 'events.json'];
+  const [raw, taxonomy, rawClusters, rawEvents] = fixture
+    ? names.map(read)
+    : await Promise.all(names.map((name) => fetchJson(`${BASE}/${name}`)));
   const data = slimData(raw, taxonomy);
   if (data.companies.length === 0) throw new Error('no companies; refusing to build an empty site');
   const dir = new URL('../public/data/', import.meta.url);
   mkdirSync(dir, { recursive: true });
   writeFileSync(new URL('tally.json', dir), JSON.stringify(data));
+  const clusters = slimClusters(rawClusters);
+  // Past events are dropped at build, by the build's own date (UTC).
+  const events = slimEvents(rawEvents, clusters, new Date().toISOString().slice(0, 10));
+  writeFileSync(new URL('clusters.json', dir), JSON.stringify(clusters));
+  writeFileSync(new URL('events.json', dir), JSON.stringify(events));
+  const signposts = events.events.filter((e) => e.audience === 'members').length;
+  console.log(`Wrote clusters.json (${clusters.clusters.length} clusters) and events.json (${events.events.length - signposts} public events, ${signposts} members-only signposts).`);
   const located = data.companies.filter((c) => c.lat != null).length;
   console.log(`Wrote public/data/tally.json from ${fixture ? 'the test fixture' : 'MilUX-Ltd/tally'}: ${data.count} companies, ${located} with a point.`);
 }

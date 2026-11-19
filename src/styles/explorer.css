@@ -122,3 +122,17 @@ button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .search-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .search-row input { flex: 1 1 14rem; min-width: 0; min-height: 44px; font: inherit; padding: 0.25rem 0.5rem; border: 2px solid var(--green); border-radius: 4px; background: #fff; color: inherit; }
 .search-status { margin: 0.5rem 0 0; overflow-wrap: anywhere; }
+.clusters-panel { border: 2px solid var(--blue-grey); background: #fff; margin: 0.75rem 0; padding: 0.5rem 1rem; min-width: 0; }
+.clusters-panel legend { font-weight: 600; padding: 0 0.25rem; }
+.clusters-picker { display: grid; gap: 0.25rem; margin: 0.5rem 0; max-width: 24rem; }
+.clusters-picker select { font: inherit; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--green); border-radius: 4px; background: #fff; color: var(--green); width: 100%; max-width: 100%; }
+.cluster-detail p { margin: 0.25rem 0; overflow-wrap: anywhere; }
+.cluster-links { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+.cluster-events-heading { font-size: 1rem; margin: 0.5rem 0 0.25rem; }
+.cluster-events { margin: 0; padding-left: 1.25rem; }
+.cluster-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; padding: 0; margin: 0.5rem 0; }
+.cluster-legend li { display: flex; align-items: center; gap: 0.35rem; }
+.cluster-swatch { flex: none; vertical-align: middle; }
+.clusters-panel .clusters-more, .clusters-panel .clusters-attribution { margin: 0.25rem 0; font-size: 0.95rem; }
+.clusters-panel .clusters-attribution { color: var(--blue-grey); }
+.clusters-panel a { color: var(--green); }
