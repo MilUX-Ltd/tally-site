@@ -1,14 +1,17 @@
 ---
 import '../styles/base.css';
 import { canonicalUrl } from '../lib/company-page';
+import { FEED_PATH } from '../lib/new-companies';
 interface Props {
   title: string;
   description: string;
   wide?: boolean;
   /** Whether the page has a canonical address (not the 404 page). */
   canonical?: boolean;
+  /** Whether to advertise the new companies feed in the head. */
+  feed?: boolean;
 }
-const { title, description, wide = false, canonical = true } = Astro.props;
+const { title, description, wide = false, canonical = true, feed = false } = Astro.props;
 // Canonical addresses are on tally.milux.co.uk and end in a slash, as served.
 const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
 ---
@@ -20,6 +23,7 @@ const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.ur
     <title>{title}</title>
     <meta name="description" content={description} />
     {canonical && <link rel="canonical" href={canonicalUrl(path)} />}
+    {feed && <link rel="alternate" type="application/rss+xml" title="New companies in Tally" href={FEED_PATH} />}
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>

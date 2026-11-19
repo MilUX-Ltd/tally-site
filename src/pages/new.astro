@@ -1,0 +1,45 @@
+---
+// Companies added to Tally most recently, grouped by week, newest first, with
+// a link to the RSS feed of the same list (/new/feed.xml). Added dates come
+// from the data repo's history (scripts/build-history.mjs). No script runs on
+// this page.
+import Base from '../layouts/Base.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import '../styles/new.css';
+import { dayText, FEED_PATH, recentAdditions, WEEKS } from '../lib/new-companies';
+import { addedDates, siteData } from '../lib/site-data';
+
+const data = siteData();
+const weeks = recentAdditions(data.companies, addedDates(), data.taxonomy);
+const count = weeks.reduce((n, w) => n + w.entries.length, 0);
+---
+<Base title="New companies: Tally" description="Companies added to Tally, the open directory of UK defence capability, newest first." feed>
+  <header class="site-header">
+    <p><a href="/">Back to the Tally map</a> · <a href="/events">Upcoming cluster events</a></p>
+    <h1>New companies</h1>
+    <p>Companies added to Tally in the {WEEKS} weeks to the latest addition, newest first. We add companies every week from public sources. Follow new additions with the <a href={FEED_PATH}>RSS feed of new companies</a>.</p>
+  </header>
+
+  {count === 0 ? (
+    <p>No new companies are listed at the moment.</p>
+  ) : (
+    weeks.map((w) => (
+      <section class="new-week" aria-labelledby={`w-${w.week}`}>
+        <h2 id={`w-${w.week}`}>{w.label}</h2>
+        <ul>
+          {w.entries.map((e) => (
+            <li class="new-company">
+              <h3><a href={e.path}>{e.name}</a></h3>
+              <p class="meta">{[e.region, e.capabilities.join(', ')].filter(Boolean).join(' · ')}</p>
+              <p class="meta">Added {dayText(e.added)}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  )}
+
+  <SiteFooter>
+    <p>Company data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from public sources, under CC BY 4.0. The date added is when a company first appeared in the directory.</p>
+  </SiteFooter>
+</Base>
