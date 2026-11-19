@@ -31,10 +31,12 @@ export interface ViewState {
   matrix: { group: string | null; page: number };
   /** Page of the results list. */
   page: number;
+  /** Shortlisted companies, in the order added. */
+  list: string[];
 }
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1 };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [] };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -98,6 +100,7 @@ export function fromQuery(query: string): ViewState {
   if (group && ID.test(group)) state.matrix.group = group;
   state.matrix.page = pageNumber(p.get('mpage'));
   state.page = pageNumber(p.get('page'));
+  state.list = list(p.get('list'), ID);
   return state;
 }
 
@@ -115,6 +118,7 @@ export function toQuery(state: ViewState): string {
   if (state.matrix.group) add('mgroup', state.matrix.group);
   if (state.matrix.page > 1) add('mpage', String(state.matrix.page));
   if (state.page > 1) add('page', String(state.page));
+  if (state.list.length) add('list', state.list.join(','));
   return parts.join('&');
 }
 
@@ -138,5 +142,5 @@ export function sanitiseState(state: ViewState, data: TallyData): ViewState {
   const filters = { ...state.filters };
   for (const facet of FACETS) filters[facet] = state.filters[facet].filter((v) => known[facet].has(v));
   const group = state.matrix.group && t.groups.some((g) => g.slug === state.matrix.group) ? state.matrix.group : null;
-  return { ...state, filters, sel: state.sel.filter((id) => ids.has(id)), matrix: { ...state.matrix, group } };
+  return { ...state, filters, sel: state.sel.filter((id) => ids.has(id)), list: state.list.filter((id) => ids.has(id)), matrix: { ...state.matrix, group } };
 }

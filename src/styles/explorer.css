@@ -81,3 +81,14 @@ button:focus-visible, summary:focus-visible, input:focus-visible, [tabindex]:foc
 .map-tools { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .map-tools button[aria-pressed='true'] { background: var(--orange); border-color: var(--orange); }
 .map.drawing { cursor: crosshair; }
+button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
+.shortlist { margin: 1.5rem 0 1rem; padding: 1rem; border: 2px solid var(--gold); background: #fff; }
+.shortlist h2 { margin: 0 0 0.5rem; font-size: 1.2rem; }
+.shortlist-items { list-style: none; padding: 0; margin: 0 0 0.75rem; }
+.shortlist-items li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; align-items: center; padding: 0.25rem 0; border-bottom: 1px solid var(--beige); }
+.shortlist-share { display: grid; gap: 0.25rem; }
+.shortlist-share input { font: inherit; width: 100%; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--blue-grey); border-radius: 4px; color: var(--green); background: var(--neutral); }
+.shortlist-share input:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+.shortlist-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.button-link { display: inline-block; padding: 0.5rem 0.9rem; border: 2px solid var(--green); border-radius: 4px; color: var(--green); background: #fff; text-decoration: none; font-weight: 600; }
+.button-link:hover { background: var(--neutral); }

@@ -11,6 +11,9 @@ import { companiesInBbox } from '../lib/matrix';
 import type { TallyData } from '../lib/types';
 import { fromQuery, roundPosition, sanitiseState, toQuery, type ViewState } from '../lib/url-state';
 import Matrix from './Matrix';
+import Shortlist from './Shortlist';
+import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
+import type { Company } from '../lib/types';
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -65,18 +68,34 @@ export default function Explorer() {
       return { ...s, filters: { ...s.filters, [facet]: on ? [...values, value] : values }, page: 1, matrix: { ...s.matrix, page: 1 } };
     });
 
+  const byId = useMemo(() => new Map((data?.companies ?? []).map((c) => [c.id, c])), [data]);
+  const shortlisted = state.list.map((id) => byId.get(id)).filter((c): c is Company => Boolean(c));
+  const shareUrl = `${window.location.origin}${window.location.pathname}${state.list.length ? `?list=${state.list.join(',')}` : ''}`;
+  const removeFromList = (id: string) => setState((s) => ({ ...s, list: removeFromShortlist(s.list, id) }));
+  const shortlistButton = (c: Company) =>
+    state.list.includes(c.id) ? (
+      <button type="button" class="secondary small" onClick={() => removeFromList(c.id)}>
+        Remove<span class="vh"> {c.name}</span> from shortlist
+      </button>
+    ) : (
+      <button type="button" class="secondary small" onClick={() => setState((s) => ({ ...s, list: addToShortlist(s.list, c.id) }))}>
+        Add<span class="vh"> {c.name}</span> to shortlist
+      </button>
+    );
+
   if (failed) return <p class="notice">The company data could not be loaded. Please refresh the page to try again.</p>;
   if (!data) return <p class="notice">Loading companies.</p>;
 
   return (
     <div class="explorer">
-      <aside class="explorer-filters" aria-label="Filters">
+      <aside class="explorer-filters" aria-label="Filters and shortlist">
         <Filters
           taxonomy={data.taxonomy}
           filters={state.filters}
           onToggle={toggle}
           onClear={() => update({ filters: emptyFilters(), page: 1, matrix: { ...state.matrix, page: 1 } })}
         />
+        <Shortlist companies={shortlisted} taxonomy={data.taxonomy} shareUrl={shareUrl} onRemove={removeFromList} />
       </aside>
       <div class="explorer-main">
         <p id="result-count" role="status">
@@ -103,7 +122,7 @@ export default function Explorer() {
           }}
         />
         {areaCompanies && (
-          <AreaPanel companies={areaCompanies} focus={picked} onClear={() => update({ cell: null, sel: [], area: null })} />
+          <AreaPanel companies={areaCompanies} focus={picked} actions={shortlistButton} onClear={() => update({ cell: null, sel: [], area: null })} />
         )}
         <Matrix
           taxonomy={data.taxonomy}
@@ -116,7 +135,7 @@ export default function Explorer() {
           onGroup={(group) => update({ matrix: { group, page: state.matrix.page } })}
           onPage={(page) => update({ matrix: { ...state.matrix, page } })}
         />
-        <ResultsList companies={filtered} page={state.page} onPage={(page) => update({ page })} />
+        <ResultsList companies={filtered} page={state.page} onPage={(page) => update({ page })} actions={shortlistButton} />
       </div>
     </div>
   );

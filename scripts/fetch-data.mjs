@@ -47,8 +47,10 @@ export function slimData(raw, taxonomy) {
     let id = slugify(c.name) || 'company';
     for (let n = 2; used.has(id); n++) id = `${slugify(c.name) || 'company'}-${n}`;
     used.add(id);
-    const lat = num(c.lat, -90, 90);
-    const lon = num(c.lon, -180, 180);
+    // A "region" location means the UK location is not published: never map it.
+    const unpublished = str(c.location_source) === 'region';
+    const lat = unpublished ? null : num(c.lat, -90, 90);
+    const lon = unpublished ? null : num(c.lon, -180, 180);
     return {
       id,
       name: str(c.name),

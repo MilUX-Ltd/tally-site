@@ -11,6 +11,11 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   ...astro.configs.recommended,
   {
+    // Tests match a byte order mark in regular expressions on purpose.
+    files: ['tests/**/*.ts'],
+    rules: { 'no-irregular-whitespace': ['error', { skipRegExps: true }] },
+  },
+  {
     files: ['scripts/**/*.mjs'],
     languageOptions: {
       globals: { AbortSignal: 'readonly', console: 'readonly', fetch: 'readonly', process: 'readonly', URL: 'readonly' },
