@@ -175,7 +175,8 @@ export function companyCertifications(company: Company, taxonomy: Taxonomy, chec
     .filter((a) => company.tags.includes(a.slug))
     .map((a) => {
       const found = (checks ?? []).find((c) => c.accreditation === a.slug);
-      const check = readable(found) ? found : null;
+      // The link is checked again here: only an https address is ever rendered as a link.
+      const check = readable(found) ? { ...found, link: found.link && /^https:\/\/[^\s<>"\\]+$/i.test(found.link) ? found.link : null } : null;
       return { slug: a.slug, label: a.label, check, source: certificationLabel(check) };
     });
 }

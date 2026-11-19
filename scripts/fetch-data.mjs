@@ -132,7 +132,11 @@ export function companyTexts(raw) {
 // when well formed, for an accreditation the taxonomy knows and the company
 // carries; anything else is dropped, so the certification stays "Stated by the
 // company". Written to a build-only file that is never served.
-const CHECK_HTTPS = /^https:\/\/[^\s<>"]+$/i;
+const CHECK_HTTPS = /^https:\/\/[^\s<>"\\]+$/i;
+// Negative or status wording a register name may not carry. The same list is in
+// the data repo's gate (.github/scripts/check.py, REGISTER_DENIED); keep them alike.
+const REGISTER_DENIED =
+  /\b(?:not|no|none|unverified|unconfirmed|uncertified|expired|revoked|lapsed|withdrawn|suspended|fail|failed|failure|invalid|removed|found|missing|cancelled|canceled)\b|n['\u2019]t\b/i;
 
 /** Certification checks for every company that has any, keyed by id. `today` is the build's UTC date. */
 export function certificationChecks(raw, taxonomy, today = new Date().toISOString().slice(0, 10)) {
@@ -152,7 +156,8 @@ export function certificationChecks(raw, taxonomy, today = new Date().toISOStrin
       const checked = validDate(str(check.checked));
       const link = check.link == null || str(check.link) === '' ? null : str(check.link);
       if (!accreditation.startsWith('accr-') || !known.has(accreditation) || !tags.has(accreditation) || seen.has(accreditation)) continue;
-      if (register.length < 2 || register.length > 80 || /[\n\r]|:\/\/|www\./i.test(register)) continue;
+      if (register.length < 2 || register.length > 80 || [...register].some((ch) => ch.charCodeAt(0) < 0x20 || ch.charCodeAt(0) === 0x7f) || /\\|:\/\/|www\./i.test(register)) continue;
+      if (REGISTER_DENIED.test(register)) continue;
       if (!checked || checked > today) continue;
       if (link !== null && !CHECK_HTTPS.test(link)) continue;
       seen.add(accreditation);
