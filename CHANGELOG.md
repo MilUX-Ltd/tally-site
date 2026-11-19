@@ -20,6 +20,8 @@ All notable changes to the Tally site. Versions follow semantic versioning.
 - Cluster regions overlay: the areas of the 16 UK regional defence and security clusters, merged and simplified from ONS Open Geography boundaries (Open Government Licence v3.0, attributed), drawn in each cluster's colour with a marker counting its upcoming events. Choosing a cluster narrows the companies to its recorded members (`mbr-` tag) and lists its upcoming events. Held in the URL (`clusters`, `cluster`).
 - `/events`: upcoming cluster events as a month calendar and a list, built at build time; past events are dropped. Members-only events show only a signpost and a link to join the cluster, and the build refuses a members-only event that carries anything more.
 - Bundle-size check in the build, and journey tests run under the production CSP.
+- Plain-English search: a search box sends the request to `POST /api/search`, a Worker route on the same site that asks Claude Haiku for filter values through one strict tool, validates them against the filter schema and the known values, and returns filters only. The route is rate-limited and budget-capped; without a key, at a limit, or on any failure it answers `{"fallback": true}` and the browser runs a keyword search over names, summaries and tag labels, held in the URL (`q`), and says so. Contract in `CONTEXT.md`.
 
 ### Changed
+- Pull-request previews use Worker Previews (`wrangler preview`), since a Worker that implements a Durable Object gets no version preview URL; the deploy check also exercises the search route.
 - CSP allows the map tile host (`tiles.openfreemap.org`) for connect and images only.

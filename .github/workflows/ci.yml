@@ -3,7 +3,7 @@
 # (branch protection on main requires the "test" job).
 #
 # Deploys run only when the CLOUDFLARE_API_TOKEN repository secret is set:
-# pull requests upload a preview version (unique preview URL), pushes to main
+# pull requests deploy a Worker Preview (one per pull request), pushes to main
 # deploy to production. Both are followed by a header and smoke check against
 # the deployed URL.
 name: CI
@@ -63,11 +63,16 @@ jobs:
       - name: Build
         if: env.CLOUDFLARE_API_TOKEN != ''
         run: npm run build
-      - name: Upload preview version
+      # A Worker that implements a Durable Object gets no version preview URL,
+      # so pull requests use Worker Previews: one preview per pull request,
+      # with its own Durable Object namespace and none of production's secrets.
+      - name: Deploy pull request preview
         if: env.CLOUDFLARE_API_TOKEN != ''
         id: upload
+        env:
+          PREVIEW_NAME: pr-${{ github.event.pull_request.number }}
         run: |
-          npx wrangler versions upload | tee upload.log
+          npx wrangler preview --name "$PREVIEW_NAME" --ignore-base-config | tee upload.log
           url=$(grep -Eo 'https://[a-z0-9-]+-tally-site[a-z0-9.-]*\.workers\.dev' upload.log | head -1)
           if [ -z "$url" ]; then
             echo "Could not extract the preview URL from wrangler output; failing rather than skipping the deploy check." >&2
@@ -77,7 +82,7 @@ jobs:
           echo "Preview URL: $url" >> "$GITHUB_STEP_SUMMARY"
       - name: Check headers and smoke on the preview URL
         if: env.CLOUDFLARE_API_TOKEN != '' && steps.upload.outputs.preview-url != ''
-        run: node scripts/check-deploy.mjs "${{ steps.upload.outputs.preview-url }}"
+        run: node scripts/check-deploy.mjs "${{ steps.upload.outputs.preview-url }}" --expect-search-fallback
       - name: Note when deploy is not configured
         if: env.CLOUDFLARE_API_TOKEN == ''
         run: echo "CLOUDFLARE_API_TOKEN secret not set; skipping preview deploy." >> "$GITHUB_STEP_SUMMARY"

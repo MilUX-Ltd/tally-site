@@ -1,6 +1,9 @@
 // Post-deploy check: the deployed page returns 200, shows the Tally marker,
-// and carries every security header exactly as public/_headers sets it.
-// Usage: node scripts/check-deploy.mjs <deployed-url>
+// and carries every security header exactly as public/_headers sets it; the
+// search route runs and refuses an over-long request without calling the
+// model. With --expect-search-fallback (previews, which never hold the key),
+// a normal search must answer {"fallback": true}.
+// Usage: node scripts/check-deploy.mjs <deployed-url> [--expect-search-fallback]
 /* global setTimeout */
 import { readFileSync } from 'node:fs';
 
@@ -36,6 +39,17 @@ for (const [name, value] of Object.entries(expected)) {
   const actual = response.headers.get(name);
   if (actual !== value) failures.push(`header ${name}:\n  expected: ${value}\n  actual:   ${actual}`);
 }
+const searchUrl = new URL('/api/search', url).toString();
+const post = (q) =>
+  fetch(searchUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q }) });
+const tooLong = await post('x'.repeat(301));
+if (tooLong.status !== 413) failures.push(`search: an over-long request should get 413, got ${tooLong.status}`);
+if (process.argv.includes('--expect-search-fallback')) {
+  const answer = await post('cyber companies');
+  const text = await answer.text();
+  if (answer.status !== 200 || text !== '{"fallback":true}') failures.push(`search: expected 200 {"fallback":true}, got ${answer.status} ${text.slice(0, 200)}`);
+}
+
 if (failures.length) {
   console.error(`Deploy check FAILED for ${url}\n\n${failures.join('\n')}`);
   process.exit(1);

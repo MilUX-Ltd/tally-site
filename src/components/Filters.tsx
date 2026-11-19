@@ -1,5 +1,5 @@
 // The filter panel: capabilities by group, then company facets.
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { activeFilterCount, type Facet, type Filters as FilterState } from '../lib/filters';
 import type { Option, Taxonomy } from '../lib/types';
 
@@ -8,13 +8,22 @@ interface Props {
   filters: FilterState;
   onToggle: (facet: Facet, value: string, on: boolean) => void;
   onClear: () => void;
+  /** Goes up by one each time a search sets the filters. */
+  reveal: number;
 }
 
-function Choices({ facet, title, options, filters, onToggle }: { facet: Facet; title: string; options: Option[] } & Pick<Props, 'filters' | 'onToggle'>) {
+function Choices({ facet, title, options, filters, onToggle, reveal }: { facet: Facet; title: string; options: Option[] } & Pick<Props, 'filters' | 'onToggle' | 'reveal'>) {
   const selected = filters[facet];
   const count = options.filter((o) => selected.includes(o.slug)).length;
+  // After a search sets the filters, groups holding a chosen value open so
+  // the choices are visible. They never close on their own.
+  const details = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    if (reveal > 0 && count > 0 && details.current) details.current.open = true;
+    // Only a new search should open groups, not every change of count.
+  }, [reveal]);
   return (
-    <details class="filter-group">
+    <details class="filter-group" ref={details}>
       <summary>
         {title}
         {count > 0 && <span class="filter-count"> ({count} selected)</span>}
@@ -36,7 +45,7 @@ function Choices({ facet, title, options, filters, onToggle }: { facet: Facet; t
   );
 }
 
-export default function Filters({ taxonomy, filters, onToggle, onClear }: Props) {
+export default function Filters({ taxonomy, filters, onToggle, onClear, reveal }: Props) {
   const [open, setOpen] = useState(true);
   useEffect(() => {
     if (!window.matchMedia('(min-width: 60rem)').matches) setOpen(false);
@@ -56,15 +65,16 @@ export default function Filters({ taxonomy, filters, onToggle, onClear }: Props)
             title={g.label}
             options={taxonomy.capabilities.filter((c) => c.group === g.slug)}
             filters={filters}
+            reveal={reveal}
             onToggle={onToggle}
           />
         ))}
         <h2>Companies</h2>
-        <Choices facet="size" title="Size" options={taxonomy.sizes} filters={filters} onToggle={onToggle} />
-        <Choices facet="region" title="Region" options={taxonomy.regions} filters={filters} onToggle={onToggle} />
-        <Choices facet="fw" title="Frameworks" options={taxonomy.frameworks} filters={filters} onToggle={onToggle} />
-        <Choices facet="accr" title="Accreditations" options={taxonomy.accreditations} filters={filters} onToggle={onToggle} />
-        <Choices facet="mbr" title="Memberships" options={taxonomy.memberships} filters={filters} onToggle={onToggle} />
+        <Choices facet="size" title="Size" options={taxonomy.sizes} filters={filters} onToggle={onToggle} reveal={reveal} />
+        <Choices facet="region" title="Region" options={taxonomy.regions} filters={filters} onToggle={onToggle} reveal={reveal} />
+        <Choices facet="fw" title="Frameworks" options={taxonomy.frameworks} filters={filters} onToggle={onToggle} reveal={reveal} />
+        <Choices facet="accr" title="Accreditations" options={taxonomy.accreditations} filters={filters} onToggle={onToggle} reveal={reveal} />
+        <Choices facet="mbr" title="Memberships" options={taxonomy.memberships} filters={filters} onToggle={onToggle} reveal={reveal} />
         <button type="button" class="secondary" onClick={onClear} disabled={count === 0}>
           Clear all filters
         </button>
