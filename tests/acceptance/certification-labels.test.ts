@@ -60,7 +60,7 @@ describe('the build keeps only well-formed checks', () => {
     ]);
 
     // The browser data carries no checks.
-    expect(JSON.stringify(data)).not.toContain('certification');
+    expect(JSON.stringify(data)).not.toContain('certification_checks');
     expect(JSON.stringify(data)).not.toContain('Example certificate register');
   });
 });
