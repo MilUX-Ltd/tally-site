@@ -1,0 +1,10 @@
+{
+ "as_of": "2020-01-01",
+ "opportunities": [
+  {"kind": "funding", "cluster": "SCRDSC", "deadline": "2020-01-20", "time": null, "title": "Fixture closed grant", "summary": "A call that has already closed.", "link": "https://example.org/closed"},
+  {"kind": "funding", "cluster": "LRDSC", "deadline": "2099-03-12", "time": "12:00", "title": "Fixture AI deployment fund", "summary": "Funding for SMEs deploying AI with a larger partner.", "link": "https://example.org/ai-fund"},
+  {"kind": "opportunity", "cluster": "SCRDSC", "deadline": "2099-04-01", "time": null, "title": "Fixture request for information", "summary": "The buyer wants to understand industry capability.", "link": "https://example.org/rfi"},
+  {"kind": "funding", "cluster": "SCRDSC", "deadline": "2099-05-30", "time": null, "title": "Fixture security reviews", "summary": null, "link": "http://example.org/reviews"},
+  {"kind": "opportunity", "cluster": "WalesDSC", "deadline": null, "time": null, "title": "Fixture rolling supplier list", "summary": "A rolling call for suppliers, with no closing date.", "link": "https://example.org/rolling"}
+ ]
+}

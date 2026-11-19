@@ -21,14 +21,16 @@ describe('security headers baseline', () => {
     expect(line, `${name} missing`).toBeDefined();
     expect(line).toContain(fragment);
   });
-  it('allows the map tile host for connect and images only', () => {
+  it('allows the map tile host for connect and images, and the place lookup for connect only', () => {
     const csp = headers.split('\n').find((l) => l.trim().startsWith('Content-Security-Policy:')) ?? '';
     const directives = csp.replace('Content-Security-Policy:', '').split(';').map((d) => d.trim());
+    const using = (host: string) => directives.filter((d) => d.split(/\s+/).slice(1).some((token) => token === host)).map((d) => d.split(/\s+/)[0]);
     const tileHost = 'https://tiles.openfreemap.org';
-    const withHost = directives.filter((d) => d.split(/\s+/).slice(1).some((token) => token === tileHost)).map((d) => d.split(/\s+/)[0]);
-    expect(withHost.sort()).toEqual(['connect-src', 'img-src']);
+    const geocoder = 'https://api.postcodes.io';
+    expect(using(tileHost).sort()).toEqual(['connect-src', 'img-src']);
+    expect(using(geocoder)).toEqual(['connect-src']);
     const thirdParty = csp.match(/https:\/\/[a-z0-9.-]+/g) ?? [];
-    expect(new Set(thirdParty)).toEqual(new Set([tileHost]));
+    expect(new Set(thirdParty)).toEqual(new Set([tileHost, geocoder]));
   });
   it('never allows inline script', () => {
     expect(headers).not.toContain("'unsafe-inline'");

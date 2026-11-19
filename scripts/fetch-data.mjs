@@ -1,6 +1,7 @@
-// Build step: fetch the public Tally data, taxonomy, clusters and events from
-// MilUX-Ltd/tally, slim them for the browser and write public/data/tally.json,
-// clusters.json and events.json (git-ignored).
+// Build step: fetch the public Tally data, taxonomy, clusters, events and
+// opportunities from MilUX-Ltd/tally, slim them for the browser and write
+// public/data/tally.json, clusters.json, events.json and opportunities.json
+// (git-ignored).
 // With TALLY_DATA_SOURCE=fixture it reads tests/fixtures instead, so tests
 // never touch the network.
 // Usage: node scripts/fetch-data.mjs
@@ -153,6 +154,36 @@ export function slimEvents(raw, clusters, today) {
   return { as_of: str(raw.as_of), events };
 }
 
+// Funding calls and opportunities. Only public items are exported by the data
+// repo; members-only items are never published. The build refuses any field
+// outside the contract, so nothing else can slip through.
+const OPPORTUNITY_KEYS = ['kind', 'cluster', 'deadline', 'time', 'title', 'summary', 'link'];
+const OPPORTUNITY_KINDS = new Set(['funding', 'opportunity']);
+
+/** Open opportunities (deadline on or after today, YYYY-MM-DD, or none), checked against the contract and sorted by deadline. */
+export function slimOpportunities(raw, clusters, today) {
+  if (!raw || !Array.isArray(raw.opportunities)) throw new Error('opportunities.json has no opportunities array');
+  const known = new Set(clusters.clusters.map((c) => c.id));
+  const out = [];
+  for (const o of raw.opportunities) {
+    if (!o || typeof o !== 'object' || !Object.keys(o).every((k) => OPPORTUNITY_KEYS.includes(k))) {
+      throw new Error('opportunities.json: an item carries fields outside the contract; refusing to build');
+    }
+    if (!OPPORTUNITY_KINDS.has(o.kind)) throw new Error(`opportunities.json: unknown kind ${JSON.stringify(o.kind)}`);
+    if (!known.has(o.cluster)) throw new Error(`opportunities.json: item for unknown cluster ${JSON.stringify(o.cluster)}`);
+    if (!str(o.title)) throw new Error('opportunities.json: an item has no title');
+    const deadline = o.deadline == null ? null : str(o.deadline);
+    if (deadline !== null && (!DATE.test(deadline) || Number.isNaN(Date.parse(deadline)))) {
+      throw new Error(`opportunities.json: bad deadline ${JSON.stringify(o.deadline)}`);
+    }
+    const link = safeLink(o.link);
+    if (!link || (deadline !== null && deadline < today)) continue;
+    out.push({ kind: o.kind, cluster: o.cluster, deadline, time: orNull(o.time), title: str(o.title), summary: orNull(o.summary), link });
+  }
+  out.sort((a, b) => Number(a.deadline === null) - Number(b.deadline === null) || (a.deadline ?? '').localeCompare(b.deadline ?? '') || a.cluster.localeCompare(b.cluster) || a.title.localeCompare(b.title, 'en-GB'));
+  return { as_of: str(raw.as_of), opportunities: out };
+}
+
 async function fetchJson(url) {
   const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
   if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
@@ -162,8 +193,8 @@ async function fetchJson(url) {
 async function main() {
   const fixture = process.env.TALLY_DATA_SOURCE === 'fixture';
   const read = (name) => JSON.parse(readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8'));
-  const names = ['tally-data.json', 'taxonomy.json', 'clusters.json', 'events.json'];
-  const [raw, taxonomy, rawClusters, rawEvents] = fixture
+  const names = ['tally-data.json', 'taxonomy.json', 'clusters.json', 'events.json', 'opportunities.json'];
+  const [raw, taxonomy, rawClusters, rawEvents, rawOpportunities] = fixture
     ? names.map(read)
     : await Promise.all(names.map((name) => fetchJson(`${BASE}/${name}`)));
   const data = slimData(raw, taxonomy);
@@ -173,9 +204,13 @@ async function main() {
   writeFileSync(new URL('tally.json', dir), JSON.stringify(data));
   const clusters = slimClusters(rawClusters);
   // Past events are dropped at build, by the build's own date (UTC).
-  const events = slimEvents(rawEvents, clusters, new Date().toISOString().slice(0, 10));
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  const events = slimEvents(rawEvents, clusters, todayUtc);
+  const opportunities = slimOpportunities(rawOpportunities, clusters, todayUtc);
   writeFileSync(new URL('clusters.json', dir), JSON.stringify(clusters));
   writeFileSync(new URL('events.json', dir), JSON.stringify(events));
+  writeFileSync(new URL('opportunities.json', dir), JSON.stringify(opportunities));
+  console.log(`Wrote opportunities.json (${opportunities.opportunities.length} open funding calls and opportunities).`);
   const signposts = events.events.filter((e) => e.audience === 'members').length;
   console.log(`Wrote clusters.json (${clusters.clusters.length} clusters) and events.json (${events.events.length - signposts} public events, ${signposts} members-only signposts).`);
   const located = data.companies.filter((c) => c.lat != null).length;
