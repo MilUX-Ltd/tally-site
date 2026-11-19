@@ -7,3 +7,4 @@
 | 2026-11-19 | CSP and Astro islands | Island directives inline a script; mount from a bundled module |
 | 2026-11-19 | Local test server | `astro preview` backgrounds under agents; use `--ignore-lock` |
 | 2026-11-19 | MapLibre worker | Set the worker URL explicitly after bundling |
+| 2026-11-19 | Local test server | Another server may already hold the Playwright port; check before trusting a local run |

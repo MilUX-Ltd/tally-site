@@ -13,6 +13,7 @@ import type { Company } from '../lib/types';
 import type { Bbox, MapPosition } from '../lib/url-state';
 
 export type Binning = typeof import('../lib/binning');
+type GeoData = Parameters<GeoJSONSource['setData']>[0];
 
 export type { MapPosition };
 
@@ -24,6 +25,12 @@ interface Props {
   chosenSite?: string | null;
   /** A distance ring around the chosen site, as [lon, lat] points. */
   ring?: number[][] | null;
+  /** Cluster outlines to draw, each with its colour and whether it is chosen. */
+  clusterRegions?: { type: 'FeatureCollection'; features: unknown[] } | null;
+  /** One marker per cluster with upcoming events. */
+  clusterEvents?: { type: 'FeatureCollection'; features: unknown[] } | null;
+  /** The chosen cluster's bounds, brought into view when the choice changes. */
+  clusterFocus?: { key: string; bounds: [number, number, number, number] } | null;
   /** Draw hexagons at this resolution whatever the zoom (capability overlap places). */
   fixedResolution?: number | null;
   selectedCell: string | null;
@@ -154,6 +161,20 @@ export default function MapView(props: Props) {
         m.on('load', async () => {
           m.resize();
           if (!start) m.fitBounds(UK_BOUNDS, { padding: 16, animate: false });
+          // Cluster areas sit under everything else.
+          m.addSource('cluster-regions', { type: 'geojson', data: (propsRef.current.clusterRegions ?? EMPTY) as GeoData });
+          m.addLayer({
+            id: 'cluster-fill',
+            type: 'fill',
+            source: 'cluster-regions',
+            paint: { 'fill-color': ['get', 'colour'], 'fill-opacity': ['case', ['get', 'chosen'], 0.22, 0.12] },
+          });
+          m.addLayer({
+            id: 'cluster-line',
+            type: 'line',
+            source: 'cluster-regions',
+            paint: { 'line-color': ['get', 'colour'], 'line-width': ['case', ['get', 'chosen'], 3.5, 1.5] },
+          });
           m.addSource('hexes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
           m.addSource('points', {
             type: 'geojson',
@@ -239,6 +260,21 @@ export default function MapView(props: Props) {
               'circle-stroke-color': '#FFFFFF',
               'circle-stroke-width': 2,
             },
+          });
+
+          m.addSource('cluster-events', { type: 'geojson', data: (propsRef.current.clusterEvents ?? EMPTY) as GeoData });
+          m.addLayer({
+            id: 'cluster-event-points',
+            type: 'circle',
+            source: 'cluster-events',
+            paint: { 'circle-color': ['get', 'colour'], 'circle-radius': 11, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 2 },
+          });
+          m.addLayer({
+            id: 'cluster-event-count',
+            type: 'symbol',
+            source: 'cluster-events',
+            layout: { 'text-field': ['to-string', ['get', 'count']], 'text-font': FONT, 'text-size': 12, 'text-allow-overlap': true },
+            paint: { 'text-color': '#FFFFFF' },
           });
 
           // Drawing a rectangle: press, drag and release while "Draw an area" is on.
@@ -347,6 +383,28 @@ export default function MapView(props: Props) {
     const source = mapRef.current?.getSource('sites') as GeoJSONSource | undefined;
     if (loaded && source) source.setData(sitesGeoJSON(props.sites, props.chosenSite));
   }, [props.sites, props.chosenSite, loaded]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource('cluster-regions') as GeoJSONSource | undefined;
+    if (loaded && source) source.setData((props.clusterRegions ?? EMPTY) as GeoData);
+  }, [props.clusterRegions, loaded]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource('cluster-events') as GeoJSONSource | undefined;
+    if (loaded && source) source.setData((props.clusterEvents ?? EMPTY) as GeoData);
+  }, [props.clusterEvents, loaded]);
+
+  // Bring a newly chosen cluster into view.
+  const focusKey = props.clusterFocus?.key ?? '';
+  const lastFocusKey = useRef<string | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!loaded || !map) return;
+    if (lastFocusKey.current === focusKey) return;
+    lastFocusKey.current = focusKey;
+    const focus = propsRef.current.clusterFocus;
+    if (focus) map.fitBounds(focus.bounds, { padding: 24, animate: false });
+  }, [focusKey, loaded]);
 
   // Draw the ring, and bring it into view when the site or radius changes.
   const ringKey = props.ring ? `${props.chosenSite}:${props.ring[0].join(',')}` : '';

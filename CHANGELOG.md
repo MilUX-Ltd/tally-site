@@ -17,6 +17,8 @@ All notable changes to the Tally site. Versions follow semantic versioning.
 - Overseas companies listed by country, Europe first then the rest of the world, following the same filters; an explicit guard in the build and the browser keeps overseas and out-of-bounds points off the UK map.
 - Growth over time: a slider (with play) replays the directory's size by month, overall and per capability group, from a small file built at build time from the data repo's git history; the month is held in the URL (`month`).
 - Defence sites overlay: 53 widely published UK defence sites, each verified against its Wikipedia article (CC BY-SA 4.0, attributed), can be drawn on the map; choosing a site and a radius (10, 25 or 50 miles) draws a ring and narrows the map, matrix and list to companies within it. Held in the URL (`site`, `radius`, `sites`).
+- Cluster regions overlay: the areas of the 16 UK regional defence and security clusters, merged and simplified from ONS Open Geography boundaries (Open Government Licence v3.0, attributed), drawn in each cluster's colour with a marker counting its upcoming events. Choosing a cluster narrows the companies to its recorded members (`mbr-` tag) and lists its upcoming events. Held in the URL (`clusters`, `cluster`).
+- `/events`: upcoming cluster events as a month calendar and a list, built at build time; past events are dropped. Members-only events show only a signpost and a link to join the cluster, and the build refuses a members-only event that carries anything more.
 - Bundle-size check in the build, and journey tests run under the production CSP.
 
 ### Changed
