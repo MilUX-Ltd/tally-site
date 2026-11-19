@@ -5,6 +5,7 @@ All notable changes to the Tally site. Versions follow semantic versioning.
 ## [Unreleased]
 
 ### Added
+- New companies (`/new`): companies added in the 12 weeks up to the latest addition, grouped by week, newest first, each with a link to its company page, its region, top capabilities and the date added, and an RSS 2.0 feed of the same list at `/new/feed.xml`, advertised in the page head. The added date is when a company first appeared on the data repo's `main`, read from its git history at build time. Linked from the explorer header and the footer, and listed in the sitemap.
 - Walking skeleton: holding page, 404 page, security headers baseline, public-terms guard, CI with lint, type check, unit tests and the accessibility floor, preview and production deploy jobs.
 - Capability heatmap: a full-width UK map (MapLibre, OpenFreeMap tiles) with companies binned into H3 hexagons in the browser, coloured by count with a brand legend, turning into clustered pins when zoomed in. Selecting a hexagon, cluster or pin lists its companies.
 - Filters for capability (by group), size, region, framework, accreditation and membership, redrawing the map and the paged results list.
