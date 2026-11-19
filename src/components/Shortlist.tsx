@@ -11,6 +11,8 @@ interface Props {
   companies: Company[];
   taxonomy: Taxonomy;
   shareUrl: string;
+  /** A note for the last row of the CSV, such as overlap mode being on. */
+  note?: string;
   onRemove: (id: string) => void;
 }
 
@@ -26,7 +28,7 @@ function download(text: string, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-export default function Shortlist({ companies, taxonomy, shareUrl, onRemove }: Props) {
+export default function Shortlist({ companies, taxonomy, shareUrl, onRemove, note }: Props) {
   const [status, setStatus] = useState('');
   const copy = async () => {
     try {
@@ -62,7 +64,7 @@ export default function Shortlist({ companies, taxonomy, shareUrl, onRemove }: P
             <button type="button" onClick={copy}>
               Copy link
             </button>
-            <button type="button" class="secondary" onClick={() => download(shortlistCsv(companies, taxonomy), 'tally-shortlist.csv')}>
+            <button type="button" class="secondary" onClick={() => download(shortlistCsv(companies, taxonomy, note), 'tally-shortlist.csv')}>
               Download CSV
             </button>
             <span role="status">{status}</span>

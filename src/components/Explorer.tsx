@@ -1,7 +1,7 @@
 // The explorer island: filters, heatmap, area list and results. Its whole
 // state is one ViewState, kept in the URL (src/lib/url-state.ts).
 import '../styles/explorer.css';
-import { useEffect, useLayoutEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
 import AreaPanel from './AreaPanel';
 import Filters from './Filters';
 import MapView, { type Binning } from './MapView';
@@ -13,7 +13,7 @@ import { fromQuery, roundPosition, sanitiseState, toQuery, type ViewState } from
 import Matrix from './Matrix';
 import Shortlist from './Shortlist';
 import CapMatchToggle from './CapMatchToggle';
-import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
+import { addToShortlist, overlapNote, removeFromShortlist } from '../lib/shortlist';
 import type { Company } from '../lib/types';
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -55,10 +55,16 @@ export default function Explorer() {
     if (overlapOn && !binning) import('../lib/binning').then((b) => setBinning(() => b)).catch(() => setFailed(true));
   }, [overlapOn, binning]);
   const facetFiltered = useMemo(() => (data ? filterCompanies(data.companies, state.filters) : []), [data, state.filters]);
+  // While the hexagon module loads, keep showing the last result rather than
+  // announcing that nothing matches.
+  const overlapPending = overlapOn && !binning;
+  const lastFiltered = useRef<Company[] | null>(null);
   const filtered = useMemo(() => {
     if (!overlapOn) return facetFiltered;
-    return binning ? binning.overlapCompanies(facetFiltered, state.filters.cap) : [];
+    if (!binning) return lastFiltered.current ?? facetFiltered;
+    return binning.overlapCompanies(facetFiltered, state.filters.cap);
   }, [overlapOn, binning, facetFiltered, state.filters.cap]);
+  lastFiltered.current = filtered;
   const onMap = useMemo(() => filtered.filter(isLocated).length, [filtered]);
   const places = useMemo(
     () => (overlapOn && binning ? binning.binCompanies(filtered, binning.OVERLAP_RESOLUTION).length : 0),
@@ -81,7 +87,10 @@ export default function Explorer() {
   const toggle = (facet: Facet, value: string, on: boolean) =>
     setState((s) => {
       const values = s.filters[facet].filter((v) => v !== value);
-      return { ...s, filters: { ...s.filters, [facet]: on ? [...values, value] : values }, page: 1, matrix: { ...s.matrix, page: 1 } };
+      const next = on ? [...values, value] : values;
+      // Overlap needs two or more capabilities; with fewer, go back to any-of.
+      const capMatch = facet === 'cap' && next.length < 2 ? 'any' : s.capMatch;
+      return { ...s, filters: { ...s.filters, [facet]: next }, capMatch, page: 1, matrix: { ...s.matrix, page: 1 } };
     });
 
   const byId = useMemo(() => new Map((data?.companies ?? []).map((c) => [c.id, c])), [data]);
@@ -111,7 +120,13 @@ export default function Explorer() {
           onToggle={toggle}
           onClear={() => update({ filters: emptyFilters(), page: 1, matrix: { ...state.matrix, page: 1 } })}
         />
-        <Shortlist companies={shortlisted} taxonomy={data.taxonomy} shareUrl={shareUrl} onRemove={removeFromList} />
+        <Shortlist
+          companies={shortlisted}
+          taxonomy={data.taxonomy}
+          shareUrl={shareUrl}
+          onRemove={removeFromList}
+          note={overlapOn ? overlapNote(state.filters.cap, data.taxonomy) : undefined}
+        />
       </aside>
       <div class="explorer-main">
         {state.filters.cap.length >= 2 && (
@@ -122,8 +137,11 @@ export default function Explorer() {
           />
         )}
         <p id="result-count" role="status">
-          {plural(filtered.length, 'company matches', 'companies match')}; {onMap} on the map
-          {overlapOn ? `, in ${plural(places, 'place', 'places')} where all chosen capabilities overlap` : ''}.
+          {overlapPending
+            ? `${plural(filtered.length, 'company', 'companies')} so far; working out where all chosen capabilities overlap.`
+            : overlapOn
+              ? `${plural(filtered.length, 'company', 'companies')} with a chosen capability, in ${plural(places, 'place', 'places')} where all chosen capabilities overlap.`
+              : `${plural(filtered.length, 'company matches', 'companies match')}; ${onMap} on the map.`}
         </p>
         <MapView
           companies={filtered}

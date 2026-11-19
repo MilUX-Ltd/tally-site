@@ -45,8 +45,18 @@ function labels(tags: string[], options: Array<{ slug: string; label: string }>)
     .join('; ');
 }
 
-/** CSV text (RFC 4180, CRLF line ends), one row per company in shortlist order. */
-export function shortlistCsv(companies: Company[], taxonomy: Taxonomy): string {
+/** The CSV note recorded when the shortlist is downloaded in overlap mode. */
+export function overlapNote(caps: string[], taxonomy: Taxonomy): string {
+  const names = caps.map((slug) => taxonomy.capabilities.find((c) => c.slug === slug)?.label ?? slug);
+  return `Note: downloaded in overlap mode; showing places where all of these capabilities are found: ${names.join('; ')}`;
+}
+
+/**
+ * CSV text (RFC 4180, CRLF line ends), one row per company in shortlist order.
+ * With a note (for example, overlap mode was on), a last row carries it in the
+ * Name column, starting "Note:", with the other columns empty.
+ */
+export function shortlistCsv(companies: Company[], taxonomy: Taxonomy, note?: string): string {
   const size = (c: Company) =>
     taxonomy.sizes.find((s) => c.tags.includes(s.slug) || s.slug === `size-${c.size}`)?.label ?? c.size;
   const rows = companies.map((c) => [
@@ -65,5 +75,6 @@ export function shortlistCsv(companies: Company[], taxonomy: Taxonomy): string {
     labels(c.tags, taxonomy.memberships),
     c.summary,
   ]);
+  if (note) rows.push([note, ...Array<string>(CSV_COLUMNS.length - 1).fill('')]);
   return [CSV_COLUMNS as readonly string[], ...rows].map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';
 }
