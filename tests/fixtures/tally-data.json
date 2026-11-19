@@ -159,7 +159,7 @@
   {
    "name": "Example Cyber Defence",
    "website": "https://example.com/example-cyber-defence",
-   "linkedin": "",
+   "linkedin": "https://www.linkedin.com/company/example-cyber-defence",
    "hq": "London, United Kingdom",
    "region": "London",
    "size": "small",
@@ -176,7 +176,7 @@
     "size-small"
    ],
    "summary": "Example Cyber Defence is a synthetic company used only in tests.",
-   "body": "# Example Cyber Defence\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "body": "# Example Cyber Defence\n\n> Synthetic one-line summary.\n\n## What they do\n\nExample Cyber Defence tests **networks** and *systems* for defence customers. Read [their approach](https://example.com/approach).\n\n<script>alert('x')</script> and <img src=x onerror=alert(1)> stay as text.\n\n## Products and solutions\n\n- **Red Team Kit** - a synthetic product for tests.\n- **Hidden Link** - a [bad link](javascript:alert(1)) stays as text.\n\n## Links\n\n- Website: https://example.com/example-cyber-defence\n\n## Sources\n\nPublic information verified 2026-06-29. Synthetic test company. This body text is long and must not reach the browser.\n",
    "postcode": "",
    "lat": 51.5072,
    "lon": -0.1276,

@@ -1,0 +1,16 @@
+---
+// Safe Markdown: paragraphs and bullet lists of inline nodes. Never set:html.
+import MarkdownInline from './MarkdownInline.astro';
+import { parseMarkdown } from '../lib/company-page';
+interface Props {
+  text: string;
+}
+const blocks = parseMarkdown(Astro.props.text);
+---
+{blocks.map((b) =>
+  b.type === 'p' ? (
+    <p><MarkdownInline nodes={b.inlines} /></p>
+  ) : (
+    <ul>{b.items.map((item) => <li><MarkdownInline nodes={item} /></li>)}</ul>
+  ),
+)}
