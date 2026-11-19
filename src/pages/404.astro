@@ -1,7 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
+import SiteFooter from '../components/SiteFooter.astro';
 ---
-<Base title="Page not found: Tally" description="This page does not exist.">
+<Base title="Page not found: Tally" description="This page does not exist." canonical={false}>
   <h1>Page not found</h1>
   <p><a href="/">Go to Tally</a></p>
+  <SiteFooter />
 </Base>

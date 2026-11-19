@@ -4,6 +4,7 @@
 // and every answer is a JSON object. Arguments are untrusted: the schemas in
 // mcp.ts check their shape, and this module checks every value against the
 // data. Errors are fixed sentences that never repeat what was sent.
+import { companyPath } from '../src/lib/company-page';
 import { clusterMembers, type Cluster, type ClusterEvent } from '../src/lib/clusters';
 import { filterCompanies, isLocated, type Filters } from '../src/lib/filters';
 import { keywordSearch } from '../src/lib/search';
@@ -62,6 +63,7 @@ const mapped = (c: Company): c is Company & { lat: number; lon: number } => c.lo
 
 const round = (n: number, places: number) => Math.round(n * 10 ** places) / 10 ** places;
 const pageUrl = (origin: string, c: Company) => `${origin}/?sel=${encodeURIComponent(c.id)}`;
+const profileUrl = (origin: string, c: Company) => `${origin}${companyPath(encodeURIComponent(c.id))}`;
 const clip = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text);
 
 function labeller(data: TallyData) {
@@ -90,6 +92,7 @@ function summaryRecord(c: Company, origin: string, labels: ReturnType<typeof lab
     capabilities: c.tags.filter((t) => labels.cap.has(t)).map((t) => labels.cap.get(t)!),
     location: location(c),
     page_url: pageUrl(origin, c),
+    profile_url: profileUrl(origin, c),
   };
 }
 
@@ -232,6 +235,7 @@ export function getCompany({ data }: Loaded, args: { id?: string; name?: string 
       frameworks: pick(labels.fw),
       memberships: pick(labels.mbr),
       page_url: pageUrl(origin, company),
+      profile_url: profileUrl(origin, company),
     },
   };
 }

@@ -1,11 +1,16 @@
 ---
 import '../styles/base.css';
+import { canonicalUrl } from '../lib/company-page';
 interface Props {
   title: string;
   description: string;
   wide?: boolean;
+  /** Whether the page has a canonical address (not the 404 page). */
+  canonical?: boolean;
 }
-const { title, description, wide = false } = Astro.props;
+const { title, description, wide = false, canonical = true } = Astro.props;
+// Canonical addresses are on tally.milux.co.uk and end in a slash, as served.
+const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
 ---
 <!doctype html>
 <html lang="en-GB">
@@ -14,6 +19,7 @@ const { title, description, wide = false } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {canonical && <link rel="canonical" href={canonicalUrl(path)} />}
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>

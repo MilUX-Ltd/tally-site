@@ -8,4 +8,5 @@
 | 2026-11-19 | Local test server | `astro preview` backgrounds under agents; use `--ignore-lock` |
 | 2026-11-19 | MapLibre worker | Set the worker URL explicitly after bundling |
 | 2026-11-19 | Local test server | Another server may already hold the Playwright port; check before trusting a local run |
+| 2026-11-19 | Journey tests | The explorer header's height moves the map; map-click tests need the point on screen |
 | 2026-11-19 | Explorer layout | Height added above the map breaks the map-click journeys |
