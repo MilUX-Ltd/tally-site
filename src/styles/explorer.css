@@ -116,3 +116,9 @@ button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .sites-pickers select { font: inherit; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--green); border-radius: 4px; background: #fff; color: var(--green); width: 100%; max-width: 100%; }
 .sites-panel .site-source, .sites-panel .sites-attribution { margin: 0.25rem 0; font-size: 0.95rem; color: var(--blue-grey); }
 .sites-panel a { color: var(--green); }
+.search { margin-bottom: 1rem; }
+.search-form label { display: block; font-weight: 600; font-size: 1.1rem; }
+.search-hint { margin: 0.25rem 0 0.5rem; color: var(--blue-grey); }
+.search-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.search-row input { flex: 1 1 14rem; min-width: 0; min-height: 44px; font: inherit; padding: 0.25rem 0.5rem; border: 2px solid var(--green); border-radius: 4px; background: #fff; color: inherit; }
+.search-status { margin: 0.5rem 0 0; overflow-wrap: anywhere; }

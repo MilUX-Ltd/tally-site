@@ -11,6 +11,11 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   ...astro.configs.recommended,
   {
+    // Leading underscore marks a deliberately unused argument; a rest sibling
+    // is how an object is copied without a key.
+    rules: { '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', ignoreRestSiblings: true }] },
+  },
+  {
     // Tests match a byte order mark in regular expressions on purpose.
     files: ['tests/**/*.ts'],
     rules: { 'no-irregular-whitespace': ['error', { skipRegExps: true }] },

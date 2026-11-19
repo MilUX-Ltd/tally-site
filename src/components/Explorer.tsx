@@ -9,7 +9,9 @@ import ResultsList from './ResultsList';
 import { emptyFilters, filterCompanies, isLocated, type Facet } from '../lib/filters';
 import { companiesInBbox } from '../lib/matrix';
 import type { TallyData } from '../lib/types';
-import { fromQuery, roundPosition, sanitiseSites, sanitiseState, toQuery, type ViewState } from '../lib/url-state';
+import { fromQuery, keywordText, roundPosition, sanitiseSites, sanitiseState, toQuery, type ViewState } from '../lib/url-state';
+import SearchBox from './SearchBox';
+import { askSearch, keywordSearch, readSearchAnswer } from '../lib/search';
 import Matrix from './Matrix';
 import Shortlist from './Shortlist';
 import Growth from './Growth';
@@ -73,7 +75,11 @@ export default function Explorer() {
   useEffect(() => {
     if (overlapOn && !binning) import('../lib/binning').then((b) => setBinning(() => b)).catch(() => setFailed(true));
   }, [overlapOn, binning]);
-  const facetFiltered = useMemo(() => (data ? filterCompanies(data.companies, state.filters) : []), [data, state.filters]);
+  const facetFiltered = useMemo(() => {
+    if (!data) return [];
+    const byFacet = filterCompanies(data.companies, state.filters);
+    return state.q ? keywordSearch(byFacet, state.q, data.taxonomy) : byFacet;
+  }, [data, state.filters, state.q]);
   // While the hexagon module loads, keep showing the last result rather than
   // announcing that nothing matches.
   const overlapPending = overlapOn && !binning;
@@ -114,6 +120,32 @@ export default function Explorer() {
       return { ...s, filters: { ...s.filters, [facet]: next }, capMatch, page: 1, matrix: { ...s.matrix, page: 1 } };
     });
 
+  // Plain-English search: filters from the route, checked against the data;
+  // otherwise a keyword search, and the page says so.
+  const [searchMessage, setSearchMessage] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [reveal, setReveal] = useState(0);
+  const runSearch = async (text: string) => {
+    if (!data) return;
+    setSearching(true);
+    setSearchMessage('Searching.');
+    const siteNames = new Map((sitesData?.sites ?? []).map((x) => [x.id, x.name]));
+    const answer = readSearchAnswer(await askSearch(text), data.taxonomy, siteNames.keys(), siteNames);
+    const reset = { cell: null, sel: [], area: null, page: 1 };
+    if (answer.kind === 'filters') {
+      setState((s) => ({ ...s, ...reset, filters: answer.filters, capMatch: answer.capMatch, site: answer.site, radius: answer.radius, q: '', matrix: { ...s.matrix, page: 1 } }));
+      setReveal((n) => n + 1);
+      setSearchMessage(`Search set these filters: ${answer.labels.join(', ')}.`);
+    } else {
+      const q = keywordText(text);
+      setState((s) => ({ ...s, ...reset, filters: emptyFilters(), capMatch: 'any', site: null, q, matrix: { ...s.matrix, page: 1 } }));
+      setSearchMessage(
+        `We used a simple keyword search for this request, so filters were cleared and the list shows companies whose names, summaries or capabilities match: ${q}.`,
+      );
+    }
+    setSearching(false);
+  };
+
   const byId = useMemo(() => new Map((data?.companies ?? []).map((c) => [c.id, c])), [data]);
   const shortlisted = state.list.map((id) => byId.get(id)).filter((c): c is Company => Boolean(c));
   const shareUrl = `${window.location.origin}${window.location.pathname}${state.list.length ? `?list=${state.list.join(',')}` : ''}`;
@@ -139,6 +171,7 @@ export default function Explorer() {
           taxonomy={data.taxonomy}
           filters={state.filters}
           onToggle={toggle}
+          reveal={reveal}
           onClear={() => update({ filters: emptyFilters(), page: 1, matrix: { ...state.matrix, page: 1 } })}
         />
         <Shortlist
@@ -150,6 +183,16 @@ export default function Explorer() {
         />
       </aside>
       <div class="explorer-main">
+        <SearchBox
+          keywords={state.q}
+          message={searchMessage}
+          busy={searching}
+          onSearch={(text) => void runSearch(text)}
+          onClear={() => {
+            setSearchMessage('');
+            update({ q: '', page: 1, matrix: { ...state.matrix, page: 1 } });
+          }}
+        />
         {state.filters.cap.length >= 2 && (
           <CapMatchToggle
             count={state.filters.cap.length}

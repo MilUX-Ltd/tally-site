@@ -18,6 +18,8 @@ All notable changes to the Tally site. Versions follow semantic versioning.
 - Growth over time: a slider (with play) replays the directory's size by month, overall and per capability group, from a small file built at build time from the data repo's git history; the month is held in the URL (`month`).
 - Defence sites overlay: 53 widely published UK defence sites, each verified against its Wikipedia article (CC BY-SA 4.0, attributed), can be drawn on the map; choosing a site and a radius (10, 25 or 50 miles) draws a ring and narrows the map, matrix and list to companies within it. Held in the URL (`site`, `radius`, `sites`).
 - Bundle-size check in the build, and journey tests run under the production CSP.
+- Plain-English search: a search box sends the request to `POST /api/search`, a Worker route on the same site that asks Claude Haiku for filter values through one strict tool, validates them against the filter schema and the known values, and returns filters only. The route is rate-limited and budget-capped; without a key, at a limit, or on any failure it answers `{"fallback": true}` and the browser runs a keyword search over names, summaries and tag labels, held in the URL (`q`), and says so. Contract in `CONTEXT.md`.
 
 ### Changed
+- Pull-request previews use Worker Previews (`wrangler preview`), since a Worker that implements a Durable Object gets no version preview URL; the deploy check also exercises the search route.
 - CSP allows the map tile host (`tiles.openfreemap.org`) for connect and images only.

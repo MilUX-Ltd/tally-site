@@ -40,6 +40,7 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | `site` | Chosen defence site; companies are narrowed to those within the radius | site id from the dataset | none |
    | `radius` | Radius around the chosen site, in miles | `10`, `25` or `50` | `25` |
    | `sites` | Draw every defence site on the map | `1` | not drawn |
+   | `q` | Keyword search, set when plain-English search falls back: companies whose name, summary or tag labels contain every word (common words ignored; a word matches the start of a word) | text, up to 300 characters | none |
 
    Filters combine: a company must match every facet that has values. Only one of `cell`, `sel` and `area` is set at a time; the area list shows the companies that match the filters within it.
 2. **Data contract.** The build (`scripts/fetch-data.mjs`) reads `tally-data.json` and `taxonomy.json` from `MilUX-Ltd/tally` and writes a slimmed `public/data/tally.json` (not committed). Fields the site depends on:
@@ -70,3 +71,9 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
 
    Downloaded in overlap mode, the file is named `tally-shortlist-overlap.csv`; its content is the same.
 4. **Routes.** `/` (explorer), `/about`, `/events`, `/404`. Overseas companies are a section of the explorer (Europe, then the rest of the world), not a separate page.
+5. **Search API.** `POST /api/search` on the same origin (the only server-side route; docs/adr/0004).
+   - Request: `Content-Type: application/json`, body `{"q": "<request>"}`; `q` is a string of 1 to 300 characters once trimmed.
+   - `200 {"fallback": false, "filters": {"cap": [], "size": [], "region": [], "fw": [], "accr": [], "mbr": []}, "capmatch": "any" | "all", "site": "<site id>" | null, "radius": 10 | 25 | 50}`: filter values for the explorer, in the URL-state vocabulary above. Every value is one the data knows; a capability group named in the request arrives as its top-level capabilities; `capmatch` is `all` only with two or more capabilities.
+   - `200 {"fallback": true}`: use the keyword search instead. Returned when search is not configured, a rate or budget limit is reached, the model is unavailable, or its answer is unusable.
+   - `400 {"error": "bad-request"}` for a body that is not JSON `{"q": string}` or an empty `q`; `413 {"error": "too-long", "max": 300}` for a longer `q`; `405` for any method but POST; `404` for any other `/api/` path.
+   - Responses are JSON with `Cache-Control: no-store`. Nothing the model writes is returned, and the request text is not logged or kept. The browser checks every value again against its own data before applying it, and treats any failure as a fallback.

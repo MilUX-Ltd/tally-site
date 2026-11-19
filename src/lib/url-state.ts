@@ -7,6 +7,7 @@
 // does not know. Nothing from the URL is ever rendered as HTML.
 import { emptyFilters, FACETS, type Facet, type Filters } from './filters';
 import { MONTH } from './history';
+import { MAX_QUERY_LENGTH } from './search';
 import { DEFAULT_RADIUS, isRadius, type Radius } from './sites';
 import type { TallyData } from './types';
 
@@ -45,12 +46,14 @@ export interface ViewState {
   radius: Radius;
   /** Whether every defence site is drawn on the map. */
   sites: boolean;
+  /** Keyword search text, set when plain-English search falls back; '' for none. */
+  q: string;
 }
 
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, sites: false };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, sites: false, q: '' };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -92,6 +95,13 @@ function pageNumber(value: string | null): number {
 const validLat = (n: number) => n >= -85 && n <= 85;
 const validLon = (n: number) => n >= -180 && n <= 180;
 
+/** Keyword text from the URL: control characters removed, spaces collapsed, length capped. */
+export function keywordText(value: string | null): string {
+  if (!value) return '';
+  // eslint-disable-next-line no-control-regex
+  return value.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, MAX_QUERY_LENGTH);
+}
+
 export function fromQuery(query: string): ViewState {
   const p = new URLSearchParams(query.startsWith('?') ? query.slice(1) : query);
   const state = defaultState();
@@ -124,6 +134,7 @@ export function fromQuery(query: string): ViewState {
   const radius = Number(p.get('radius'));
   if (/^\d+$/.test(p.get('radius') ?? '') && isRadius(radius)) state.radius = radius;
   if (p.get('sites') === '1') state.sites = true;
+  state.q = keywordText(p.get('q'));
   return state;
 }
 
@@ -147,6 +158,7 @@ export function toQuery(state: ViewState): string {
   if (state.site) add('site', state.site);
   if (state.radius !== DEFAULT_RADIUS) add('radius', String(state.radius));
   if (state.sites) add('sites', '1');
+  if (state.q) add('q', state.q);
   return parts.join('&');
 }
 
