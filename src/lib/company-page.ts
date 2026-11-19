@@ -126,6 +126,60 @@ export function capabilityGroups(company: Company, taxonomy: Taxonomy): Array<{ 
 export const labelsFor = (company: Company, options: Array<{ slug: string; label: string }>) =>
   options.filter((o) => company.tags.includes(o.slug)).map((o) => o.label);
 
+// Certification labels. Every certification shown says where it came from:
+// the company's own statement, or a manual check against a public register
+// recorded in the data repo. The wording never says or implies that a company
+// is not certified; a check that cannot be read falls back to the statement.
+
+export interface CertificationCheck {
+  accreditation: string;
+  register: string;
+  /** YYYY-MM-DD */
+  checked: string;
+  /** https link to the register entry, or null. */
+  link: string | null;
+}
+
+export const STATED = 'Stated by the company';
+
+/** A YYYY-MM-DD date as "1 December 2026", or null when it is not a real date. */
+export function longDate(iso: string): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null;
+  const date = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== iso) return null;
+  return date.toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+/** Whether a check can be shown: a register in words and a real date. */
+const readable = (check: CertificationCheck | null | undefined): check is CertificationCheck =>
+  Boolean(check && typeof check.register === 'string' && check.register.trim().length >= 2 && longDate(check.checked));
+
+/** Where a certification came from, in words: "Stated by the company" or "Checked against <register> on <date>". */
+export function certificationLabel(check: CertificationCheck | null | undefined): string {
+  if (!readable(check)) return STATED;
+  return `Checked against ${check.register.trim()} on ${longDate(check.checked)}`;
+}
+
+export interface Certification {
+  slug: string;
+  label: string;
+  /** The recorded check, or null when the certification is as stated by the company. */
+  check: CertificationCheck | null;
+  /** The provenance label. */
+  source: string;
+}
+
+/** A company's certifications (its accreditations) in taxonomy order, each with where it came from. */
+export function companyCertifications(company: Company, taxonomy: Taxonomy, checks: CertificationCheck[] | undefined): Certification[] {
+  return taxonomy.accreditations
+    .filter((a) => company.tags.includes(a.slug))
+    .map((a) => {
+      const found = (checks ?? []).find((c) => c.accreditation === a.slug);
+      const check = readable(found) ? found : null;
+      return { slug: a.slug, label: a.label, check, source: certificationLabel(check) };
+    });
+}
+
 export function sizeLabel(company: Company, taxonomy: Taxonomy): string {
   return taxonomy.sizes.find((s) => company.tags.includes(s.slug) || s.slug === `size-${company.size}`)?.label ?? company.size;
 }

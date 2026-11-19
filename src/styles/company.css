@@ -16,6 +16,10 @@
 .company-facts dt { font-weight: 600; margin-top: 0.5rem; }
 .company-facts dd { margin: 0; }
 .company-facts .note { display: block; color: var(--blue-grey); }
+.certifications { list-style: none; margin: 0; padding: 0; }
+.certifications li { margin: 0.25rem 0; }
+.certification-name { font-weight: 600; }
+.certification-source { display: block; font-size: 0.9rem; color: var(--blue-grey); }
 .company-map { margin: 1rem 0; }
 .company-map svg { display: block; width: 100%; max-width: 12rem; height: auto; }
 .company-map .marker { fill: var(--orange); stroke: var(--green); stroke-width: 2; }

@@ -10,9 +10,11 @@ import '../../styles/company.css';
 import {
   canonicalUrl,
   capabilityGroups,
+  companyCertifications,
   companyLocation,
   companyPath,
   labelsFor,
+  longDate,
   metaDescription,
   pageTitle,
   sizeLabel,
@@ -20,7 +22,7 @@ import {
 } from '../../lib/company-page';
 import { correctionMailto } from '../../lib/contact';
 import { isLocated } from '../../lib/filters';
-import { companyTexts, siteData } from '../../lib/site-data';
+import { certificationChecks, companyTexts, siteData } from '../../lib/site-data';
 import type { Company } from '../../lib/types';
 
 export const getStaticPaths = (() => siteData().companies.map((company) => ({ params: { slug: company.id }, props: { company } }))) satisfies GetStaticPaths;
@@ -34,11 +36,10 @@ const text = companyTexts()[company.id] ?? { what: '', products: '', verified: n
 const groups = capabilityGroups(company, taxonomy);
 const where = companyLocation(company);
 const size = sizeLabel(company, taxonomy);
-const facets = [
-  ['Frameworks', labelsFor(company, taxonomy.frameworks)],
-  ['Accreditations', labelsFor(company, taxonomy.accreditations)],
-  ['Memberships', labelsFor(company, taxonomy.memberships)],
-] as const;
+const frameworks = labelsFor(company, taxonomy.frameworks);
+const memberships = labelsFor(company, taxonomy.memberships);
+// Each certification with where it came from: stated by the company, or checked against a register.
+const certifications = companyCertifications(company, taxonomy, certificationChecks()[company.id]);
 const verified = text.verified
   ? new Date(`${text.verified}T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' })
   : null;
@@ -103,12 +104,39 @@ const correction = correctionMailto(company.name, canonicalUrl(companyPath(compa
             <dd>{company.founded}</dd>
           </>
         )}
-        {facets.map(([label, values]) => (
-          <>
-            <dt>{label}</dt>
-            <dd>{values.length ? values.join(', ') : 'None recorded'}</dd>
-          </>
-        ))}
+        <dt>Frameworks</dt>
+        <dd>{frameworks.length ? frameworks.join(', ') : 'None recorded'}</dd>
+        <dt id="certifications-heading">Accreditations</dt>
+        <dd>
+          {certifications.length ? (
+            <ul class="certifications" aria-labelledby="certifications-heading">
+              {certifications.map((c) => (
+                <li>
+                  <span class="certification-name">{c.label}</span>{' '}
+                  <span class="certification-source">
+                    {c.check ? (
+                      <>
+                        Checked against{' '}
+                        {c.check.link ? (
+                          <a href={c.check.link} rel="noopener nofollow">{c.check.register}</a>
+                        ) : (
+                          c.check.register
+                        )}{' '}
+                        on <time datetime={c.check.checked}>{longDate(c.check.checked)}</time>
+                      </>
+                    ) : (
+                      c.source
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            'None recorded in Tally'
+          )}
+        </dd>
+        <dt>Memberships</dt>
+        <dd>{memberships.length ? memberships.join(', ') : 'None recorded'}</dd>
       </dl>
       {where.point && (
         <figure class="company-map">

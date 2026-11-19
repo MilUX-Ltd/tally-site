@@ -2,6 +2,7 @@
 // build from what scripts/fetch-data.mjs wrote. Never imported by browser code.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { CertificationCheck } from './company-page';
 import type { TallyData } from './types';
 
 export interface CompanyText {
@@ -12,6 +13,7 @@ export interface CompanyText {
 
 let data: TallyData | null = null;
 let texts: Record<string, CompanyText> | null = null;
+let checks: Record<string, CertificationCheck[]> | null = null;
 
 export function siteData(): TallyData {
   data ??= JSON.parse(readFileSync(join(process.cwd(), 'public', 'data', 'tally.json'), 'utf8')) as TallyData;
@@ -21,4 +23,10 @@ export function siteData(): TallyData {
 export function companyTexts(): Record<string, CompanyText> {
   texts ??= JSON.parse(readFileSync(join(process.cwd(), '.tally', 'company-text.json'), 'utf8')) as Record<string, CompanyText>;
   return texts;
+}
+
+/** Recorded certification checks, keyed by company id (build-only, from scripts/fetch-data.mjs). */
+export function certificationChecks(): Record<string, CertificationCheck[]> {
+  checks ??= JSON.parse(readFileSync(join(process.cwd(), '.tally', 'certification-checks.json'), 'utf8')) as Record<string, CertificationCheck[]>;
+  return checks;
 }
