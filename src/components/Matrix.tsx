@@ -2,6 +2,7 @@
 // grouped by capability group. Ticking a column sets the capability filter,
 // which redraws the map; an area on the map narrows the rows.
 import { useMemo } from 'preact/hooks';
+import { companyPath } from '../lib/company-page';
 import { hasCapability, matrixColumns, matrixPage, MATRIX_PAGE_SIZE } from '../lib/matrix';
 import type { Company, Taxonomy } from '../lib/types';
 
@@ -78,7 +79,9 @@ export default function Matrix({ taxonomy, companies, selectedCaps, group, page,
           <tbody>
             {rows.map((company) => (
               <tr key={company.id}>
-                <th scope="row">{company.name}</th>
+                <th scope="row">
+                  <a href={companyPath(company.id)}>{company.name}</a>
+                </th>
                 {columns.map((c) =>
                   hasCapability(company, c.slug) ? (
                     <td key={c.slug} class="tick">

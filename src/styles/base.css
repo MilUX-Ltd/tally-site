@@ -26,3 +26,15 @@ main.wide { max-width: none; padding: 1rem; }
 .site-header h1 { margin: 0; }
 .site-header p { margin: 0.25rem 0 1rem; max-width: 60rem; }
 .site-footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--beige); }
+/* Shared by every page. */
+.vh {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.button-link { display: inline-block; padding: 0.5rem 0.9rem; border: 2px solid var(--green); border-radius: 4px; color: var(--green); background: #fff; text-decoration: none; font-weight: 600; }
+.button-link:hover { background: var(--neutral); }
+.footer-links { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; }

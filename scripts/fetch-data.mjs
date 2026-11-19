@@ -46,13 +46,22 @@ export function slimTaxonomy(taxonomy) {
 }
 
 /** Slims the raw data for the browser: drops page bodies, adds stable ids, keeps only safe links and valid points. */
-export function slimData(raw, taxonomy) {
-  if (!raw || !Array.isArray(raw.companies)) throw new Error('tally-data.json has no companies array');
+/** Stable ids, in data order: the slugified name, with -2, -3 and so on when names collide. Also the company page slug. */
+export function companyIds(companies) {
   const used = new Set();
-  const companies = raw.companies.map((c) => {
+  return companies.map((c) => {
     let id = slugify(c.name) || 'company';
     for (let n = 2; used.has(id); n++) id = `${slugify(c.name) || 'company'}-${n}`;
     used.add(id);
+    return id;
+  });
+}
+
+export function slimData(raw, taxonomy) {
+  if (!raw || !Array.isArray(raw.companies)) throw new Error('tally-data.json has no companies array');
+  const ids = companyIds(raw.companies);
+  const companies = raw.companies.map((c, i) => {
+    const id = ids[i];
     // A "region" location means the UK location is not published: never map it.
     // Overseas companies are never mapped, and nor is any point outside the UK.
     const unpublished = str(c.location_source) === 'region';
@@ -81,6 +90,40 @@ export function slimData(raw, taxonomy) {
   });
   companies.sort((a, b) => a.name.localeCompare(b.name, 'en-GB'));
   return { generated: str(raw.generated), count: companies.length, taxonomy: slimTaxonomy(taxonomy), companies };
+}
+
+// Company page text: two sections of each company's markdown body and the
+// date its public sources were verified. Written to a build-only file that is
+// never served; the rest of the body is dropped.
+const SECTIONS = { what: 'What they do', products: 'Products and solutions' };
+
+function validDate(v) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return null;
+  const t = Date.parse(`${v}T00:00:00Z`);
+  return Number.isNaN(t) || new Date(t).toISOString().slice(0, 10) !== v ? null : v;
+}
+
+/** The "What they do" and "Products and solutions" sections and the sources-verified date of a body. */
+export function companySections(body) {
+  const sections = new Map();
+  for (const part of str(body).split(/^## /m).slice(1)) {
+    const nl = part.indexOf('\n');
+    const heading = (nl === -1 ? part : part.slice(0, nl)).trim();
+    sections.set(heading, nl === -1 ? '' : part.slice(nl + 1).trim());
+  }
+  const verified = (sections.get('Sources') ?? '').match(/verified (\d{4}-\d{2}-\d{2})/i);
+  return {
+    what: sections.get(SECTIONS.what) ?? '',
+    products: sections.get(SECTIONS.products) ?? '',
+    verified: verified ? validDate(verified[1]) : null,
+  };
+}
+
+/** Page text for every company, keyed by id. */
+export function companyTexts(raw) {
+  if (!raw || !Array.isArray(raw.companies)) throw new Error('tally-data.json has no companies array');
+  const ids = companyIds(raw.companies);
+  return Object.fromEntries(raw.companies.map((c, i) => [ids[i], companySections(c.body)]));
 }
 
 // Clusters and events. Members-only events are signposts: cluster, date, this
@@ -171,6 +214,10 @@ async function main() {
   const dir = new URL('../public/data/', import.meta.url);
   mkdirSync(dir, { recursive: true });
   writeFileSync(new URL('tally.json', dir), JSON.stringify(data));
+  // Company page text: build-only, outside public/, never served.
+  const buildDir = new URL('../.tally/', import.meta.url);
+  mkdirSync(buildDir, { recursive: true });
+  writeFileSync(new URL('company-text.json', buildDir), JSON.stringify(companyTexts(raw)));
   const clusters = slimClusters(rawClusters);
   // Past events are dropped at build, by the build's own date (UTC).
   const events = slimEvents(rawEvents, clusters, new Date().toISOString().slice(0, 10));

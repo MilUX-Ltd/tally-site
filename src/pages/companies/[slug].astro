@@ -1,0 +1,156 @@
+---
+// A page for each company, built at build time from the public data
+// (public/data/tally.json) and the build-only page text (.tally/). Static: the
+// only script is a small helper that keeps the visitor's shortlist.
+import type { GetStaticPaths } from 'astro';
+import Base from '../../layouts/Base.astro';
+import Markdown from '../../components/Markdown.astro';
+import SiteFooter from '../../components/SiteFooter.astro';
+import '../../styles/company.css';
+import {
+  canonicalUrl,
+  capabilityGroups,
+  companyLocation,
+  companyPath,
+  labelsFor,
+  metaDescription,
+  pageTitle,
+  sizeLabel,
+  UK_MAP,
+} from '../../lib/company-page';
+import { correctionMailto } from '../../lib/contact';
+import { isLocated } from '../../lib/filters';
+import { companyTexts, siteData } from '../../lib/site-data';
+import type { Company } from '../../lib/types';
+
+export const getStaticPaths = (() => siteData().companies.map((company) => ({ params: { slug: company.id }, props: { company } }))) satisfies GetStaticPaths;
+
+interface Props {
+  company: Company;
+}
+const { company } = Astro.props;
+const { taxonomy } = siteData();
+const text = companyTexts()[company.id] ?? { what: '', products: '', verified: null };
+const groups = capabilityGroups(company, taxonomy);
+const where = companyLocation(company);
+const size = sizeLabel(company, taxonomy);
+const facets = [
+  ['Frameworks', labelsFor(company, taxonomy.frameworks)],
+  ['Accreditations', labelsFor(company, taxonomy.accreditations)],
+  ['Memberships', labelsFor(company, taxonomy.memberships)],
+] as const;
+const verified = text.verified
+  ? new Date(`${text.verified}T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' })
+  : null;
+const onMap = isLocated(company) ? `/?sel=${company.id}&map=9/${company.lat.toFixed(5)}/${company.lon.toFixed(5)}` : null;
+const correction = correctionMailto(company.name, canonicalUrl(companyPath(company.id)));
+---
+<Base title={pageTitle(company)} description={metaDescription(company)}>
+  <header class="site-header company-header">
+    <p><a href="/" data-explorer-link>Back to the explorer</a></p>
+    <h1>{company.name}</h1>
+    {company.summary && <p class="lede">{company.summary}</p>}
+    <p class="company-page-actions">
+      <a class="button-link" href={`/?list=${company.id}`} data-shortlist={company.id}>Add<span class="vh"> {company.name}</span> to shortlist</a>
+      {onMap && <a href={onMap}>Show on the Tally map</a>}
+    </p>
+  </header>
+
+  <div class="company-layout">
+    <div class="company-main">
+      {text.what && (
+        <section aria-labelledby="what-heading">
+          <h2 id="what-heading">What they do</h2>
+          <Markdown text={text.what} />
+        </section>
+      )}
+      {text.products && (
+        <section aria-labelledby="products-heading">
+          <h2 id="products-heading">Products and solutions</h2>
+          <Markdown text={text.products} />
+        </section>
+      )}
+      <section aria-labelledby="capabilities-heading">
+        <h2 id="capabilities-heading">Capabilities</h2>
+        {groups.length === 0 ? (
+          <p>No capabilities recorded yet.</p>
+        ) : (
+          groups.map((g) => (
+            <div class="capability-group">
+              <h3>{g.label}</h3>
+              <ul>{g.capabilities.map((c) => <li>{c}</li>)}</ul>
+            </div>
+          ))
+        )}
+      </section>
+    </div>
+
+    <aside class="company-facts" aria-labelledby="facts-heading">
+      <h2 id="facts-heading">At a glance</h2>
+      <dl>
+        <dt>Size</dt>
+        <dd>{size || 'Not known'}</dd>
+        <dt>Region</dt>
+        <dd>{company.region || 'Not known'}</dd>
+        <dt>Location</dt>
+        <dd>
+          {where.text}
+          {where.note && <span class="note"> {where.note}</span>}
+        </dd>
+        {company.founded && (
+          <>
+            <dt>Founded</dt>
+            <dd>{company.founded}</dd>
+          </>
+        )}
+        {facets.map(([label, values]) => (
+          <>
+            <dt>{label}</dt>
+            <dd>{values.length ? values.join(', ') : 'None recorded'}</dd>
+          </>
+        ))}
+      </dl>
+      {where.point && (
+        <figure class="company-map">
+          <svg viewBox={`0 0 ${UK_MAP.width} ${UK_MAP.height}`} role="img" aria-labelledby="map-title">
+            <title id="map-title">Map of the UK with a marker at {where.text}</title>
+            <image href="/maps/uk.svg" width={UK_MAP.width} height={UK_MAP.height} />
+            <circle cx={where.point.x} cy={where.point.y} r="7" class="marker" />
+          </svg>
+          <figcaption>Approximate location. Outline: Office for National Statistics, Open Government Licence v3.0.</figcaption>
+        </figure>
+      )}
+      {(company.website || company.linkedin) && (
+        <ul class="company-links">
+          {company.website && (
+            <li>
+              <a href={company.website} rel="noopener nofollow">Website<span class="vh"> of {company.name}</span></a>
+            </li>
+          )}
+          {company.linkedin && (
+            <li>
+              <a href={company.linkedin} rel="noopener nofollow">LinkedIn<span class="vh"> page of {company.name}</span></a>
+            </li>
+          )}
+        </ul>
+      )}
+      <p class="verified">
+        {verified ? (
+          <>
+            Sources verified <time datetime={text.verified}>{verified}</time>.
+          </>
+        ) : (
+          'From public sources.'
+        )}
+      </p>
+      <p><a href={correction}>Correct this listing</a></p>
+    </aside>
+  </div>
+
+  <SiteFooter>
+    <p>Company data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from public sources, under CC BY 4.0. Map outline: Office for National Statistics, Open Government Licence v3.0; contains OS data © Crown copyright and database right 2025.</p>
+  </SiteFooter>
+</Base>
+<script>
+  import '../../scripts/company';
+</script>
