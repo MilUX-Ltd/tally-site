@@ -13,6 +13,7 @@ import { fromQuery, roundPosition, sanitiseState, toQuery, type ViewState } from
 import Matrix from './Matrix';
 import Shortlist from './Shortlist';
 import CapMatchToggle from './CapMatchToggle';
+import OverseasList from './OverseasList';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
 import type { Company } from '../lib/types';
 
@@ -179,6 +180,7 @@ export default function Explorer() {
           onPage={(page) => update({ matrix: { ...state.matrix, page } })}
         />
         <ResultsList companies={filtered} page={state.page} onPage={(page) => update({ page })} actions={shortlistButton} />
+        <OverseasList companies={facetFiltered} overlap={overlapOn} actions={shortlistButton} />
       </div>
     </div>
   );

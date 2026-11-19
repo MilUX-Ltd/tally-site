@@ -7,6 +7,11 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const BASE = 'https://raw.githubusercontent.com/MilUX-Ltd/tally/main';
 
+// West, south, east, north: the UK map's bounds. Must match UK_BOUNDS in
+// src/lib/map-config.ts (a unit test checks they agree).
+export const UK_BOUNDS = [-8.7, 49.8, 1.9, 60.9];
+const inUk = (lat, lon) => lon >= UK_BOUNDS[0] && lon <= UK_BOUNDS[2] && lat >= UK_BOUNDS[1] && lat <= UK_BOUNDS[3];
+
 const str = (v) => (typeof v === 'string' ? v.trim() : '');
 const num = (v, lo, hi) => (typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? v : null);
 const safeLink = (v) => (/^https?:\/\/[^\s]+$/i.test(str(v)) ? str(v) : '');
@@ -48,9 +53,12 @@ export function slimData(raw, taxonomy) {
     for (let n = 2; used.has(id); n++) id = `${slugify(c.name) || 'company'}-${n}`;
     used.add(id);
     // A "region" location means the UK location is not published: never map it.
+    // Overseas companies are never mapped, and nor is any point outside the UK.
     const unpublished = str(c.location_source) === 'region';
-    const lat = unpublished ? null : num(c.lat, -90, 90);
-    const lon = unpublished ? null : num(c.lon, -180, 180);
+    const overseas = Boolean(str(c.country)) || str(c.region) === 'Overseas';
+    let lat = unpublished || overseas ? null : num(c.lat, -90, 90);
+    let lon = unpublished || overseas ? null : num(c.lon, -180, 180);
+    if (lat != null && lon != null && !inUk(lat, lon)) lat = lon = null;
     return {
       id,
       name: str(c.name),
