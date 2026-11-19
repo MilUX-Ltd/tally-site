@@ -22,6 +22,8 @@ async function expectNoAxeViolations(page: Page) {
 const params = (url: string) => new URL(url).searchParams;
 const matrix = (page: Page) => page.getByRole('table', { name: /capability matrix/i });
 const rowNames = async (page: Page) => (await matrix(page).locator('tbody th[scope="row"]').allInnerTexts()).map((t) => t.trim()).sort();
+// Amended for the explorer views (approved): follow a view's link before using that view.
+const openView = (page: Page, name: string) => page.getByRole('navigation', { name: 'Views' }).getByRole('link', { name, exact: true }).click();
 const featureCount = (page: Page, source: string) =>
   page.locator('#tally-map').evaluate(async (el, id) => {
     const map = (el as unknown as { tallyMap: { getSource: (id: string) => { getData: () => Promise<{ features: unknown[] }> } | undefined } }).tallyMap;
@@ -80,7 +82,7 @@ test.beforeEach(async ({ page }) => {
 
 test('typing a postcode shows companies near it', async ({ page }) => {
   const asked = await useOfflineGeocoder(page);
-  await page.goto('/');
+  await page.goto('/?view=compare');
   await waitForMap(page);
   const panel = page.getByRole('group', { name: 'Near a place' });
   await expect(panel).toBeVisible();
@@ -102,6 +104,7 @@ test('typing a postcode shows companies near it', async ({ page }) => {
   await expect(page.locator('#result-count')).toContainText(`${ten.length} compan`);
   await expect(page.locator('#result-count')).toContainText(`within 10 miles of ${BS16.postcode}`);
   await expect.poll(() => rowNames(page)).toEqual(ten);
+  await openView(page, 'Companies');
   const list = page.getByRole('list', { name: 'Results' });
   for (const name of ten) await expect(list).toContainText(name);
   await expect(list).not.toContainText('Example Cyber Defence');
@@ -111,12 +114,13 @@ test('typing a postcode shows companies near it', async ({ page }) => {
   await distance.selectOption({ label: '50 miles' });
   const fifty = near(BS16, 50);
   expect(fifty.length).toBeGreaterThan(ten.length);
+  await openView(page, 'Compare');
   await expect.poll(() => rowNames(page)).toEqual(fifty);
 
   // The view reopens from its URL without asking the geocoder again, at phone width.
   const before = asked.length;
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto(`/?near=${encodeURIComponent(BS16.postcode)}&at=51.5,-2.55&within=5`);
+  await page.goto(`/?near=${encodeURIComponent(BS16.postcode)}&at=51.5,-2.55&within=5&view=compare`);
   await waitForMap(page);
   await expect(page.getByLabel('Distance from the place')).toHaveValue('5');
   await expect(page.locator('#result-count')).toContainText(`within 5 miles of ${BS16.postcode}`);
@@ -132,7 +136,7 @@ test('typing a postcode shows companies near it', async ({ page }) => {
 
 test('a town picks the city and an unknown place says so', async ({ page }) => {
   const asked = await useOfflineGeocoder(page);
-  await page.goto('/');
+  await page.goto('/?view=compare');
   await waitForMap(page);
   await findPlace(page, 'Newport');
   await expect.poll(() => params(page.url()).get('near')).toBe('Newport');
@@ -176,7 +180,7 @@ test('one location at a time, combined with clusters and overlap', async ({ page
   await expect(page.locator('#result-count')).not.toContainText(BS16.postcode);
 
   // Within a chosen cluster.
-  await page.goto(`/?cluster=SCRDSC&near=${encodeURIComponent(PO1.postcode)}&at=50.8198,-1.088&within=10`);
+  await page.goto(`/?cluster=SCRDSC&near=${encodeURIComponent(PO1.postcode)}&at=50.8198,-1.088&within=10&view=compare`);
   await waitForMap(page);
   const members = near(PO1, 10, (tags) => tags.includes('mbr-scrdsc'));
   expect(members.length).toBeGreaterThan(0);
@@ -184,7 +188,7 @@ test('one location at a time, combined with clusters and overlap', async ({ page
   await expect.poll(() => rowNames(page)).toEqual(members);
 
   // In overlap mode.
-  await page.goto(`/?cap=uas,manufacturing&capmatch=all&near=${encodeURIComponent(BS16.postcode)}&at=51.5,-2.55&within=10`);
+  await page.goto(`/?cap=uas,manufacturing&capmatch=all&near=${encodeURIComponent(BS16.postcode)}&at=51.5,-2.55&within=10&view=compare`);
   await waitForMap(page);
   await expect(page.locator('#result-count')).toContainText(`2 companies with a chosen capability within 10 miles of ${BS16.postcode}, in 1 place`);
   await expect.poll(() => rowNames(page)).toEqual(['Example Aerial Systems', 'Example Composites']);

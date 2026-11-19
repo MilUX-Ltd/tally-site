@@ -6,6 +6,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { AXE_TAGS, useOfflineMap, waitForMap } from '../support/offline-map';
 
 const CYBER = '/companies/example-cyber-defence/';
+// Amended for the explorer views (approved): follow a view's link before using that view.
+const openView = (page: Page, name: string) => page.getByRole('navigation', { name: 'Views' }).getByRole('link', { name, exact: true }).click();
 
 async function expectNoAxeViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
@@ -107,10 +109,12 @@ test('company names link to their pages', async ({ page }) => {
     'href',
     '/companies/example-avionics/',
   );
+  await openView(page, 'Compare');
   await expect(page.locator('.matrix tbody').getByRole('link', { name: 'Example Avionics', exact: true })).toHaveAttribute(
     'href',
     '/companies/example-avionics/',
   );
+  await openView(page, 'Companies');
   await expect(page.locator('.overseas').getByRole('link', { name: 'Example Nordic Defence', exact: true })).toHaveAttribute(
     'href',
     '/companies/example-nordic-defence/',

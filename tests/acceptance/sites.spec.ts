@@ -63,7 +63,7 @@ test('the sites overlay shows every site with attribution', async ({ page }) => 
 
 test('picking a site and radius filters the companies', async ({ page }) => {
   expect(abbeyWood).toBeTruthy();
-  await page.goto('/');
+  await page.goto('/?view=compare');
   await waitForMap(page);
   await page.getByLabel('Companies near a site').selectOption({ label: abbeyWood.name });
   await page.getByLabel('Within').selectOption({ label: '10 miles' });
@@ -86,7 +86,7 @@ test('picking a site and radius filters the companies', async ({ page }) => {
 
   // The view opens from its URL, and works at phone width.
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto(`/?site=${abbeyWood.id}&radius=10`);
+  await page.goto(`/?site=${abbeyWood.id}&radius=10&view=compare`);
   await waitForMap(page);
   await expect(page.getByLabel('Companies near a site')).toHaveValue(abbeyWood.id);
   await expect.poll(() => rowNames(page)).toEqual(ten);

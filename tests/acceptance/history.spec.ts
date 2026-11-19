@@ -20,7 +20,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('the growth slider replays the directory by month', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?view=growth');
   await waitForMap(page);
   await growth(page).scrollIntoViewIfNeeded();
   await expect(growth(page)).toContainText('November 2026: 32 companies');

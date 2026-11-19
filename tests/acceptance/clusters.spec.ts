@@ -15,6 +15,8 @@ async function expectNoAxeViolations(page: Page) {
 const params = (url: string) => new URL(url).searchParams;
 const matrix = (page: Page) => page.getByRole('table', { name: /capability matrix/i });
 const rowNames = async (page: Page) => (await matrix(page).locator('tbody th[scope="row"]').allInnerTexts()).map((t) => t.trim()).sort();
+// Amended for the explorer views (approved): follow a view's link before using that view.
+const openView = (page: Page, name: string) => page.getByRole('navigation', { name: 'Views' }).getByRole('link', { name, exact: true }).click();
 const featureCount = (page: Page, source: string) =>
   page.locator('#tally-map').evaluate(async (el, id) => {
     const map = (el as unknown as { tallyMap: { getSource: (id: string) => { getData: () => Promise<{ features: unknown[] }> } | undefined } }).tallyMap;
@@ -28,7 +30,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('picking a cluster filters companies to its members', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?view=clusters');
   await waitForMap(page);
   const panel = page.getByRole('group', { name: 'Clusters' });
   await expect(panel).toBeVisible();
@@ -49,10 +51,12 @@ test('picking a cluster filters companies to its members', async ({ page }) => {
   const members = ['Example EW Systems', 'Example Harbour Systems', 'Example Human Factors'];
   await expect(page.locator('#result-count')).toContainText('3 companies match');
   await expect(page.locator('#result-count')).toContainText('South Central');
+  await openView(page, 'Compare');
   await expect.poll(() => rowNames(page)).toEqual(members);
   await expectNoAxeViolations(page);
 
   // A cluster whose members Tally does not record does not narrow the list.
+  await openView(page, 'Clusters');
   await pick.selectOption({ label: 'London' });
   await expect.poll(() => params(page.url()).get('cluster')).toBe('LRDSC');
   await expect(panel).toContainText('does not yet record');
@@ -60,9 +64,10 @@ test('picking a cluster filters companies to its members', async ({ page }) => {
 
   // The view opens from its URL, and works at phone width.
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto('/?clusters=1&cluster=SCRDSC');
+  await page.goto('/?clusters=1&cluster=SCRDSC&view=clusters');
   await waitForMap(page);
   await expect(page.getByLabel('Companies in a cluster')).toHaveValue('SCRDSC');
+  await openView(page, 'Compare');
   await expect.poll(() => rowNames(page)).toEqual(members);
   await noSideScroll(page);
   await expectNoAxeViolations(page);
@@ -73,7 +78,7 @@ test('picking a cluster filters companies to its members', async ({ page }) => {
 });
 
 test('events appear on the map by cluster', async ({ page }) => {
-  await page.goto('/?clusters=1');
+  await page.goto('/?clusters=1&view=clusters');
   await waitForMap(page);
   // Four clusters have upcoming events in the fixture; the past one is not drawn.
   await expect.poll(() => featureCount(page, 'cluster-events')).toBe(4);

@@ -24,7 +24,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('ticking a matrix column filters companies and redraws the map', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?view=compare');
   await waitForMap(page);
   await expect(matrix(page)).toBeVisible();
   await matrix(page).getByRole('checkbox', { name: 'Filter by Cyber', exact: true }).check();
@@ -49,7 +49,7 @@ test('ticking a matrix column filters companies and redraws the map', async ({ p
 });
 
 test("using the map's current view narrows the matrix", async ({ page }) => {
-  await page.goto('/?map=7.5/51.6/-2.3');
+  await page.goto('/?map=7.5/51.6/-2.3&view=compare');
   await waitForMap(page);
   await page.getByRole('button', { name: "Use the map's current view" }).click();
   await expect.poll(() => params(page.url()).get('area')).not.toBeNull();
@@ -65,7 +65,7 @@ test("using the map's current view narrows the matrix", async ({ page }) => {
 });
 
 test('drawing a rectangle narrows the matrix', async ({ page }) => {
-  await page.goto('/?map=8/51.5/-2.55');
+  await page.goto('/?map=8/51.5/-2.55&view=compare');
   await waitForMap(page);
   await page.getByRole('button', { name: 'Draw an area' }).click();
   const corners = await page.locator('#tally-map').evaluate((el) => {
@@ -84,7 +84,7 @@ test('drawing a rectangle narrows the matrix', async ({ page }) => {
 });
 
 test('the matrix works by keyboard alone', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?view=compare');
   await waitForMap(page);
   const first = matrix(page).getByRole('checkbox').first();
   await first.focus();

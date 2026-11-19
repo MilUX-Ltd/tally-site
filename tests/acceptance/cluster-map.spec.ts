@@ -29,7 +29,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('the cluster map button draws every area labelled and fades the companies', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?view=clusters');
   await waitForMap(page);
   const button = page.getByRole('button', { name: 'Cluster map' });
   const checkbox = page.getByRole('group', { name: 'Clusters' }).getByRole('checkbox', { name: 'Show cluster areas on the map' });

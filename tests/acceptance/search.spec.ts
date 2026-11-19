@@ -44,7 +44,7 @@ test('plain-English search sets the filters', async ({ page }) => {
       radius: 25,
     }),
   );
-  await page.goto('/');
+  await page.goto('/?view=compare');
   await waitForMap(page);
 
   // Keyboard only: the box is reachable and Enter submits.
@@ -75,7 +75,7 @@ test('plain-English search sets the filters', async ({ page }) => {
 
 test('falls back to keyword search and says so', async ({ page }) => {
   await answerSearch(page, json({ fallback: true }));
-  await page.goto('/');
+  await page.goto('/?view=compare');
   await waitForMap(page);
 
   await searchBox(page).fill('counter drone');
@@ -89,7 +89,7 @@ test('falls back to keyword search and says so', async ({ page }) => {
 
   // The keyword view opens from its URL, and works at phone width.
   await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto('/?q=counter%20drone');
+  await page.goto('/?q=counter%20drone&view=compare');
   await waitForMap(page);
   await expect(searchBox(page)).toHaveValue('counter drone');
   await expect.poll(() => rowNames(page)).toEqual(['Example Counter Drone']);
@@ -107,7 +107,7 @@ test('falls back to keyword search and says so', async ({ page }) => {
 
 test('a failing search route still gives a keyword search', async ({ page }) => {
   await answerSearch(page, json({ error: 'boom' }, 500));
-  await page.goto('/');
+  await page.goto('/?view=compare');
   await waitForMap(page);
   await searchBox(page).fill('photonics');
   await searchBox(page).press('Enter');
