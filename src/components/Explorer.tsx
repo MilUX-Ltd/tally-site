@@ -1,20 +1,18 @@
 // The explorer island: filters, heatmap, area list and results. Its whole
 // state is one ViewState, kept in the URL (src/lib/url-state.ts).
 import '../styles/explorer.css';
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'preact/hooks';
 import AreaPanel from './AreaPanel';
 import Filters from './Filters';
 import MapView, { type Binning } from './MapView';
 import ResultsList from './ResultsList';
 import { emptyFilters, filterCompanies, isLocated, type Facet } from '../lib/filters';
-import type { Company, TallyData } from '../lib/types';
-import { fromQuery, roundPosition, sanitiseState, toQuery, type Bbox, type ViewState } from '../lib/url-state';
+import { companiesInBbox } from '../lib/matrix';
+import type { TallyData } from '../lib/types';
+import { fromQuery, roundPosition, sanitiseState, toQuery, type ViewState } from '../lib/url-state';
+import Matrix from './Matrix';
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
-
-export function inBbox(c: Company, [w, s, e, n]: Bbox): boolean {
-  return isLocated(c) && c.lon >= w && c.lon <= e && c.lat >= s && c.lat <= n;
-}
 
 export default function Explorer() {
   const [data, setData] = useState<TallyData | null>(null);
@@ -34,7 +32,8 @@ export default function Explorer() {
       .catch(() => setFailed(true));
   }, []);
 
-  useEffect(() => {
+  // Layout effect: the address changes in the same frame as the view.
+  useLayoutEffect(() => {
     if (!data) return;
     const query = toQuery(state);
     if (query !== window.location.search.replace(/^\?/, '')) {
@@ -56,10 +55,7 @@ export default function Explorer() {
       const ids = new Set(state.sel);
       return filtered.filter((c) => ids.has(c.id));
     }
-    if (state.area) {
-      const area = state.area;
-      return filtered.filter((c) => inBbox(c, area));
-    }
+    if (state.area) return companiesInBbox(filtered, state.area);
     return null;
   }, [state.cell, state.sel, state.area, binning, filtered]);
 
@@ -100,10 +96,26 @@ export default function Explorer() {
           }}
           onMove={(position) => update({ map: roundPosition(position) })}
           onBinning={(b) => setBinning(() => b)}
+          area={state.area}
+          onArea={(area) => {
+            setPicked(true);
+            update({ area, cell: null, sel: [], matrix: { ...state.matrix, page: 1 } });
+          }}
         />
         {areaCompanies && (
           <AreaPanel companies={areaCompanies} focus={picked} onClear={() => update({ cell: null, sel: [], area: null })} />
         )}
+        <Matrix
+          taxonomy={data.taxonomy}
+          companies={areaCompanies ?? filtered}
+          selectedCaps={state.filters.cap}
+          group={state.matrix.group}
+          page={state.matrix.page}
+          inArea={areaCompanies !== null}
+          onToggleCap={(slug, on) => toggle('cap', slug, on)}
+          onGroup={(group) => update({ matrix: { group, page: state.matrix.page } })}
+          onPage={(page) => update({ matrix: { ...state.matrix, page } })}
+        />
         <ResultsList companies={filtered} page={state.page} onPage={(page) => update({ page })} />
       </div>
     </div>

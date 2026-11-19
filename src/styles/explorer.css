@@ -63,3 +63,21 @@ button:focus-visible, summary:focus-visible, input:focus-visible, [tabindex]:foc
 .pager { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
 .maplibregl-ctrl-attrib a { color: var(--green); }
 .maplibregl-ctrl-attrib.maplibregl-compact, .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib { background: rgba(255, 255, 255, 0.9); }
+.matrix { margin-top: 2rem; }
+.matrix-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+.matrix-controls select { font: inherit; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--green); border-radius: 4px; background: #fff; color: var(--green); max-width: 100%; }
+.matrix-scroll { position: relative; overflow: auto; max-width: 100%; max-height: 80vh; border: 1px solid var(--beige); background: #fff; }
+.matrix table { border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
+.matrix th, .matrix td { border-bottom: 1px solid var(--beige); border-right: 1px solid var(--beige); padding: 0.25rem; }
+.matrix tbody th { position: sticky; left: 0; background: #fff; text-align: left; font-weight: 600; min-width: 10rem; max-width: 14rem; z-index: 1; }
+.matrix .company-head { position: sticky; left: 0; background: #fff; text-align: left; vertical-align: bottom; z-index: 2; }
+.matrix .group-head { text-align: left; background: var(--neutral); font-size: 0.8rem; vertical-align: bottom; }
+.matrix .cap-head { vertical-align: bottom; }
+.matrix .cap-head label { display: flex; flex-direction: column-reverse; align-items: center; gap: 0.25rem; cursor: pointer; }
+.matrix .cap-label { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-weight: 600; max-height: 12rem; }
+.matrix .cap-head input { width: 1.25rem; height: 1.25rem; accent-color: var(--green); }
+.matrix td { text-align: center; min-width: 2rem; }
+.matrix td.tick { color: var(--green); }
+.map-tools { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.map-tools button[aria-pressed='true'] { background: var(--orange); border-color: var(--orange); }
+.map.drawing { cursor: crosshair; }

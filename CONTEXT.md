@@ -9,6 +9,8 @@
 - **Event**: a dated cluster event. Public events are shown in full; members-only events appear only as a signpost to join the cluster.
 - **Shortlist**: companies a buyer has picked, held in the URL, exportable as CSV.
 - **Heatmap**: hexagon density of companies matching the current filters.
+- **Matrix**: a table of companies against top-level capabilities, grouped by capability group. A company is ticked under a capability when it has it or a sub-capability.
+- **Area**: a rectangle taken from the map's current view or drawn on the map; it narrows the area list and the matrix.
 - **Overlap**: places where two or more chosen capabilities coincide.
 
 ## Public interface (what consumers depend on)
