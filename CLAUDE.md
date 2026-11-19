@@ -10,10 +10,10 @@ Current version: **0.1.0** (unreleased). Before changing anything, state the cur
 
 ## Stack
 
-- Astro (static output) with one Preact island for the explorer; TypeScript throughout.
+- Astro (static output) with one Preact island for the explorer, mounted from a bundled module (`src/scripts/explorer.ts`) because island directives inline a script the CSP blocks; TypeScript throughout.
 - Cloudflare Workers static assets (`wrangler.jsonc`, assets in `./dist`). One Worker route for search arrives in a later card; nothing else runs server-side.
 - Map: MapLibre GL JS with OpenFreeMap tiles; hexagon binning with H3 in the browser.
-- Data: built from the public data repo `MilUX-Ltd/tally` at build time. This repo never holds or edits company data.
+- Data: built from the public data repo `MilUX-Ltd/tally` at build time (`npm run data`; `TALLY_DATA_SOURCE=fixture` uses the synthetic fixture in `tests/fixtures/`). This repo never holds or edits company data.
 - Tests: Vitest (logic), Playwright with axe (journeys and accessibility).
 - Node 24 in CI. Locally: `npm ci`, `npm run lint`, `npm run typecheck`, `npm run check:public`, `npm test`.
 

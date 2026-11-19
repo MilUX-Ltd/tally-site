@@ -21,3 +21,8 @@ a { color: var(--green); }
 a:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
 .skip-link { position: absolute; left: -999px; }
 .skip-link:focus { left: 1rem; top: 1rem; background: #fff; padding: 0.5rem; }
+main.wide { max-width: none; padding: 1rem; }
+@media (min-width: 60rem) { main.wide { padding: 1rem 2rem; } }
+.site-header h1 { margin: 0; }
+.site-header p { margin: 0.25rem 0 1rem; max-width: 60rem; }
+.site-footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--beige); }

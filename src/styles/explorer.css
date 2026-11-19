@@ -1,0 +1,65 @@
+/* Explorer layout. Brand colours only (see base.css). */
+.vh {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.explorer { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 60rem) {
+  .explorer { grid-template-columns: 18rem minmax(0, 1fr); align-items: start; }
+  .explorer-filters { position: sticky; top: 0; max-height: 100vh; overflow-y: auto; }
+}
+.notice { padding: 2rem 0; }
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+  border: 2px solid var(--green);
+  background: var(--green);
+  color: #fff;
+  padding: 0.4rem 0.9rem;
+  min-height: 44px;
+}
+button.secondary { background: #fff; color: var(--green); }
+button:disabled { cursor: not-allowed; border-color: var(--blue-grey); color: var(--blue-grey); background: var(--neutral); }
+button:focus-visible, summary:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
+}
+.filters-toggle { width: 100%; text-align: left; }
+#filter-panel h2 { font-size: 1.1rem; margin: 1rem 0 0.25rem; }
+.filter-group { border-bottom: 1px solid var(--beige); }
+.filter-group summary { padding: 0.5rem 0; cursor: pointer; font-weight: 600; }
+.filter-group fieldset { border: 0; margin: 0 0 0.5rem; padding: 0; }
+.choice { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.2rem 0; }
+.choice input { width: 1.25rem; height: 1.25rem; margin: 0.15rem 0 0; flex: none; accent-color: var(--green); }
+.choice.child { padding-left: 1.5rem; }
+#filter-panel > button { margin-top: 1rem; }
+#result-count { font-weight: 600; margin: 0 0 0.75rem; }
+.map-wrap { display: grid; gap: 0.75rem; }
+.map { width: 100%; height: 60vh; min-height: 320px; border: 1px solid var(--beige); background: #fff; }
+.map-failed { padding: 1rem; }
+.legend h2 { font-size: 1rem; margin: 0 0 0.25rem; }
+.legend ul { list-style: none; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; padding: 0; margin: 0; }
+.legend li { display: flex; align-items: center; gap: 0.4rem; }
+.legend-note { margin: 0.25rem 0 0; color: var(--blue-grey); font-size: 0.95rem; }
+.swatch { display: inline-block; width: 1.25rem; height: 1rem; border: 1px solid var(--blue-grey); }
+.swatch-0 { background: #d2c78d; }
+.swatch-1 { background: #b5b171; }
+.swatch-2 { background: #a35c17; }
+.swatch-3 { background: #113308; }
+.area { margin-top: 1.5rem; padding: 1rem; border: 2px solid var(--green); background: #fff; }
+.area h2 { margin-top: 0; }
+.results h2 { margin-top: 1.5rem; }
+.company-list { list-style: none; padding: 0; margin: 0; }
+.company { padding: 0.75rem 0; border-bottom: 1px solid var(--beige); }
+.company h3, .company h4 { margin: 0; font-size: 1.05rem; }
+.company p { margin: 0.25rem 0; overflow-wrap: anywhere; }
+.company .meta { color: var(--blue-grey); }
+.company-actions { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; }
+.pager { display: flex; gap: 1rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
+.maplibregl-ctrl-attrib a { color: var(--green); }
+.maplibregl-ctrl-attrib.maplibregl-compact, .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib { background: rgba(255, 255, 255, 0.9); }

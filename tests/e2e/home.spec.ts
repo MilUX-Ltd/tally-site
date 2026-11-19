@@ -1,5 +1,10 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { useOfflineMap, waitForMap } from '../support/offline-map';
+
+test.beforeEach(async ({ page }) => {
+  await useOfflineMap(page);
+});
 
 test('home page shows Tally and the built-with-AI line', async ({ page }) => {
   await page.goto('/');
@@ -9,6 +14,7 @@ test('home page shows Tally and the built-with-AI line', async ({ page }) => {
 
 test('home page meets WCAG 2.2 AA (automated checks)', async ({ page }) => {
   await page.goto('/');
+  await waitForMap(page);
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();
