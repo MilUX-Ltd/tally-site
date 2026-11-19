@@ -5,6 +5,7 @@ import { handleSearch } from './search';
 import type { Env } from './types';
 
 export { SearchBudget } from './budget';
+export { McpRateLimiter } from './mcp-limiter';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {

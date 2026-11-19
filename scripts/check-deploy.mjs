@@ -3,7 +3,7 @@
 // search route runs and refuses an over-long request without calling the
 // model. With --expect-search-fallback (previews, which never hold the key),
 // a normal search must answer {"fallback": true}. The Ask Tally connector at
-// /mcp must answer an MCP initialize and list its four tools.
+// /mcp must answer an MCP initialize, list its four tools and refuse a batch.
 // Usage: node scripts/check-deploy.mjs <deployed-url> [--expect-search-fallback]
 /* global setTimeout */
 import { readFileSync } from 'node:fs';
@@ -78,6 +78,12 @@ if (init.status !== 200 || !init.message?.result?.serverInfo) failures.push(`mcp
 const list = await rpc(2, 'tools/list');
 const tools = (list.message?.result?.tools ?? []).map((t) => t.name).sort().join(',');
 if (tools !== 'get_company,list_capabilities,list_clusters_and_events,search_companies') failures.push(`mcp: tools/list returned ${tools || 'nothing'}`);
+const batch = await fetch(mcpUrl, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', 'mcp-protocol-version': '2025-06-18' },
+  body: JSON.stringify([{ jsonrpc: '2.0', id: 3, method: 'tools/list' }]),
+});
+if (batch.status !== 400) failures.push(`mcp: a batch should get 400, got ${batch.status}`);
 
 if (failures.length) {
   console.error(`Deploy check FAILED for ${url}\n\n${failures.join('\n')}`);

@@ -24,13 +24,16 @@ const URL_MCP = 'https://tally.milux.co.uk/mcp';
     <section aria-labelledby="claude-heading">
       <h2 id="claude-heading">Add it in Claude</h2>
       <ol>
-        <li>In Claude on the web or the desktop app, open <strong>Settings</strong>, then <strong>Connectors</strong>.</li>
-        <li>Choose <strong>Add custom connector</strong>.</li>
-        <li>Name it <strong>Tally</strong> and paste the address above as the URL. Leave the advanced settings empty; Tally needs no sign-in.</li>
-        <li>Choose <strong>Add</strong>. In a new chat, turn Tally on from the tools menu and ask your question.</li>
+        <li>In Claude on the web or the desktop app, open <strong>Customize</strong>, then <strong>Connectors</strong>.</li>
+        <li>Choose <strong>+ Add</strong>, then <strong>Add custom connector</strong>.</li>
+        <li>Paste <code>{URL_MCP}</code> and choose <strong>Continue</strong>.</li>
+        <li>For <strong>Authentication</strong>, choose <strong>No sign in</strong>, then choose <strong>Add</strong>.</li>
+        <li>In a chat, choose <strong>+</strong>, then <strong>Connectors</strong>, and turn Tally on. Then ask your question.</li>
       </ol>
-      <p>In Claude Code, run <code>claude mcp add --transport http tally {URL_MCP}</code>.</p>
-      <p>If you use Claude through your organisation, an owner of the account may need to add the connector for you.</p>
+      <h3>For Claude Team and Enterprise owners</h3>
+      <p>An owner can add Tally for everyone in the organisation: open <strong>Organization settings</strong>, then <strong>Connectors</strong>, choose <strong>Add</strong>, then <strong>Custom</strong>, then <strong>Web</strong>, and paste the address above. Members then turn it on in a chat as above.</p>
+      <h3>Claude Code</h3>
+      <p>Run <code>claude mcp add --transport http tally {URL_MCP}</code>.</p>
     </section>
 
     <section aria-labelledby="other-heading">
@@ -57,9 +60,9 @@ const URL_MCP = 'https://tally.milux.co.uk/mcp';
       <h2 id="data-heading">What it uses and what it keeps</h2>
       <ul>
         <li>Answers come only from the same public data the Tally map shows. Your assistant's own model does the thinking; Tally runs no AI model for the connector.</li>
-        <li>Tally does not log or keep what your assistant asks. Your address is used only to apply a fair-use rate limit.</li>
+        <li>Tally does not log or keep what your assistant asks. To apply a fair-use limit, it counts requests for one minute by the network address they come from and, when your assistant sends one, the connection id Tally gave it. Those counts are held in memory only and are not stored.</li>
         <li>Postcodes are placed from Tally's own data. If Tally cannot place one, your assistant can give a latitude and longitude instead.</li>
-        <li>Requests are rate-limited per visitor. If you hit the limit, wait a minute and try again.</li>
+        <li>The limit is generous for normal use. If you hit it, wait a minute and try again.</li>
       </ul>
       <p>Something wrong or missing? Please <a href="https://milux.co.uk/contact/">get in touch</a>.</p>
     </section>

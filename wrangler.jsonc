@@ -24,21 +24,35 @@
   // Without it the route falls back to keyword search.
   "ratelimits": [
     { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } },
-    { "name": "MCP_RATE_LIMIT", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
+    { "name": "MCP_RATE_LIMIT", "namespace_id": "1003", "simple": { "limit": 300, "period": 60 } }
   ],
+  // The connector at /mcp: a coarse rate-limit binding (approximate, per location)
+  // in front of a strict per-address limiter (worker/mcp-limiter.ts) whose limits
+  // per connection and per address, per minute, are these vars.
+  "vars": { "MCP_KEY_LIMIT": "120", "MCP_ADDRESS_LIMIT": "1200" },
   "durable_objects": {
-    "bindings": [{ "name": "SEARCH_BUDGET", "class_name": "SearchBudget" }]
+    "bindings": [
+      { "name": "SEARCH_BUDGET", "class_name": "SearchBudget" },
+      { "name": "MCP_LIMITER", "class_name": "McpRateLimiter" }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SearchBudget"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["SearchBudget"] },
+    { "tag": "v2", "new_sqlite_classes": ["McpRateLimiter"] }
+  ],
   // Worker Previews do not inherit the top-level vars and bindings; each
   // preview gets its own Durable Object namespace.
   "previews": {
     "ratelimits": [
       { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
-      { "name": "MCP_RATE_LIMIT", "namespace_id": "1004", "simple": { "limit": 60, "period": 60 } }
+      { "name": "MCP_RATE_LIMIT", "namespace_id": "1004", "simple": { "limit": 300, "period": 60 } }
     ],
+    "vars": { "MCP_KEY_LIMIT": "120", "MCP_ADDRESS_LIMIT": "1200" },
     "durable_objects": {
-      "bindings": [{ "name": "SEARCH_BUDGET", "class_name": "SearchBudget" }]
+      "bindings": [
+        { "name": "SEARCH_BUDGET", "class_name": "SearchBudget" },
+        { "name": "MCP_LIMITER", "class_name": "McpRateLimiter" }
+      ]
     }
   }
 }

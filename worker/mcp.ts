@@ -2,8 +2,10 @@
 // stateless) over the site's public data. No authentication, no secrets, no
 // model calls and no outbound requests.
 //
-// Guards, in order: method; JSON only; body size cap; a per-visitor rate
-// limit that fails closed; the SDK's protocol checks; strict schemas on tool
+// Guards, in order: method; a foreign Origin; JSON only; body size cap; a
+// coarse rate limit, then a strict per-address limiter (mcp-limiter.ts), both
+// failing closed; one JSON-RPC message per request (no batches), a plain id,
+// and a known tool name; the SDK's protocol checks; strict schemas on tool
 // arguments (no extra keys, bounded strings and lists); then every value is
 // checked against the data (ask-tally.ts). Errors are fixed sentences and
 // never repeat what was sent. Nothing sent is logged or kept.
@@ -17,7 +19,11 @@ import {
 } from '@modelcontextprotocol/server';
 import * as z from 'zod';
 import { getCompany, listCapabilities, listClustersAndEvents, loadData, MAX_RESULTS, searchCompanies, ToolError, type Loaded } from './ask-tally';
+import { visitorKeys, withinLimit } from './mcp-limiter';
 import type { Env } from './types';
+
+/** The production site, whose pages may call /mcp from a browser. */
+const SITE_ORIGIN = 'https://tally.milux.co.uk';
 
 /** Largest request body read, in bytes. A well-formed tool call fits easily. */
 const MAX_BODY_BYTES = 16 * 1024;
@@ -214,26 +220,80 @@ async function readCapped(request: Request): Promise<string | null> {
   return new TextDecoder().decode(joined);
 }
 
-function withHeaders(response: Response): Response {
+function withHeaders(response: Response, extra: Record<string, string> = {}): Response {
   const out = new Response(response.body, response);
-  for (const [k, v] of Object.entries(HEADERS)) out.headers.set(k, v);
+  for (const [k, v] of Object.entries({ ...HEADERS, ...extra })) out.headers.set(k, v);
   return out;
+}
+
+const TOOL_NAMES = new Set(['search_companies', 'get_company', 'list_capabilities', 'list_clusters_and_events']);
+
+/** Fixed messages for JSON-RPC errors, so nothing the SDK writes from the request reaches the reply. */
+const ERROR_MESSAGES: Record<number, string> = {
+  [-32700]: 'Parse error.',
+  [-32600]: 'Invalid request.',
+  [-32601]: 'Method not found.',
+  [-32602]: 'Invalid params.',
+  [-32603]: 'Internal error.',
+};
+const UNKNOWN_TOOL = 'Unknown tool. Call tools/list for the tools this server offers.';
+
+/** A request id safe to repeat: a whole number, or a short plain string. */
+const safeId = (id: unknown) =>
+  id === undefined || (typeof id === 'number' && Number.isSafeInteger(id)) || (typeof id === 'string' && /^[A-Za-z0-9._:-]{1,64}$/.test(id));
+
+const LIMITED = () => rpcError(429, -32000, 'Too many requests. Try again in a minute.', { 'retry-after': '60' });
+
+/**
+ * Rewrites a JSON reply from the SDK: every error message becomes a fixed
+ * sentence for its code (and error data is dropped), and the server says its
+ * tool list never changes.
+ */
+async function sanitise(response: Response): Promise<{ response: Response; initialized: boolean }> {
+  const type = response.headers.get('content-type') ?? '';
+  if (!type.includes('application/json')) return { response, initialized: false };
+  const text = await response.text();
+  if (!text) return { response: new Response(null, { status: response.status, headers: response.headers }), initialized: false };
+  let message: { error?: { code?: unknown; message?: unknown; data?: unknown }; result?: { capabilities?: { tools?: Record<string, unknown> }; protocolVersion?: unknown } };
+  try {
+    message = JSON.parse(text);
+  } catch {
+    return { response: rpcError(500, -32603, 'Internal error.'), initialized: false };
+  }
+  let initialized = false;
+  if (message && typeof message === 'object' && !Array.isArray(message)) {
+    if (message.error) {
+      const code = typeof message.error.code === 'number' ? message.error.code : -32603;
+      message.error = { code, message: ERROR_MESSAGES[code] ?? 'Request refused.' };
+    }
+    const tools = message.result?.capabilities?.tools;
+    if (tools) tools.listChanged = false;
+    initialized = typeof message.result?.protocolVersion === 'string';
+  }
+  const headers = new Headers(response.headers);
+  headers.delete('content-length');
+  return { response: new Response(JSON.stringify(message), { status: response.status, statusText: response.statusText, headers }), initialized };
 }
 
 export async function handleMcp(request: Request, env: Env): Promise<Response> {
   if (request.method !== 'POST') return rpcError(405, -32000, 'Method not allowed.', { allow: 'POST' });
+  const origin = new URL(request.url).origin;
+  // Browsers send Origin; only our own pages may call from one. Assistants' servers send none.
+  const from = request.headers.get('origin');
+  if (from !== null && from !== origin && from !== SITE_ORIGIN) return rpcError(403, -32000, 'Forbidden origin.');
   // JSON only, so a cross-site page cannot post without a CORS preflight, which is never answered.
   if (!isJsonContentType(request.headers.get('content-type'))) return rpcError(415, -32000, 'Unsupported media type: send application/json.');
   const declared = Number(request.headers.get('content-length') ?? '0');
   if (declared > MAX_BODY_BYTES) return rpcError(413, -32000, 'Request too large.');
 
+  // A coarse, approximate limit first (cheap), then the strict per-address limiter.
   try {
-    const visitor = request.headers.get('cf-connecting-ip') ?? 'unknown';
-    const { success } = await env.MCP_RATE_LIMIT.limit({ key: visitor });
-    if (!success) return rpcError(429, -32000, 'Too many requests. Try again in a minute.', { 'retry-after': '60' });
+    const { success } = await env.MCP_RATE_LIMIT.limit({ key: visitorKeys(request).key });
+    if (!success) return LIMITED();
   } catch {
-    return rpcError(429, -32000, 'Too many requests. Try again in a minute.', { 'retry-after': '60' });
+    return LIMITED();
   }
+  if (!(await withinLimit(env, request))) return LIMITED();
 
   const raw = await readCapped(request);
   if (raw === null) return rpcError(413, -32000, 'Request too large.');
@@ -243,20 +303,33 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
   } catch {
     return rpcError(400, -32700, 'Parse error.');
   }
+  // One message per request: batches are refused on every protocol version.
+  if (Array.isArray(parsed)) return rpcError(400, -32600, 'Batch requests are not supported.');
+  if (typeof parsed !== 'object' || parsed === null) return rpcError(400, -32600, 'Invalid request.');
+  const msg = parsed as { id?: unknown; method?: unknown; params?: { name?: unknown } };
+  if (!safeId(msg.id)) return rpcError(400, -32600, 'Invalid request.');
+  if (msg.method === 'tools/call' && !(typeof msg.params?.name === 'string' && TOOL_NAMES.has(msg.params.name))) {
+    return new Response(JSON.stringify({ jsonrpc: '2.0', id: msg.id ?? null, error: { code: -32602, message: UNKNOWN_TOOL } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json; charset=utf-8', ...HEADERS },
+    });
+  }
 
-  const origin = new URL(request.url).origin;
   const forward = new Request(request.url, { method: 'POST', headers: request.headers, body: raw });
   try {
     if (await isLegacyRequest(forward, parsed, { maxRequestBodySize: MAX_BODY_BYTES })) {
-      // 2025-era clients: one fresh server per request, no session, plain JSON replies.
+      // 2025-era clients: one fresh server per request, no server-side session, plain JSON replies.
       const server = buildServer(env, origin);
       const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       await server.connect(transport);
-      const response = await transport.handleRequest(forward, { parsedBody: parsed });
-      return withHeaders(response);
+      const { response, initialized } = await sanitise(await transport.handleRequest(forward, { parsedBody: parsed }));
+      // A session id is issued on initialize only to key the rate limit per conversation; nothing is kept for it.
+      const session: Record<string, string> = initialized && msg.method === 'initialize' ? { 'mcp-session-id': crypto.randomUUID() } : {};
+      return withHeaders(response, session);
     }
     const handler = createMcpHandler(() => buildServer(env, origin), { legacy: 'reject', responseMode: 'json', maxRequestBodySize: MAX_BODY_BYTES });
-    return withHeaders(await handler.fetch(forward, { parsedBody: parsed }));
+    const { response } = await sanitise(await handler.fetch(forward, { parsedBody: parsed }));
+    return withHeaders(response);
   } catch {
     return rpcError(500, -32603, 'Internal error.');
   }
