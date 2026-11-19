@@ -1,6 +1,7 @@
 // Filter logic. Within a facet, values are alternatives (any); facets combine
 // (all). A capability also matches its sub-capabilities ("cyber" matches
 // "cyber/pen-testing"), but not the other way round.
+import { UK_BOUNDS } from './map-config';
 import type { Company } from './types';
 
 export interface Filters {
@@ -47,6 +48,15 @@ export function filterCompanies(companies: Company[], filters: Filters): Company
   return companies.filter((c) => matches(c, filters));
 }
 
+/**
+ * A company is drawn on the UK map only when it has a point, is not an
+ * overseas company, and the point is inside the UK bounds. This is the guard
+ * that keeps overseas companies off the map even if the data carries a point.
+ */
 export function isLocated(company: Company): company is Company & { lat: number; lon: number } {
-  return typeof company.lat === 'number' && typeof company.lon === 'number';
+  const { lat, lon } = company;
+  if (typeof lat !== 'number' || typeof lon !== 'number') return false;
+  if (company.country || company.region === 'Overseas') return false;
+  const [w, s, e, n] = UK_BOUNDS;
+  return lon >= w && lon <= e && lat >= s && lat <= n;
 }

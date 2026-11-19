@@ -39,7 +39,7 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
 
    Filters combine: a company must match every facet that has values. Only one of `cell`, `sel` and `area` is set at a time; the area list shows the companies that match the filters within it.
 2. **Data contract.** The build (`scripts/fetch-data.mjs`) reads `tally-data.json` and `taxonomy.json` from `MilUX-Ltd/tally` and writes a slimmed `public/data/tally.json` (not committed). Fields the site depends on:
-   - Company: `name`, `website`, `linkedin`, `hq`, `region`, `size`, `headcount`, `founded`, `tags`, `summary`, and when present `lat`, `lon`, `postcode`, `location_source` (`website`, `companies-house`, `town` or `region`) and `country` (overseas companies). `body` is dropped. A company without a valid `lat` and `lon` is listed, filtered and in the matrix but not mapped. A company whose `location_source` is `region` is never mapped, even if coordinates appear: its UK location is not published. Links that are not http or https are dropped.
+   - Company: `name`, `website`, `linkedin`, `hq`, `region`, `size`, `headcount`, `founded`, `tags`, `summary`, and when present `lat`, `lon`, `postcode`, `location_source` (`website`, `companies-house`, `town` or `region`) and `country` (overseas companies). `body` is dropped. A company without a valid `lat` and `lon` is listed, filtered and in the matrix but not mapped. A company whose `location_source` is `region` is never mapped, even if coordinates appear: its UK location is not published. An overseas company (`country` set, or region `Overseas`) is never mapped, and nor is any point outside the UK bounds: the build drops such points and the browser's `isLocated` refuses them. Links that are not http or https are dropped.
    - Each company gets an `id`: its name in lower case with runs of other characters turned into hyphens (a numeric suffix if two names collide). Ids appear in URLs, so they are part of this interface.
    - Taxonomy: `facets.capability.groups` (`slug`, `label`, `order`, `description`), `facets.capability.values` (`slug`, `label`, `group`), and the `size`, `region`, `frameworks`, `accreditations` and `memberships` facets.
    - Filter meaning: within a facet any value matches; facets combine; a capability matches its sub-capabilities (`cyber` matches `cyber/pen-testing`).
@@ -63,4 +63,4 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | Summary | One-paragraph summary |
 
    Downloaded in overlap mode, the file is named `tally-shortlist-overlap.csv`; its content is the same.
-4. **Routes.** `/` (explorer), `/about`, `/countries`, `/events`, `/404`.
+4. **Routes.** `/` (explorer), `/about`, `/404`. Overseas companies are a section of the explorer (Europe, then the rest of the world), not a separate page.
