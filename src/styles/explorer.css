@@ -100,3 +100,12 @@ button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .overseas h3 { margin: 1rem 0 0.25rem; font-size: 1.15rem; }
 .overseas h4 { margin: 0.75rem 0 0; font-size: 1.05rem; color: var(--blue-grey); }
 .company h5 { margin: 0; font-size: 1.05rem; }
+.growth { margin-top: 2rem; }
+.growth-controls { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; }
+.growth-controls input[type='range'] { flex: 1 1 12rem; min-height: 44px; accent-color: var(--green); }
+.growth-total { font-weight: 600; font-size: 1.1rem; }
+.growth-table { border-collapse: collapse; width: 100%; max-width: 40rem; }
+.growth-table th, .growth-table td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--beige); }
+.growth-table .num-bar { display: inline-flex; align-items: center; gap: 0.5rem; }
+.growth-table .bar { width: 10rem; max-width: 40vw; height: 0.9rem; flex: none; }
+.growth-table .bar rect { fill: var(--gold); }

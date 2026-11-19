@@ -12,6 +12,7 @@ import type { TallyData } from '../lib/types';
 import { fromQuery, roundPosition, sanitiseState, toQuery, type ViewState } from '../lib/url-state';
 import Matrix from './Matrix';
 import Shortlist from './Shortlist';
+import Growth from './Growth';
 import CapMatchToggle from './CapMatchToggle';
 import OverseasList from './OverseasList';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
@@ -181,6 +182,7 @@ export default function Explorer() {
         />
         <ResultsList companies={filtered} page={state.page} onPage={(page) => update({ page })} actions={shortlistButton} />
         <OverseasList companies={facetFiltered} overlap={overlapOn} actions={shortlistButton} />
+        <Growth month={state.month} onMonth={(month) => update({ month })} />
       </div>
     </div>
   );
