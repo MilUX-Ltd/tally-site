@@ -35,7 +35,7 @@ export default function NearPanel({ place, radius, busy, message, onFind, onRadi
               <input
                 id="near-place"
                 type="text"
-                autocomplete="postal-code"
+                autocomplete="off"
                 maxLength={MAX_PLACE_LENGTH}
                 aria-describedby="near-hint"
                 value={text}
