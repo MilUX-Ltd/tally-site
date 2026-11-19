@@ -1,0 +1,6 @@
+# Changes to the pipeline, the agent guard, the committed acceptance tests and
+# the build context need the maintainer's review.
+/.github/            @matt-milux
+/.claude/            @matt-milux
+/tests/acceptance/   @matt-milux
+/CLAUDE.md           @matt-milux

@@ -1,0 +1,40 @@
+{
+  "name": "tally-site",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tally: an open map and directory of UK defence capability",
+  "license": "CC-BY-NC-4.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "lint": "eslint .",
+    "typecheck": "astro check",
+    "check:public": "node scripts/check-public-terms.mjs",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@astrojs/preact": "6.1.6",
+    "astro": "7.4.13",
+    "preact": "11.2.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "@axe-core/playwright": "4.14.0",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.65.1",
+    "@types/node": "26.1.0",
+    "eslint": "10.15.0",
+    "eslint-plugin-astro": "2.1.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.73.0",
+    "vitest": "4.1.12",
+    "wrangler": "4.165.0"
+  }
+}

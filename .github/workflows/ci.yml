@@ -1,0 +1,124 @@
+# Tally site pipeline: public-terms guard, lint, type check, unit tests and the
+# accessibility floor on every push and pull request. A red check blocks merge
+# (branch protection on main requires the "test" job).
+#
+# Deploys run only when the CLOUDFLARE_API_TOKEN repository secret is set:
+# pull requests upload a preview version (unique preview URL), pushes to main
+# deploy to production. Both are followed by a header and smoke check against
+# the deployed URL.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint, type-check, test, accessibility floor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Public-terms guard
+        run: npm run check:public
+      - name: Lint
+        run: npm run lint
+      - name: Type-check
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm run test:unit
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+      - name: Accessibility floor and smoke tests
+        run: npm run test:e2e
+
+  deploy-preview:
+    name: Preview deploy (pull request)
+    if: github.event_name == 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: env.CLOUDFLARE_API_TOKEN != ''
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npm ci
+      - name: Build
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npm run build
+      - name: Upload preview version
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        id: upload
+        run: |
+          npx wrangler versions upload | tee upload.log
+          url=$(grep -Eo 'https://[a-z0-9-]+-tally-site[a-z0-9.-]*\.workers\.dev' upload.log | head -1)
+          if [ -z "$url" ]; then
+            echo "Could not extract the preview URL from wrangler output; failing rather than skipping the deploy check." >&2
+            exit 1
+          fi
+          echo "preview-url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview URL: $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Check headers and smoke on the preview URL
+        if: env.CLOUDFLARE_API_TOKEN != '' && steps.upload.outputs.preview-url != ''
+        run: node scripts/check-deploy.mjs "${{ steps.upload.outputs.preview-url }}"
+      - name: Note when deploy is not configured
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "CLOUDFLARE_API_TOKEN secret not set; skipping preview deploy." >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-production:
+    name: Production deploy (main)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        if: env.CLOUDFLARE_API_TOKEN != ''
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npm ci
+      - name: Build
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npm run build
+      - name: Deploy to production
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        id: deploy
+        run: |
+          npx wrangler deploy | tee deploy.log
+          url=$(grep -Eo 'https://[a-z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          if [ -z "$url" ]; then
+            echo "Could not extract the production URL from wrangler output; failing rather than skipping the deploy check." >&2
+            exit 1
+          fi
+          echo "production-url=$url" >> "$GITHUB_OUTPUT"
+          echo "Production URL: $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Check headers and smoke on the production URL
+        if: env.CLOUDFLARE_API_TOKEN != '' && steps.deploy.outputs.production-url != ''
+        run: node scripts/check-deploy.mjs "${{ steps.deploy.outputs.production-url }}"
+      - name: Note when deploy is not configured
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "CLOUDFLARE_API_TOKEN secret not set; skipping production deploy." >> "$GITHUB_STEP_SUMMARY"

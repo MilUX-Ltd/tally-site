@@ -1,0 +1,23 @@
+/* Brand tokens (MilUX brand kit). */
+:root {
+  --green: #113308;
+  --gold: #b5b171;
+  --blue-grey: #586f7c;
+  --orange: #a35c17;
+  --neutral: #f7f6eb;
+  --beige: #d2c78d;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: var(--neutral);
+  color: var(--green);
+  line-height: 1.5;
+}
+main { max-width: 72rem; margin: 0 auto; padding: 2rem 1rem; }
+a { color: var(--green); }
+a:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+.skip-link { position: absolute; left: -999px; }
+.skip-link:focus { left: 1rem; top: 1rem; background: #fff; padding: 0.5rem; }
