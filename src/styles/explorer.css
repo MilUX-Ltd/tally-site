@@ -71,7 +71,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, [tabindex]:foc
 .matrix td { text-align: center; min-width: 2rem; }
 .matrix td.tick { color: var(--green); }
 .map-tools { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.map-tools button[aria-pressed='true'] { background: var(--orange); border-color: var(--orange); }
+.map-tools button[aria-pressed='true'] { background: var(--orange); border-color: var(--orange); color: #fff; }
 .map.drawing { cursor: crosshair; }
 button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .shortlist { margin: 1.5rem 0 1rem; padding: 1rem; border: 2px solid var(--gold); background: #fff; }
@@ -123,9 +123,18 @@ button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .cluster-links { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
 .cluster-events-heading { font-size: 1rem; margin: 0.5rem 0 0.25rem; }
 .cluster-events { margin: 0; padding-left: 1.25rem; }
-.cluster-legend { list-style: none; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; padding: 0; margin: 0.5rem 0; }
-.cluster-legend li { display: flex; align-items: center; gap: 0.35rem; }
 .cluster-swatch { flex: none; vertical-align: middle; }
 .clusters-panel .clusters-more, .clusters-panel .clusters-attribution { margin: 0.25rem 0; font-size: 0.95rem; }
 .clusters-panel .clusters-attribution { color: var(--blue-grey); }
 .clusters-panel a { color: var(--green); }
+
+/* Cluster map legend */
+.cluster-map-legend { margin: 0.75rem 0; }
+.cluster-map-legend h2 { font-size: 1rem; margin: 0 0 0.25rem; }
+.cluster-map-hint, .cluster-map-note { margin: 0.25rem 0; color: var(--blue-grey); font-size: 0.95rem; }
+.cluster-map-legend ul { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.25rem 0.75rem; padding: 0; margin: 0.5rem 0; }
+.cluster-map-entry { display: grid; grid-template-columns: 20px 1fr; align-items: start; gap: 0.15rem 0.5rem; width: 100%; text-align: left; background: #fff; color: var(--green); border: 1px solid var(--blue-grey); padding: 0.35rem 0.5rem; font: inherit; cursor: pointer; }
+.cluster-map-entry .cluster-swatch { grid-column: 1; grid-row: 1; margin-top: 0.25rem; }
+.cluster-map-entry[aria-pressed='true'] { border-color: var(--green); border-width: 3px; padding: calc(0.35rem - 2px) calc(0.5rem - 2px); background: var(--neutral); }
+.cluster-map-name { grid-column: 2; grid-row: 1; font-weight: 600; }
+.cluster-map-detail { grid-column: 2; grid-row: 2; font-size: 0.9rem; color: #2f3b42; }
