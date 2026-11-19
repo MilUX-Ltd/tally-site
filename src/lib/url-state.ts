@@ -105,7 +105,8 @@ export function fromQuery(query: string): ViewState {
   state.matrix.page = pageNumber(p.get('mpage'));
   state.page = pageNumber(p.get('page'));
   state.list = list(p.get('list'), ID);
-  if (p.get('capmatch') === 'all') state.capMatch = 'all';
+  // Overlap needs two or more capabilities.
+  if (p.get('capmatch') === 'all' && state.filters.cap.length >= 2) state.capMatch = 'all';
   return state;
 }
 
@@ -124,7 +125,7 @@ export function toQuery(state: ViewState): string {
   if (state.matrix.page > 1) add('mpage', String(state.matrix.page));
   if (state.page > 1) add('page', String(state.page));
   if (state.list.length) add('list', state.list.join(','));
-  if (state.capMatch === 'all') add('capmatch', 'all');
+  if (state.capMatch === 'all' && state.filters.cap.length >= 2) add('capmatch', 'all');
   return parts.join('&');
 }
 
@@ -148,5 +149,6 @@ export function sanitiseState(state: ViewState, data: TallyData): ViewState {
   const filters = { ...state.filters };
   for (const facet of FACETS) filters[facet] = state.filters[facet].filter((v) => known[facet].has(v));
   const group = state.matrix.group && t.groups.some((g) => g.slug === state.matrix.group) ? state.matrix.group : null;
-  return { ...state, filters, sel: state.sel.filter((id) => ids.has(id)), list: state.list.filter((id) => ids.has(id)), matrix: { ...state.matrix, group } };
+  const capMatch = filters.cap.length >= 2 ? state.capMatch : 'any';
+  return { ...state, filters, capMatch, sel: state.sel.filter((id) => ids.has(id)), list: state.list.filter((id) => ids.has(id)), matrix: { ...state.matrix, group } };
 }

@@ -67,3 +67,8 @@ export function shortlistCsv(companies: Company[], taxonomy: Taxonomy): string {
   ]);
   return [CSV_COLUMNS as readonly string[], ...rows].map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';
 }
+
+/** The download's file name: it says when the shortlist was made in overlap mode. */
+export function shortlistFilename(overlap: boolean): string {
+  return overlap ? 'tally-shortlist-overlap.csv' : 'tally-shortlist.csv';
+}

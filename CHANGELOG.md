@@ -13,6 +13,7 @@ All notable changes to the Tally site. Versions follow semantic versioning.
 - Capability matrix linked both ways with the map: companies against top-level capabilities in the ten groups, a page of rows at a time; ticking a column sets the capability filter and redraws the map; taking the map's current view or drawing a rectangle narrows the matrix. Fully keyboard operable.
 - Shortlist: add or remove companies from the list or a map area; the shortlist is held in the URL (`list`), with a link to share, CSV download (columns in `CONTEXT.md`, formula-safe), a secondary "Book a call" link and the built-with-AI line.
 - Capability overlap: with two or more capabilities chosen, a toggle switches from any of them to only the places where all of them are found (`capmatch=all`); the map, count, matrix and list follow.
+- Overlap mode reads more clearly: the count says how many companies have a chosen capability and in how many places all overlap, never announces zero while loading, `capmatch` is left out of the URL with fewer than two capabilities, and a shortlist downloaded in overlap mode is named `tally-shortlist-overlap.csv`.
 - Bundle-size check in the build, and journey tests run under the production CSP.
 
 ### Changed

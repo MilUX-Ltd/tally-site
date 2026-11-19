@@ -35,7 +35,7 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | `mpage` | Page of matrix rows | whole number from 1 | 1 |
    | `page` | Page of the results list | whole number from 1 | 1 |
    | `list` | Shortlisted companies, in the order added | company ids | none |
-   | `capmatch` | How two or more `cap` values combine: `all` shows only overlap places (see Overlap) | `all` | any of them |
+   | `capmatch` | How two or more `cap` values combine: `all` shows only overlap places (see Overlap); ignored and left out with fewer than two capabilities | `all` | any of them |
 
    Filters combine: a company must match every facet that has values. Only one of `cell`, `sel` and `area` is set at a time; the area list shows the companies that match the filters within it.
 2. **Data contract.** The build (`scripts/fetch-data.mjs`) reads `tally-data.json` and `taxonomy.json` from `MilUX-Ltd/tally` and writes a slimmed `public/data/tally.json` (not committed). Fields the site depends on:
@@ -61,4 +61,6 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | Frameworks | Framework labels, separated by "; " |
    | Memberships | Membership labels, separated by "; " |
    | Summary | One-paragraph summary |
+
+   Downloaded in overlap mode, the file is named `tally-shortlist-overlap.csv`; its content is the same.
 4. **Routes.** `/` (explorer), `/about`, `/countries`, `/events`, `/404`.

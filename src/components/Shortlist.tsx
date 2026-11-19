@@ -1,7 +1,7 @@
 // The shortlist panel: the companies picked, a link to share them, CSV
 // download, and the way to get in touch. The shortlist lives only in the URL.
 import { useState } from 'preact/hooks';
-import { shortlistCsv } from '../lib/shortlist';
+import { shortlistCsv, shortlistFilename } from '../lib/shortlist';
 import type { Company, Taxonomy } from '../lib/types';
 
 export const CONTACT_URL = 'https://milux.co.uk/contact/';
@@ -11,6 +11,8 @@ interface Props {
   companies: Company[];
   taxonomy: Taxonomy;
   shareUrl: string;
+  /** Whether overlap mode is on; the download's file name says so. */
+  overlap?: boolean;
   onRemove: (id: string) => void;
 }
 
@@ -26,7 +28,7 @@ function download(text: string, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-export default function Shortlist({ companies, taxonomy, shareUrl, onRemove }: Props) {
+export default function Shortlist({ companies, taxonomy, shareUrl, onRemove, overlap = false }: Props) {
   const [status, setStatus] = useState('');
   const copy = async () => {
     try {
@@ -62,7 +64,7 @@ export default function Shortlist({ companies, taxonomy, shareUrl, onRemove }: P
             <button type="button" onClick={copy}>
               Copy link
             </button>
-            <button type="button" class="secondary" onClick={() => download(shortlistCsv(companies, taxonomy), 'tally-shortlist.csv')}>
+            <button type="button" class="secondary" onClick={() => download(shortlistCsv(companies, taxonomy), shortlistFilename(overlap))}>
               Download CSV
             </button>
             <span role="status">{status}</span>
