@@ -62,6 +62,39 @@ export interface RegionsData {
   features: RegionFeature[];
 }
 
+/**
+ * The cluster map's own palette, used only on the map and its legend. The
+ * house colours in clusters.json are kept as data, but several are
+ * near-identical navies, so the map needs colours that can be told apart.
+ * From Paul Tol's colourblind-safe muted and vibrant sets, assigned so that
+ * neighbouring and overlapping areas stay distinct under simulated
+ * deuteranopia, protanopia and tritanopia.
+ */
+export const MAP_COLOURS: Record<string, string> = {
+  SWRDSC: '#999933',
+  WRDSC: '#88CCEE',
+  SCRDSC: '#EE3377',
+  OBCRDSC: '#332288',
+  LRDSC: '#994F00',
+  ERDSC: '#44AA99',
+  WalesDSC: '#AA4499',
+  WMRDSC: '#117733',
+  EMRDSC: '#882255',
+  GLRDSC: '#EE7733',
+  YRDSC: '#0077BB',
+  NWRDSC: '#DDCC77',
+  NERDSC: '#CC6677',
+};
+
+/** Clusters that are not yet live are drawn as an outline only, in this colour. */
+export const NOT_LIVE_COLOUR = '#5B6770';
+
+/** A cluster's colour on the map: its palette colour, or the house colour for a cluster the palette does not know yet. */
+export function mapColour(cluster: Pick<Cluster, 'id' | 'colour' | 'status'>): string {
+  if (cluster.status !== 'live') return NOT_LIVE_COLOUR;
+  return MAP_COLOURS[cluster.id] ?? cluster.colour;
+}
+
 export const STATUS_LABELS: Record<Cluster['status'], string> = {
   live: 'Live',
   'pre-launch': 'Launching soon',
@@ -90,6 +123,7 @@ export function eventMarkers(events: ClusterEvent[], regions: RegionFeature[], c
   const counts = new Map<string, number>();
   for (const e of events) counts.set(e.cluster, (counts.get(e.cluster) ?? 0) + 1);
   const names = new Map(clusters.map((c) => [c.id, c.name]));
+  const colours = new Map(clusters.map((c) => [c.id, mapColour(c)]));
   return {
     type: 'FeatureCollection' as const,
     features: regions
@@ -97,7 +131,7 @@ export function eventMarkers(events: ClusterEvent[], regions: RegionFeature[], c
       .map((f) => ({
         type: 'Feature' as const,
         geometry: { type: 'Point' as const, coordinates: [f.properties.lon, f.properties.lat] },
-        properties: { id: f.properties.id, name: names.get(f.properties.id) ?? f.properties.name, colour: f.properties.colour, count: counts.get(f.properties.id) ?? 0 },
+        properties: { id: f.properties.id, name: names.get(f.properties.id) ?? f.properties.name, colour: f.properties.colour, mapColour: colours.get(f.properties.id) ?? f.properties.colour, count: counts.get(f.properties.id) ?? 0 },
       })),
   };
 }
@@ -125,6 +159,8 @@ export interface LegendEntry {
   id: string;
   name: string;
   colour: string;
+  /** The colour this cluster is drawn in on the cluster map. */
+  mapColour: string;
   status: Cluster['status'];
   /** Companies Tally records as members, or null when it records none for this cluster. */
   members: number | null;
@@ -142,6 +178,7 @@ export function legendEntries(clusters: Cluster[], companies: Company[], events:
       id: c.id,
       name: c.name,
       colour: c.colour,
+      mapColour: mapColour(c),
       status: c.status,
       members: clusterMembers(companies, c)?.length ?? null,
       events: counts.get(c.id) ?? 0,
@@ -162,7 +199,7 @@ export function regionArea(feature: RegionFeature): number {
 }
 
 export interface RankedRegion extends RegionFeature {
-  properties: RegionFeature['properties'] & { chosen: boolean; rank: number };
+  properties: RegionFeature['properties'] & { chosen: boolean; rank: number; mapColour: string; live: boolean };
 }
 
 /**
@@ -170,14 +207,17 @@ export interface RankedRegion extends RegionFeature {
  * lies over larger ones (Greater Lincolnshire over East Midlands and
  * Yorkshire) stays legible; the chosen cluster ranks above all.
  */
-export function rankedRegions(features: RegionFeature[], chosen: string | null): { type: 'FeatureCollection'; features: RankedRegion[] } {
+export function rankedRegions(features: RegionFeature[], chosen: string | null, clusters: Cluster[] = []): { type: 'FeatureCollection'; features: RankedRegion[] } {
+  const byId = new Map(clusters.map((c) => [c.id, c]));
   const bySize = [...features].sort((a, b) => regionArea(b) - regionArea(a));
   const rank = new Map(bySize.map((f, i) => [f.properties.id, i + 1]));
   return {
     type: 'FeatureCollection',
     features: features.map((f) => {
       const isChosen = f.properties.id === chosen;
-      return { ...f, properties: { ...f.properties, chosen: isChosen, rank: isChosen ? features.length + 1 : (rank.get(f.properties.id) ?? 0) } };
+      const c = byId.get(f.properties.id);
+      const style = { mapColour: c ? mapColour(c) : f.properties.colour, live: c ? c.status === 'live' : true };
+      return { ...f, properties: { ...f.properties, ...style, chosen: isChosen, rank: isChosen ? features.length + 1 : (rank.get(f.properties.id) ?? 0) } };
     }),
   };
 }

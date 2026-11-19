@@ -97,8 +97,8 @@ export default function Explorer() {
   const regionFeatures = useMemo(() => {
     if (!regions) return null;
     const shown = regions.features.filter((f) => state.clusters || f.properties.id === state.cluster);
-    return rankedRegions(shown, state.cluster);
-  }, [regions, state.clusters, state.cluster]);
+    return rankedRegions(shown, state.cluster, clustersData?.clusters ?? []);
+  }, [regions, state.clusters, state.cluster, clustersData]);
   const labels = useMemo(
     () => (regions && clustersData && state.clusters ? clusterLabels(regions.features, clustersData.clusters) : null),
     [regions, clustersData, state.clusters],

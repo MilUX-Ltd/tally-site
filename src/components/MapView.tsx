@@ -101,16 +101,34 @@ function ringGeoJSON(ring: number[][] | null | undefined) {
 const PIN_COLOUR = '#113308';
 const LABEL_TEXT = '#1A1A1A';
 const HEX_OPACITY = 0.72;
-const FADED = 0.25;
+const FADED = 0.1;
 
 /** Company layers fade while the cluster map is on, unless companies are kept on top. */
 const isFaded = (p: Pick<Props, 'clusterMap' | 'companiesOnTop'>) => Boolean(p.clusterMap && !p.companiesOnTop);
 
+/** Areas of clusters not yet live are drawn as a dashed outline only. */
+const LIVE: ExpressionSpecification = ['coalesce', ['get', 'live'], true];
+const AREA_COLOUR: ExpressionSpecification = ['coalesce', ['get', 'mapColour'], ['get', 'colour']];
+
 function regionPaint(clusterMap: boolean): Record<'fill-opacity' | 'line-width', ExpressionSpecification> {
   return {
-    'fill-opacity': ['case', ['get', 'chosen'], clusterMap ? 0.5 : 0.22, clusterMap ? 0.35 : 0.12],
+    'fill-opacity': ['case', ['!', LIVE], ['case', ['get', 'chosen'], 0.12, 0], ['get', 'chosen'], clusterMap ? 0.55 : 0.22, clusterMap ? 0.4 : 0.12],
     'line-width': ['case', ['get', 'chosen'], clusterMap ? 4 : 3.5, clusterMap ? 2 : 1.5],
   };
+}
+
+/** A round marker as a signed distance field, so each can take its cluster's colour and a halo. */
+function eventDot() {
+  const size = 40;
+  const radius = 11;
+  const data = new Uint8ClampedArray(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const d = Math.hypot(x + 0.5 - size / 2, y + 0.5 - size / 2) - radius;
+      data[(y * size + x) * 4 + 3] = Math.max(0, Math.min(255, Math.round(255 * (0.75 - d / 8))));
+    }
+  }
+  return { width: size, height: size, data };
 }
 
 /** Opacity of each company layer's paint properties. */
@@ -218,14 +236,23 @@ export default function MapView(props: Props) {
             type: 'fill',
             source: 'cluster-regions',
             layout: { 'fill-sort-key': ['get', 'rank'] },
-            paint: { 'fill-color': ['get', 'colour'], 'fill-opacity': regionStyle['fill-opacity'] },
+            paint: { 'fill-color': AREA_COLOUR, 'fill-opacity': regionStyle['fill-opacity'] },
           });
           m.addLayer({
             id: 'cluster-line',
             type: 'line',
             source: 'cluster-regions',
+            filter: ['==', LIVE, true],
             layout: { 'line-sort-key': ['get', 'rank'] },
-            paint: { 'line-color': ['get', 'colour'], 'line-width': regionStyle['line-width'] },
+            paint: { 'line-color': AREA_COLOUR, 'line-width': regionStyle['line-width'] },
+          });
+          m.addLayer({
+            id: 'cluster-line-not-live',
+            type: 'line',
+            source: 'cluster-regions',
+            filter: ['==', LIVE, false],
+            layout: { 'line-sort-key': ['get', 'rank'] },
+            paint: { 'line-color': AREA_COLOUR, 'line-width': regionStyle['line-width'], 'line-dasharray': [2, 1.5] },
           });
           m.addSource('hexes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
           m.addSource('points', {
@@ -321,21 +348,6 @@ export default function MapView(props: Props) {
             },
           });
 
-          m.addSource('cluster-events', { type: 'geojson', data: (propsRef.current.clusterEvents ?? EMPTY) as GeoData });
-          m.addLayer({
-            id: 'cluster-event-points',
-            type: 'circle',
-            source: 'cluster-events',
-            paint: { 'circle-color': ['get', 'colour'], 'circle-radius': 11, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 2 },
-          });
-          m.addLayer({
-            id: 'cluster-event-count',
-            type: 'symbol',
-            source: 'cluster-events',
-            layout: { 'text-field': ['to-string', ['get', 'count']], 'text-font': FONT, 'text-size': 12, 'text-allow-overlap': true },
-            paint: { 'text-color': '#FFFFFF' },
-          });
-
           // Cluster names: dark text on a white halo, beside the event marker.
           // Labels that would collide are left out at that zoom; every
           // cluster is in the legend.
@@ -354,6 +366,32 @@ export default function MapView(props: Props) {
               'text-justify': 'auto',
             },
             paint: { 'text-color': LABEL_TEXT, 'text-halo-color': '#FFFFFF', 'text-halo-width': 2 },
+          });
+
+          // Event markers sit above the labels, so they are placed first and
+          // the labels move aside rather than being covered.
+          m.addImage('event-dot', eventDot(), { sdf: true });
+          m.addSource('cluster-events', { type: 'geojson', data: (propsRef.current.clusterEvents ?? EMPTY) as GeoData });
+          m.addLayer({
+            id: 'cluster-event-points',
+            type: 'symbol',
+            source: 'cluster-events',
+            layout: {
+              'icon-image': 'event-dot',
+              'icon-allow-overlap': true,
+              'text-field': ['to-string', ['get', 'count']],
+              'text-font': FONT,
+              'text-size': 12,
+              'text-allow-overlap': true,
+            },
+            paint: {
+              'icon-color': AREA_COLOUR,
+              'icon-halo-color': '#FFFFFF',
+              'icon-halo-width': 2,
+              'text-color': '#FFFFFF',
+              'text-halo-color': LABEL_TEXT,
+              'text-halo-width': 1.5,
+            },
           });
           for (const [layer, name, value] of companyPaint(isFaded(propsRef.current))) m.setPaintProperty(layer, name, value);
 
@@ -501,6 +539,7 @@ export default function MapView(props: Props) {
     const style = regionPaint(Boolean(props.clusterMap));
     map.setPaintProperty('cluster-fill', 'fill-opacity', style['fill-opacity']);
     map.setPaintProperty('cluster-line', 'line-width', style['line-width']);
+    map.setPaintProperty('cluster-line-not-live', 'line-width', style['line-width']);
     for (const [layer, name, value] of companyPaint(faded)) map.setPaintProperty(layer, name, value);
   }, [props.clusterMap, faded, loaded]);
 

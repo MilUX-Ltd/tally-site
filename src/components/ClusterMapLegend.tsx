@@ -26,7 +26,7 @@ export default function ClusterMapLegend({ entries, chosen, onTop, onOnTop, onCh
         {entries.map((e) => (
           <li key={e.id}>
             <button type="button" class="cluster-map-entry" aria-pressed={e.id === chosen} onClick={() => onChoose(e.id)}>
-              <Swatch colour={e.colour} />
+              <Swatch colour={e.mapColour} outline={e.status !== 'live'} />
               <span class="cluster-map-name">
                 {e.name}
                 {e.status !== 'live' && ` (${STATUS_LABELS[e.status].toLowerCase()})`}
@@ -40,7 +40,8 @@ export default function ClusterMapLegend({ entries, chosen, onTop, onOnTop, onCh
       </ul>
       <p class="cluster-map-note">
         Areas are approximate and some overlap: Greater Lincolnshire shares ground with East Midlands and Yorkshire, so smaller areas are drawn on top.
-        Some places, such as Berkshire, Milton Keynes and North Somerset, have no cluster.
+        Some places, such as Berkshire, Milton Keynes and North Somerset, have no cluster. Clusters not yet live are drawn as a dashed outline.
+        Map colours tell the areas apart and are not the clusters' own brand colours.
       </p>
     </section>
   );

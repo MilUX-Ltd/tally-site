@@ -2,7 +2,7 @@
 // pick one to narrow the companies to its recorded members. The overlay and
 // the chosen cluster are held in the URL. Members-only events show only the
 // signpost and a link to join the cluster.
-import { STATUS_LABELS, shortDate, type Cluster, type ClusterEvent, type ClustersData, type RegionsData } from '../lib/clusters';
+import { mapColour, STATUS_LABELS, shortDate, type Cluster, type ClusterEvent, type ClustersData, type RegionsData } from '../lib/clusters';
 
 interface Props {
   data: ClustersData | null;
@@ -18,10 +18,15 @@ interface Props {
 
 const optionLabel = (c: Cluster) => (c.status === 'live' ? c.name : `${c.name} (${STATUS_LABELS[c.status].toLowerCase()})`);
 
-export function Swatch({ colour }: { colour: string }) {
+/** A cluster's map colour: filled for a live cluster, a dashed outline for one not yet live. */
+export function Swatch({ colour, outline = false }: { colour: string; outline?: boolean }) {
   return (
     <svg class="cluster-swatch" width="20" height="14" viewBox="0 0 20 14" aria-hidden="true" focusable="false">
-      <rect x="1" y="1" width="18" height="12" fill={colour} fill-opacity="0.35" stroke={colour} stroke-width="2" />
+      {outline ? (
+        <rect x="1" y="1" width="18" height="12" fill="none" stroke={colour} stroke-width="2" stroke-dasharray="4 2" />
+      ) : (
+        <rect x="1" y="1" width="18" height="12" fill={colour} fill-opacity="0.4" stroke={colour} stroke-width="2" />
+      )}
     </svg>
   );
 }
@@ -51,7 +56,7 @@ export default function ClustersPanel({ data, events, regions, failed, show, clu
       {cluster && (
         <div class="cluster-detail">
           <p>
-            <Swatch colour={cluster.colour} /> <strong>{cluster.full}</strong>: {cluster.region}. {STATUS_LABELS[cluster.status]}.
+            <Swatch colour={mapColour(cluster)} outline={cluster.status !== 'live'} /> <strong>{cluster.full}</strong>: {cluster.region}. {STATUS_LABELS[cluster.status]}.
           </p>
           <p>
             {memberCount != null
@@ -102,18 +107,9 @@ export default function ClustersPanel({ data, events, regions, failed, show, clu
           )}
         </div>
       )}
-      {show && (
-        <ul class="cluster-legend" aria-label="Cluster colours">
-          {sorted.map((c) => (
-            <li key={c.id}>
-              <Swatch colour={c.colour} /> {optionLabel(c)}
-            </li>
-          ))}
-        </ul>
-      )}
       <p class="clusters-more">
         <a href="/events">See all upcoming cluster events</a>
-        {show && ' Each marker on the map shows how many upcoming events a cluster has.'}
+        {show && ' Each marker on the map shows how many upcoming events a cluster has; the cluster map legend lists every cluster.'}
       </p>
       <p class="clusters-attribution">
         Cluster areas: Office for National Statistics boundaries, licensed under the{' '}
