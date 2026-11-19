@@ -16,6 +16,7 @@ All notable changes to the Tally site. Versions follow semantic versioning.
 - Overlap mode reads more clearly: the count says how many companies have a chosen capability and in how many places all overlap, never announces zero while loading, `capmatch` is left out of the URL with fewer than two capabilities, and a shortlist downloaded in overlap mode is named `tally-shortlist-overlap.csv`.
 - Overseas companies listed by country, Europe first then the rest of the world, following the same filters; an explicit guard in the build and the browser keeps overseas and out-of-bounds points off the UK map.
 - Growth over time: a slider (with play) replays the directory's size by month, overall and per capability group, from a small file built at build time from the data repo's git history; the month is held in the URL (`month`).
+- Defence sites overlay: 53 widely published UK defence sites, each verified against its Wikipedia article (CC BY-SA 4.0, attributed), can be drawn on the map; choosing a site and a radius (10, 25 or 50 miles) draws a ring and narrows the map, matrix and list to companies within it. Held in the URL (`site`, `radius`, `sites`).
 - Bundle-size check in the build, and journey tests run under the production CSP.
 
 ### Changed

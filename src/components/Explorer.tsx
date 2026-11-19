@@ -9,10 +9,12 @@ import ResultsList from './ResultsList';
 import { emptyFilters, filterCompanies, isLocated, type Facet } from '../lib/filters';
 import { companiesInBbox } from '../lib/matrix';
 import type { TallyData } from '../lib/types';
-import { fromQuery, roundPosition, sanitiseState, toQuery, type ViewState } from '../lib/url-state';
+import { fromQuery, roundPosition, sanitiseSites, sanitiseState, toQuery, type ViewState } from '../lib/url-state';
 import Matrix from './Matrix';
 import Shortlist from './Shortlist';
 import Growth from './Growth';
+import SitesPanel from './SitesPanel';
+import { companiesNearSite, ringPolygon, type SitesData } from '../lib/sites';
 import CapMatchToggle from './CapMatchToggle';
 import OverseasList from './OverseasList';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
@@ -38,6 +40,21 @@ export default function Explorer() {
       .catch(() => setFailed(true));
   }, []);
 
+  // Defence sites: a small committed dataset, fetched as data.
+  const [sitesData, setSitesData] = useState<SitesData | null>(null);
+  const [sitesFailed, setSitesFailed] = useState(false);
+  useEffect(() => {
+    fetch('/sites/defence-sites.json')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: SitesData) => {
+        setState((s) => sanitiseSites(s, d.sites.map((site) => site.id)));
+        setSitesData(d);
+      })
+      .catch(() => setSitesFailed(true));
+  }, []);
+  const site = useMemo(() => sitesData?.sites.find((x) => x.id === state.site) ?? null, [sitesData, state.site]);
+  const ring = useMemo(() => (site ? ringPolygon(site, state.radius) : null), [site, state.radius]);
+
   // Layout effect: the address changes in the same frame as the view.
   useLayoutEffect(() => {
     if (!data) return;
@@ -62,12 +79,14 @@ export default function Explorer() {
   const overlapPending = overlapOn && !binning;
   const lastFiltered = useRef<Company[] | null>(null);
   const filtered = useMemo(() => {
-    if (!overlapOn) return facetFiltered;
-    if (!binning) return lastFiltered.current ?? facetFiltered;
-    return binning.overlapCompanies(facetFiltered, state.filters.cap);
-  }, [overlapOn, binning, facetFiltered, state.filters.cap]);
+    const near = site ? companiesNearSite(facetFiltered, site, state.radius) : facetFiltered;
+    if (!overlapOn) return near;
+    if (!binning) return lastFiltered.current ?? near;
+    return binning.overlapCompanies(near, state.filters.cap);
+  }, [overlapOn, binning, facetFiltered, state.filters.cap, site, state.radius]);
   lastFiltered.current = filtered;
   const onMap = useMemo(() => filtered.filter(isLocated).length, [filtered]);
+  const within = site ? ` within ${state.radius} miles of ${site.name}` : '';
   const places = useMemo(
     () => (overlapOn && binning ? binning.binCompanies(filtered, binning.OVERLAP_RESOLUTION).length : 0),
     [overlapOn, binning, filtered],
@@ -140,13 +159,16 @@ export default function Explorer() {
         )}
         <p id="result-count" role="status">
           {overlapPending
-            ? `${plural(filtered.length, 'company', 'companies')} so far; working out where all chosen capabilities overlap.`
+            ? `${plural(filtered.length, 'company', 'companies')}${within} so far; working out where all chosen capabilities overlap.`
             : overlapOn
-              ? `${plural(filtered.length, 'company', 'companies')} with a chosen capability, in ${plural(places, 'place', 'places')} where all chosen capabilities overlap.`
-              : `${plural(filtered.length, 'company matches', 'companies match')}; ${onMap} on the map.`}
+              ? `${plural(filtered.length, 'company', 'companies')} with a chosen capability${within}, in ${plural(places, 'place', 'places')} where all chosen capabilities overlap.`
+              : `${plural(filtered.length, 'company matches', 'companies match')}${within}; ${onMap} on the map.`}
         </p>
         <MapView
           companies={filtered}
+          sites={state.sites ? (sitesData?.sites ?? null) : site ? [site] : null}
+          chosenSite={site?.id ?? null}
+          ring={ring}
           fixedResolution={overlapOn && binning ? binning.OVERLAP_RESOLUTION : null}
           selectedCell={state.cell}
           initialPosition={state.map}
@@ -166,6 +188,18 @@ export default function Explorer() {
             update({ area, cell: null, sel: [], matrix: { ...state.matrix, page: 1 } });
           }}
         />
+        {(sitesData || sitesFailed) && (
+          <SitesPanel
+            data={sitesData}
+            failed={sitesFailed}
+            show={state.sites}
+            site={site}
+            radius={state.radius}
+            onShow={(sites) => update({ sites })}
+            onSite={(id) => update({ site: id, cell: null, sel: [], area: null, page: 1, matrix: { ...state.matrix, page: 1 } })}
+            onRadius={(radius) => update({ radius, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } })}
+          />
+        )}
         {areaCompanies && (
           <AreaPanel companies={areaCompanies} focus={picked} actions={shortlistButton} onClear={() => update({ cell: null, sel: [], area: null })} />
         )}

@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import { BRAND_SCALE, colourScale, type LegendEntry } from '../lib/colour';
 import { isLocated } from '../lib/filters';
 import { ATTRIBUTION, FONT, STYLE_URL, UK_BOUNDS } from '../lib/map-config';
+import type { Site } from '../lib/sites';
 import type { Company } from '../lib/types';
 import type { Bbox, MapPosition } from '../lib/url-state';
 
@@ -17,6 +18,12 @@ export type { MapPosition };
 
 interface Props {
   companies: Company[];
+  /** Defence sites to draw, or null for none. */
+  sites?: Site[] | null;
+  /** The chosen site, drawn larger. */
+  chosenSite?: string | null;
+  /** A distance ring around the chosen site, as [lon, lat] points. */
+  ring?: number[][] | null;
   /** Draw hexagons at this resolution whatever the zoom (capability overlap places). */
   fixedResolution?: number | null;
   selectedCell: string | null;
@@ -43,6 +50,27 @@ const bboxPolygon = ([w, s, e, n]: Bbox) => ({
 });
 const EMPTY = { type: 'FeatureCollection' as const, features: [] };
 const round5 = (n: number) => Number(n.toFixed(5));
+const SITE_COLOUR = '#586F7C';
+const RING_COLOUR = '#A35C17';
+
+function sitesGeoJSON(sites: Site[] | null | undefined, chosen: string | null | undefined) {
+  return {
+    type: 'FeatureCollection' as const,
+    features: (sites ?? []).map((s) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [s.lon, s.lat] },
+      properties: { id: s.id, name: s.name, chosen: s.id === chosen },
+    })),
+  };
+}
+
+function ringGeoJSON(ring: number[][] | null | undefined) {
+  if (!ring) return { type: 'FeatureCollection' as const, features: [] };
+  return {
+    type: 'FeatureCollection' as const,
+    features: [{ type: 'Feature' as const, properties: {}, geometry: { type: 'Polygon' as const, coordinates: [ring] } }],
+  };
+}
 
 const PIN_COLOUR = '#113308';
 const CLUSTER_COLOUR = '#A35C17';
@@ -197,6 +225,22 @@ export default function MapView(props: Props) {
           m.addLayer({ id: 'area-fill', type: 'fill', source: 'area', paint: { 'fill-color': '#586F7C', 'fill-opacity': 0.12 } });
           m.addLayer({ id: 'area-line', type: 'line', source: 'area', paint: { 'line-color': '#113308', 'line-width': 2, 'line-dasharray': [2, 1] } });
 
+          m.addSource('site-ring', { type: 'geojson', data: ringGeoJSON(propsRef.current.ring) });
+          m.addLayer({ id: 'site-ring-fill', type: 'fill', source: 'site-ring', paint: { 'fill-color': RING_COLOUR, 'fill-opacity': 0.06 } });
+          m.addLayer({ id: 'site-ring-line', type: 'line', source: 'site-ring', paint: { 'line-color': RING_COLOUR, 'line-width': 2.5 } });
+          m.addSource('sites', { type: 'geojson', data: sitesGeoJSON(propsRef.current.sites, propsRef.current.chosenSite) });
+          m.addLayer({
+            id: 'site-points',
+            type: 'circle',
+            source: 'sites',
+            paint: {
+              'circle-color': ['case', ['get', 'chosen'], RING_COLOUR, SITE_COLOUR],
+              'circle-radius': ['case', ['get', 'chosen'], 8, 5],
+              'circle-stroke-color': '#FFFFFF',
+              'circle-stroke-width': 2,
+            },
+          });
+
           // Drawing a rectangle: press, drag and release while "Draw an area" is on.
           let dragFrom: [number, number] | null = null;
           const rect = (a: [number, number], b: [number, number]): Bbox => [
@@ -298,6 +342,28 @@ export default function MapView(props: Props) {
     const source = mapRef.current?.getSource('area') as GeoJSONSource | undefined;
     if (loaded && source) source.setData(props.area ? bboxPolygon(props.area) : EMPTY);
   }, [props.area, loaded]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource('sites') as GeoJSONSource | undefined;
+    if (loaded && source) source.setData(sitesGeoJSON(props.sites, props.chosenSite));
+  }, [props.sites, props.chosenSite, loaded]);
+
+  // Draw the ring, and bring it into view when the site or radius changes.
+  const ringKey = props.ring ? `${props.chosenSite}:${props.ring[0].join(',')}` : '';
+  const lastRingKey = useRef<string | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    const source = map?.getSource('site-ring') as GeoJSONSource | undefined;
+    if (!loaded || !map || !source) return;
+    source.setData(ringGeoJSON(props.ring));
+    const first = lastRingKey.current === null;
+    lastRingKey.current = ringKey;
+    if (props.ring && !(first && propsRef.current.initialPosition)) {
+      const lons = props.ring.map((p) => p[0]);
+      const lats = props.ring.map((p) => p[1]);
+      map.fitBounds([Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)], { padding: 24, animate: false });
+    }
+  }, [ringKey, loaded]);
 
   const useCurrentView = () => {
     const map = mapRef.current;

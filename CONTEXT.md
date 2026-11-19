@@ -37,6 +37,9 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | `list` | Shortlisted companies, in the order added | company ids | none |
    | `month` | Month shown by the growth slider; dropped if the history does not hold it | `YYYY-MM` | the latest month |
    | `capmatch` | How two or more `cap` values combine: `all` shows only overlap places (see Overlap); ignored and left out with fewer than two capabilities | `all` | any of them |
+   | `site` | Chosen defence site; companies are narrowed to those within the radius | site id from the dataset | none |
+   | `radius` | Radius around the chosen site, in miles | `10`, `25` or `50` | `25` |
+   | `sites` | Draw every defence site on the map | `1` | not drawn |
 
    Filters combine: a company must match every facet that has values. Only one of `cell`, `sel` and `area` is set at a time; the area list shows the companies that match the filters within it.
 2. **Data contract.** The build (`scripts/fetch-data.mjs`) reads `tally-data.json` and `taxonomy.json` from `MilUX-Ltd/tally` and writes a slimmed `public/data/tally.json` (not committed). Fields the site depends on:
@@ -44,6 +47,7 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    - Each company gets an `id`: its name in lower case with runs of other characters turned into hyphens (a numeric suffix if two names collide). Ids appear in URLs, so they are part of this interface.
    - Taxonomy: `facets.capability.groups` (`slug`, `label`, `order`, `description`), `facets.capability.values` (`slug`, `label`, `group`), and the `size`, `region`, `frameworks`, `accreditations` and `memberships` facets.
    - History: `scripts/build-history.mjs` clones `MilUX-Ltd/tally` with full history and writes `public/data/history.json` (not committed): `{ generated, groups: [{ slug, label }], months: [{ month, carried, total, groups: { <group slug>: count } }] }`. One snapshot per month, the last commit touching `tally-data.json` in that month (UTC); a month with no commit repeats the month before and has `carried: true`. Group counts read older tags through today's taxonomy. The history starts in June 2026.
+   - Defence sites: `public/sites/defence-sites.json` is committed (it is not company data). Each site has `id`, `name`, `kind` (`air-station`, `base`, `hq`, `naval-base`, `range`, `training-area`), `lat`, `lon`, a `source` (article title, URL, revision, licence, retrieval date) and a `verification` (status and distance in km). Coordinates come from the primary coordinates of the Wikipedia article about each site (CC BY-SA 4.0); a site is included only when the candidate point was within 3 km of the source point. `scripts/verify-sites.mjs` re-checks them by hand. Distances to companies are great-circle miles; overseas and unplaced companies never count.
    - Filter meaning: within a facet any value matches; facets combine; a capability matches its sub-capabilities (`cyber` matches `cyber/pen-testing`).
 3. **CSV export.** "Download CSV" saves `tally-shortlist.csv`: UTF-8 with a byte order mark, comma-separated, CRLF line ends, values quoted when they hold a comma, quote or line break (RFC 4180). One header row, then one row per shortlisted company in shortlist order. A value starting with `=`, `+`, `-`, `@`, tab or carriage return gets a leading apostrophe so spreadsheet software cannot run it as a formula. Columns, in order:
 
