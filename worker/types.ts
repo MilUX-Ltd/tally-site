@@ -32,11 +32,9 @@ export interface Env {
   SEARCH_RATE_LIMIT: RateLimit;
   /** Coarse per-visitor rate limit for the Ask Tally connector at /mcp (approximate). */
   MCP_RATE_LIMIT: RateLimit;
-  /** Strict per-address limiter for /mcp (worker/mcp-limiter.ts). */
+  /** Strict per-client limiter for /mcp (worker/mcp-limiter.ts). */
   MCP_LIMITER?: CounterNamespace;
-  /** Requests per connection key per minute for /mcp (wrangler var). */
-  MCP_KEY_LIMIT?: string;
-  /** Requests per client address per minute for /mcp (wrangler var). */
+  /** Requests per client (network address, IPv6 by /64) per minute for /mcp (wrangler var). */
   MCP_ADDRESS_LIMIT?: string;
   SEARCH_BUDGET: CounterNamespace;
   ASSETS: Assets;

@@ -3,8 +3,8 @@
 // model calls and no outbound requests.
 //
 // Guards, in order: method; a foreign Origin; JSON only; body size cap; a
-// coarse rate limit, then a strict per-address limiter (mcp-limiter.ts), both
-// failing closed; one JSON-RPC message per request (no batches), a plain id,
+// coarse rate limit, then a strict per-client limiter (mcp-limiter.ts), both
+// keyed on the client's network address and failing closed; one JSON-RPC message per request (no batches), a plain id,
 // and a known tool name; the SDK's protocol checks; strict schemas on tool
 // arguments (no extra keys, bounded strings and lists); then every value is
 // checked against the data (ask-tally.ts). Errors are fixed sentences and
@@ -19,7 +19,7 @@ import {
 } from '@modelcontextprotocol/server';
 import * as z from 'zod';
 import { getCompany, listCapabilities, listClustersAndEvents, loadData, MAX_RESULTS, searchCompanies, ToolError, type Loaded } from './ask-tally';
-import { visitorKeys, withinLimit } from './mcp-limiter';
+import { requestKey, withinLimit } from './mcp-limiter';
 import type { Env } from './types';
 
 /** The production site, whose pages may call /mcp from a browser. */
@@ -220,9 +220,9 @@ async function readCapped(request: Request): Promise<string | null> {
   return new TextDecoder().decode(joined);
 }
 
-function withHeaders(response: Response, extra: Record<string, string> = {}): Response {
+function withHeaders(response: Response): Response {
   const out = new Response(response.body, response);
-  for (const [k, v] of Object.entries({ ...HEADERS, ...extra })) out.headers.set(k, v);
+  for (const [k, v] of Object.entries(HEADERS)) out.headers.set(k, v);
   return out;
 }
 
@@ -249,18 +249,17 @@ const LIMITED = () => rpcError(429, -32000, 'Too many requests. Try again in a m
  * sentence for its code (and error data is dropped), and the server says its
  * tool list never changes.
  */
-async function sanitise(response: Response): Promise<{ response: Response; initialized: boolean }> {
+async function sanitise(response: Response): Promise<Response> {
   const type = response.headers.get('content-type') ?? '';
-  if (!type.includes('application/json')) return { response, initialized: false };
+  if (!type.includes('application/json')) return response;
   const text = await response.text();
-  if (!text) return { response: new Response(null, { status: response.status, headers: response.headers }), initialized: false };
-  let message: { error?: { code?: unknown; message?: unknown; data?: unknown }; result?: { capabilities?: { tools?: Record<string, unknown> }; protocolVersion?: unknown } };
+  if (!text) return new Response(null, { status: response.status, headers: response.headers });
+  let message: { error?: { code?: unknown; message?: unknown; data?: unknown }; result?: { capabilities?: { tools?: Record<string, unknown> } } };
   try {
     message = JSON.parse(text);
   } catch {
-    return { response: rpcError(500, -32603, 'Internal error.'), initialized: false };
+    return rpcError(500, -32603, 'Internal error.');
   }
-  let initialized = false;
   if (message && typeof message === 'object' && !Array.isArray(message)) {
     if (message.error) {
       const code = typeof message.error.code === 'number' ? message.error.code : -32603;
@@ -268,11 +267,10 @@ async function sanitise(response: Response): Promise<{ response: Response; initi
     }
     const tools = message.result?.capabilities?.tools;
     if (tools) tools.listChanged = false;
-    initialized = typeof message.result?.protocolVersion === 'string';
   }
   const headers = new Headers(response.headers);
   headers.delete('content-length');
-  return { response: new Response(JSON.stringify(message), { status: response.status, statusText: response.statusText, headers }), initialized };
+  return new Response(JSON.stringify(message), { status: response.status, statusText: response.statusText, headers });
 }
 
 export async function handleMcp(request: Request, env: Env): Promise<Response> {
@@ -286,9 +284,9 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
   const declared = Number(request.headers.get('content-length') ?? '0');
   if (declared > MAX_BODY_BYTES) return rpcError(413, -32000, 'Request too large.');
 
-  // A coarse, approximate limit first (cheap), then the strict per-address limiter.
+  // A coarse, approximate limit first (cheap), then the strict per-client limiter, both keyed on the address.
   try {
-    const { success } = await env.MCP_RATE_LIMIT.limit({ key: visitorKeys(request).key });
+    const { success } = await env.MCP_RATE_LIMIT.limit({ key: requestKey(request) });
     if (!success) return LIMITED();
   } catch {
     return LIMITED();
@@ -322,14 +320,10 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
       const server = buildServer(env, origin);
       const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
       await server.connect(transport);
-      const { response, initialized } = await sanitise(await transport.handleRequest(forward, { parsedBody: parsed }));
-      // A session id is issued on initialize only to key the rate limit per conversation; nothing is kept for it.
-      const session: Record<string, string> = initialized && msg.method === 'initialize' ? { 'mcp-session-id': crypto.randomUUID() } : {};
-      return withHeaders(response, session);
+      return withHeaders(await sanitise(await transport.handleRequest(forward, { parsedBody: parsed })));
     }
     const handler = createMcpHandler(() => buildServer(env, origin), { legacy: 'reject', responseMode: 'json', maxRequestBodySize: MAX_BODY_BYTES });
-    const { response } = await sanitise(await handler.fetch(forward, { parsedBody: parsed }));
-    return withHeaders(response);
+    return withHeaders(await sanitise(await handler.fetch(forward, { parsedBody: parsed })));
   } catch {
     return rpcError(500, -32603, 'Internal error.');
   }

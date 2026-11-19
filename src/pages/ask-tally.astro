@@ -61,7 +61,7 @@ const URL_MCP = 'https://tally.milux.co.uk/mcp';
       <h2 id="data-heading">What it uses and what it keeps</h2>
       <ul>
         <li>Answers come only from the same public data the Tally map shows. Your assistant's own model does the thinking; Tally runs no AI model for the connector.</li>
-        <li>Tally does not log or keep what your assistant asks. To apply a fair-use limit, it counts requests for one minute by the network address they come from and, when your assistant sends one, the connection id Tally gave it. Those counts are held in memory only and are not stored.</li>
+        <li>Tally does not log or keep what your assistant asks. To apply a fair-use limit, it counts requests per network address (for IPv6, per /64 network). Each count covers one minute, is held only in memory, and is never stored. Everyone sharing one network address shares one allowance.</li>
         <li>Postcodes are placed from Tally's own data. If Tally cannot place one, your assistant can give a latitude and longitude instead.</li>
         <li>The limit is generous for normal use. If you hit it, wait a minute and try again.</li>
       </ul>

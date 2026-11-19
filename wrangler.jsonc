@@ -24,12 +24,12 @@
   // Without it the route falls back to keyword search.
   "ratelimits": [
     { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } },
-    { "name": "MCP_RATE_LIMIT", "namespace_id": "1003", "simple": { "limit": 300, "period": 60 } }
+    { "name": "MCP_RATE_LIMIT", "namespace_id": "1003", "simple": { "limit": 1200, "period": 60 } }
   ],
   // The connector at /mcp: a coarse rate-limit binding (approximate, per location)
-  // in front of a strict per-address limiter (worker/mcp-limiter.ts) whose limits
-  // per connection and per address, per minute, are these vars.
-  "vars": { "MCP_KEY_LIMIT": "120", "MCP_ADDRESS_LIMIT": "1200" },
+  // in front of a strict per-client limiter (worker/mcp-limiter.ts), both keyed on
+  // the client's network address; the limit per client per minute is this var.
+  "vars": { "MCP_ADDRESS_LIMIT": "1200" },
   "durable_objects": {
     "bindings": [
       { "name": "SEARCH_BUDGET", "class_name": "SearchBudget" },
@@ -45,9 +45,10 @@
   "previews": {
     "ratelimits": [
       { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
-      { "name": "MCP_RATE_LIMIT", "namespace_id": "1004", "simple": { "limit": 300, "period": 60 } }
+      { "name": "MCP_RATE_LIMIT", "namespace_id": "1004", "simple": { "limit": 120, "period": 60 } }
     ],
-    "vars": { "MCP_KEY_LIMIT": "120", "MCP_ADDRESS_LIMIT": "1200" },
+    // Previews use a low limit so a short burst can show the limiter working.
+    "vars": { "MCP_ADDRESS_LIMIT": "15" },
     "durable_objects": {
       "bindings": [
         { "name": "SEARCH_BUDGET", "class_name": "SearchBudget" },

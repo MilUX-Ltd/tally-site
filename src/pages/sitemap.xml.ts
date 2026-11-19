@@ -1,5 +1,5 @@
-// /sitemap.xml, written at build: the explorer, the about and events pages,
-// and every company page.
+// /sitemap.xml, written at build: the explorer, the about, events and
+// ask-tally pages, and every company page.
 import type { APIRoute } from 'astro';
 import { companyPath, sitemapXml } from '../lib/company-page';
 import { siteData } from '../lib/site-data';
