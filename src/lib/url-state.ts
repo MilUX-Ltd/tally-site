@@ -53,6 +53,8 @@ export interface ViewState {
   sites: boolean;
   /** Whether cluster areas and their events are drawn on the map. */
   clusters: boolean;
+  /** Whether company hexagons and pins stay at full strength over the cluster map. */
+  onTop: boolean;
   /** Chosen cluster id; companies narrow to its recorded members. */
   cluster: string | null;
   /** Keyword search text, set when plain-English search falls back; '' for none. */
@@ -62,7 +64,7 @@ export interface ViewState {
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, cluster: null, q: '' };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '' };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -152,6 +154,7 @@ export function fromQuery(query: string): ViewState {
   if (/^\d+$/.test(p.get('within') ?? '') && isNearRadius(within)) state.within = within;
   if (p.get('sites') === '1') state.sites = true;
   if (p.get('clusters') === '1') state.clusters = true;
+  if (p.get('ontop') === '1') state.onTop = true;
   const cluster = p.get('cluster');
   if (cluster && CLUSTER.test(cluster)) state.cluster = cluster;
   state.q = keywordText(p.get('q'));
@@ -184,6 +187,7 @@ export function toQuery(state: ViewState): string {
   }
   if (state.sites) add('sites', '1');
   if (state.clusters) add('clusters', '1');
+  if (state.onTop) add('ontop', '1');
   if (state.cluster) add('cluster', state.cluster);
   if (state.q) add('q', state.q);
   return parts.join('&');

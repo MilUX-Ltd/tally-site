@@ -118,3 +118,79 @@ export function longDate(date: string): string {
 export function shortDate(date: string): string {
   return new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+// The cluster map: every cluster's area on one map, labelled, with a legend.
+
+export interface LegendEntry {
+  id: string;
+  name: string;
+  colour: string;
+  status: Cluster['status'];
+  /** Companies Tally records as members, or null when it records none for this cluster. */
+  members: number | null;
+  /** Upcoming events. */
+  events: number;
+}
+
+/** One legend entry per cluster, sorted by name: members and upcoming events. */
+export function legendEntries(clusters: Cluster[], companies: Company[], events: ClusterEvent[]): LegendEntry[] {
+  const counts = new Map<string, number>();
+  for (const e of events) counts.set(e.cluster, (counts.get(e.cluster) ?? 0) + 1);
+  return [...clusters]
+    .sort((a, b) => a.name.localeCompare(b.name, 'en-GB'))
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      colour: c.colour,
+      status: c.status,
+      members: clusterMembers(companies, c)?.length ?? null,
+      events: counts.get(c.id) ?? 0,
+    }));
+}
+
+const polygonsOf = (f: RegionFeature): number[][][][] => (f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates);
+
+/** Area of a region's outer rings, in square degrees (enough to compare regions). */
+export function regionArea(feature: RegionFeature): number {
+  let total = 0;
+  for (const [ring] of polygonsOf(feature)) {
+    let a = 0;
+    for (let i = 0; i < ring.length - 1; i++) a += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+    total += Math.abs(a / 2);
+  }
+  return total;
+}
+
+export interface RankedRegion extends RegionFeature {
+  properties: RegionFeature['properties'] & { chosen: boolean; rank: number };
+}
+
+/**
+ * Regions with a drawing rank: smaller areas rank higher, so an area that
+ * lies over larger ones (Greater Lincolnshire over East Midlands and
+ * Yorkshire) stays legible; the chosen cluster ranks above all.
+ */
+export function rankedRegions(features: RegionFeature[], chosen: string | null): { type: 'FeatureCollection'; features: RankedRegion[] } {
+  const bySize = [...features].sort((a, b) => regionArea(b) - regionArea(a));
+  const rank = new Map(bySize.map((f, i) => [f.properties.id, i + 1]));
+  return {
+    type: 'FeatureCollection',
+    features: features.map((f) => {
+      const isChosen = f.properties.id === chosen;
+      return { ...f, properties: { ...f.properties, chosen: isChosen, rank: isChosen ? features.length + 1 : (rank.get(f.properties.id) ?? 0) } };
+    }),
+  };
+}
+
+/** One name label per cluster, at its region's label point (inside its largest part). */
+export function clusterLabels(features: RegionFeature[], clusters: Cluster[]) {
+  const names = new Map(clusters.map((c) => [c.id, c.name]));
+  return {
+    type: 'FeatureCollection' as const,
+    features: features.map((f) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [f.properties.lon, f.properties.lat] },
+      properties: { id: f.properties.id, name: names.get(f.properties.id) ?? f.properties.name },
+    })),
+  };
+}

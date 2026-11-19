@@ -19,7 +19,8 @@ import SitesPanel from './SitesPanel';
 import { companiesNearSite, ringPolygon, type SitesData } from '../lib/sites';
 import CapMatchToggle from './CapMatchToggle';
 import ClustersPanel from './ClustersPanel';
-import { clusterMembers, eventMarkers, regionBounds, today, upcoming, type ClustersData, type EventsData, type RegionsData } from '../lib/clusters';
+import ClusterMapLegend from './ClusterMapLegend';
+import { clusterLabels, clusterMembers, eventMarkers, legendEntries, rankedRegions, regionBounds, today, upcoming, type ClustersData, type EventsData, type RegionsData } from '../lib/clusters';
 import OverseasList from './OverseasList';
 import NearPanel from './NearPanel';
 import { findPlace } from '../lib/near';
@@ -96,8 +97,12 @@ export default function Explorer() {
   const regionFeatures = useMemo(() => {
     if (!regions) return null;
     const shown = regions.features.filter((f) => state.clusters || f.properties.id === state.cluster);
-    return { type: 'FeatureCollection' as const, features: shown.map((f) => ({ ...f, properties: { ...f.properties, chosen: f.properties.id === state.cluster } })) };
+    return rankedRegions(shown, state.cluster);
   }, [regions, state.clusters, state.cluster]);
+  const labels = useMemo(
+    () => (regions && clustersData && state.clusters ? clusterLabels(regions.features, clustersData.clusters) : null),
+    [regions, clustersData, state.clusters],
+  );
   const markers = useMemo(
     () => (regions && clustersData && state.clusters ? eventMarkers(upcomingEvents, regions.features, clustersData.clusters) : null),
     [regions, clustersData, upcomingEvents, state.clusters],
@@ -134,6 +139,11 @@ export default function Explorer() {
     const byCluster = (cluster && clusterMembers(all, cluster)) || all;
     return state.q ? keywordSearch(byCluster, state.q, data.taxonomy) : byCluster;
   }, [data, state.filters, cluster, state.q]);
+  const legend = useMemo(
+    () => (data && clustersData && state.clusters ? legendEntries(clustersData.clusters, data.companies, upcomingEvents) : null),
+    [data, clustersData, upcomingEvents, state.clusters],
+  );
+  const chooseCluster = (id: string | null) => update({ cluster: id, cell: null, sel: [], area: null, page: 1, matrix: { ...state.matrix, page: 1 } });
   const memberCount = useMemo(() => (data && cluster ? (clusterMembers(data.companies, cluster)?.length ?? null) : null), [data, cluster]);
   // While the hexagon module loads, keep showing the last result rather than
   // announcing that nothing matches.
@@ -297,6 +307,11 @@ export default function Explorer() {
           clusterRegions={regionFeatures}
           clusterEvents={markers}
           clusterFocus={clusterFocus}
+          clusterLabels={labels}
+          clusterMap={state.clusters}
+          companiesOnTop={state.onTop}
+          onClusterMap={(clusters) => update({ clusters })}
+          onSelectCluster={(id) => chooseCluster(id)}
           fixedResolution={overlapOn && binning ? binning.OVERLAP_RESOLUTION : null}
           selectedCell={state.cell}
           initialPosition={state.map}
@@ -316,6 +331,15 @@ export default function Explorer() {
             update({ area, cell: null, sel: [], matrix: { ...state.matrix, page: 1 } });
           }}
         />
+        {legend && (
+          <ClusterMapLegend
+            entries={legend}
+            chosen={state.cluster}
+            onTop={state.onTop}
+            onOnTop={(onTop) => update({ onTop })}
+            onChoose={(id) => chooseCluster(id === state.cluster ? null : id)}
+          />
+        )}
         <NearPanel
           place={place}
           radius={state.within}
@@ -353,7 +377,7 @@ export default function Explorer() {
             cluster={cluster}
             memberCount={memberCount}
             onShow={(clusters) => update({ clusters })}
-            onCluster={(id) => update({ cluster: id, cell: null, sel: [], area: null, page: 1, matrix: { ...state.matrix, page: 1 } })}
+            onCluster={chooseCluster}
           />
         )}
         {areaCompanies && (

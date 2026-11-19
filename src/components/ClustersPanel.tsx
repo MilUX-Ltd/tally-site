@@ -18,7 +18,7 @@ interface Props {
 
 const optionLabel = (c: Cluster) => (c.status === 'live' ? c.name : `${c.name} (${STATUS_LABELS[c.status].toLowerCase()})`);
 
-function Swatch({ colour }: { colour: string }) {
+export function Swatch({ colour }: { colour: string }) {
   return (
     <svg class="cluster-swatch" width="20" height="14" viewBox="0 0 20 14" aria-hidden="true" focusable="false">
       <rect x="1" y="1" width="18" height="12" fill={colour} fill-opacity="0.35" stroke={colour} stroke-width="2" />

@@ -3,7 +3,7 @@
 // give way to clustered pins. H3 loads after the map has started on its
 // tiles, to keep the JavaScript needed before tiles small.
 import 'maplibre-gl/dist/maplibre-gl.css';
-import type { GeoJSONSource, Map as MlMap, MapGeoJSONFeature } from 'maplibre-gl';
+import type { ExpressionSpecification, GeoJSONSource, Map as MlMap, MapGeoJSONFeature } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { BRAND_SCALE, colourScale, type LegendEntry } from '../lib/colour';
 import { isLocated } from '../lib/filters';
@@ -33,6 +33,15 @@ interface Props {
   clusterEvents?: { type: 'FeatureCollection'; features: unknown[] } | null;
   /** The chosen cluster's bounds, brought into view when the choice changes. */
   clusterFocus?: { key: string; bounds: [number, number, number, number] } | null;
+  /** One name label per cluster, drawn while the cluster map is on. */
+  clusterLabels?: { type: 'FeatureCollection'; features: unknown[] } | null;
+  /** The cluster map: every area drawn strongly and labelled, companies faded behind. */
+  clusterMap?: boolean;
+  /** Keep companies at full strength over the cluster map. */
+  companiesOnTop?: boolean;
+  onClusterMap?: (on: boolean) => void;
+  /** An area on the cluster map was selected. */
+  onSelectCluster?: (id: string) => void;
   /** Draw hexagons at this resolution whatever the zoom (capability overlap places). */
   fixedResolution?: number | null;
   selectedCell: string | null;
@@ -90,6 +99,35 @@ function ringGeoJSON(ring: number[][] | null | undefined) {
 }
 
 const PIN_COLOUR = '#113308';
+const LABEL_TEXT = '#1A1A1A';
+const HEX_OPACITY = 0.72;
+const FADED = 0.25;
+
+/** Company layers fade while the cluster map is on, unless companies are kept on top. */
+const isFaded = (p: Pick<Props, 'clusterMap' | 'companiesOnTop'>) => Boolean(p.clusterMap && !p.companiesOnTop);
+
+function regionPaint(clusterMap: boolean): Record<'fill-opacity' | 'line-width', ExpressionSpecification> {
+  return {
+    'fill-opacity': ['case', ['get', 'chosen'], clusterMap ? 0.5 : 0.22, clusterMap ? 0.35 : 0.12],
+    'line-width': ['case', ['get', 'chosen'], clusterMap ? 4 : 3.5, clusterMap ? 2 : 1.5],
+  };
+}
+
+/** Opacity of each company layer's paint properties. */
+type PaintName = Parameters<MlMap['setPaintProperty']>[1];
+
+function companyPaint(faded: boolean): Array<[string, PaintName, number]> {
+  const o = faded ? FADED : 1;
+  return [
+    ['hex-fill', 'fill-opacity', faded ? FADED : HEX_OPACITY],
+    ['hex-line', 'line-opacity', o],
+    ['clusters', 'circle-opacity', o],
+    ['clusters', 'circle-stroke-opacity', o],
+    ['cluster-count', 'text-opacity', o],
+    ['pins', 'circle-opacity', o],
+    ['pins', 'circle-stroke-opacity', o],
+  ];
+}
 const CLUSTER_COLOUR = '#A35C17';
 const SELECTED_COLOUR = '#113308';
 
@@ -171,19 +209,23 @@ export default function MapView(props: Props) {
         m.on('load', async () => {
           m.resize();
           if (!start) m.fitBounds(UK_BOUNDS, { padding: 16, animate: false });
-          // Cluster areas sit under everything else.
+          // Cluster areas sit under everything else. Higher-ranked areas
+          // (smaller ones, and the chosen one) draw on top where areas overlap.
+          const regionStyle = regionPaint(Boolean(propsRef.current.clusterMap));
           m.addSource('cluster-regions', { type: 'geojson', data: (propsRef.current.clusterRegions ?? EMPTY) as GeoData });
           m.addLayer({
             id: 'cluster-fill',
             type: 'fill',
             source: 'cluster-regions',
-            paint: { 'fill-color': ['get', 'colour'], 'fill-opacity': ['case', ['get', 'chosen'], 0.22, 0.12] },
+            layout: { 'fill-sort-key': ['get', 'rank'] },
+            paint: { 'fill-color': ['get', 'colour'], 'fill-opacity': regionStyle['fill-opacity'] },
           });
           m.addLayer({
             id: 'cluster-line',
             type: 'line',
             source: 'cluster-regions',
-            paint: { 'line-color': ['get', 'colour'], 'line-width': ['case', ['get', 'chosen'], 3.5, 1.5] },
+            layout: { 'line-sort-key': ['get', 'rank'] },
+            paint: { 'line-color': ['get', 'colour'], 'line-width': regionStyle['line-width'] },
           });
           m.addSource('hexes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
           m.addSource('points', {
@@ -294,6 +336,27 @@ export default function MapView(props: Props) {
             paint: { 'text-color': '#FFFFFF' },
           });
 
+          // Cluster names: dark text on a white halo, beside the event marker.
+          // Labels that would collide are left out at that zoom; every
+          // cluster is in the legend.
+          m.addSource('cluster-labels', { type: 'geojson', data: (propsRef.current.clusterLabels ?? EMPTY) as GeoData });
+          m.addLayer({
+            id: 'cluster-label',
+            type: 'symbol',
+            source: 'cluster-labels',
+            layout: {
+              'text-field': ['get', 'name'],
+              'text-font': FONT,
+              'text-size': 13,
+              'text-max-width': 8,
+              'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
+              'text-radial-offset': 1.2,
+              'text-justify': 'auto',
+            },
+            paint: { 'text-color': LABEL_TEXT, 'text-halo-color': '#FFFFFF', 'text-halo-width': 2 },
+          });
+          for (const [layer, name, value] of companyPaint(isFaded(propsRef.current))) m.setPaintProperty(layer, name, value);
+
           // Drawing a rectangle: press, drag and release while "Draw an area" is on.
           let dragFrom: [number, number] | null = null;
           const rect = (a: [number, number], b: [number, number]): Bbox => [
@@ -321,23 +384,38 @@ export default function MapView(props: Props) {
 
           const first = (features?: MapGeoJSONFeature[]) => features?.[0]?.properties ?? {};
           m.on('click', 'hex-fill', (e) => {
-            if (drawingRef.current) return;
+            if (drawingRef.current || isFaded(propsRef.current)) return;
             const cell = first(e.features).cell;
             if (typeof cell === 'string') propsRef.current.onSelectCell(cell);
           });
           m.on('click', 'clusters', async (e) => {
+            if (isFaded(propsRef.current)) return;
             const clusterId = first(e.features).cluster_id;
             if (typeof clusterId !== 'number') return;
             const leaves = await (m.getSource('points') as GeoJSONSource).getClusterLeaves(clusterId, 10_000, 0);
             propsRef.current.onSelectIds(leaves.map((f) => String(f.properties?.id)));
           });
           m.on('click', 'pins', (e) => {
+            if (isFaded(propsRef.current)) return;
             const id = first(e.features).id;
             if (typeof id === 'string') propsRef.current.onSelectIds([id]);
           });
-          for (const layer of ['hex-fill', 'clusters', 'pins']) {
+          // On the cluster map, selecting an area chooses its cluster; where
+          // areas overlap, the one drawn on top. With companies on top, a
+          // company under the pointer takes the click instead.
+          m.on('click', 'cluster-fill', (e) => {
+            const p = propsRef.current;
+            if (drawingRef.current || !p.clusterMap) return;
+            if (!isFaded(p) && m.queryRenderedFeatures(e.point, { layers: ['hex-fill', 'clusters', 'pins'].filter((l) => m.getLayer(l)) }).length) return;
+            const top = [...(e.features ?? [])].sort((a, b) => Number(b.properties?.rank ?? 0) - Number(a.properties?.rank ?? 0))[0];
+            const id = top?.properties?.id;
+            if (typeof id === 'string') p.onSelectCluster?.(id);
+          });
+          for (const layer of ['hex-fill', 'clusters', 'pins', 'cluster-fill']) {
             m.on('mouseenter', layer, () => {
-              m.getCanvas().style.cursor = 'pointer';
+              const p = propsRef.current;
+              const clickable = layer === 'cluster-fill' ? Boolean(p.clusterMap) : !isFaded(p);
+              if (clickable) m.getCanvas().style.cursor = 'pointer';
             });
             m.on('mouseleave', layer, () => {
               m.getCanvas().style.cursor = '';
@@ -412,6 +490,21 @@ export default function MapView(props: Props) {
   }, [props.clusterRegions, loaded]);
 
   useEffect(() => {
+    const source = mapRef.current?.getSource('cluster-labels') as GeoJSONSource | undefined;
+    if (loaded && source) source.setData((props.clusterLabels ?? EMPTY) as GeoData);
+  }, [props.clusterLabels, loaded]);
+
+  const faded = isFaded(props);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!loaded || !map?.getLayer('cluster-label')) return;
+    const style = regionPaint(Boolean(props.clusterMap));
+    map.setPaintProperty('cluster-fill', 'fill-opacity', style['fill-opacity']);
+    map.setPaintProperty('cluster-line', 'line-width', style['line-width']);
+    for (const [layer, name, value] of companyPaint(faded)) map.setPaintProperty(layer, name, value);
+  }, [props.clusterMap, faded, loaded]);
+
+  useEffect(() => {
     const source = mapRef.current?.getSource('cluster-events') as GeoJSONSource | undefined;
     if (loaded && source) source.setData((props.clusterEvents ?? EMPTY) as GeoData);
   }, [props.clusterEvents, loaded]);
@@ -473,6 +566,11 @@ export default function MapView(props: Props) {
           >
             Draw an area
           </button>
+          {props.onClusterMap && (
+            <button type="button" class="secondary" aria-pressed={Boolean(props.clusterMap)} onClick={() => props.onClusterMap?.(!props.clusterMap)}>
+              Cluster map
+            </button>
+          )}
           {drawing && <span role="status">Press and drag on the map to draw a rectangle.</span>}
         </div>
       )}
