@@ -1,6 +1,7 @@
 // Post-deploy check: the deployed page returns 200, shows the Tally marker,
 // and carries every security header exactly as public/_headers sets it.
 // Usage: node scripts/check-deploy.mjs <deployed-url>
+/* global setTimeout */
 import { readFileSync } from 'node:fs';
 
 const url = process.argv[2];
@@ -19,8 +20,15 @@ const expected = Object.fromEntries(
     }),
 );
 
+// A fresh deploy can take a few seconds to reach every Cloudflare location,
+// so retry a 404 for up to a minute before judging the page.
+let response = await fetch(url, { redirect: 'follow' });
+for (let attempt = 1; attempt <= 12 && response.status === 404; attempt++) {
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+  response = await fetch(url, { redirect: 'follow' });
+}
+
 const failures = [];
-const response = await fetch(url, { redirect: 'follow' });
 if (response.status !== 200) failures.push(`expected status 200, got ${response.status}`);
 const body = await response.text();
 if (!body.includes('Tally')) failures.push('page body is missing the marker "Tally"');
