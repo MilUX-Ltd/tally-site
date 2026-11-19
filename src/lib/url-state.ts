@@ -7,6 +7,7 @@
 // does not know. Nothing from the URL is ever rendered as HTML.
 import { emptyFilters, FACETS, type Facet, type Filters } from './filters';
 import { MONTH } from './history';
+import { DEFAULT_RADIUS, isRadius, type Radius } from './sites';
 import type { TallyData } from './types';
 
 export interface MapPosition {
@@ -38,12 +39,18 @@ export interface ViewState {
   capMatch: CapMatch;
   /** Month shown by the growth slider (YYYY-MM); null means the latest. */
   month: string | null;
+  /** Chosen defence site id, whose radius narrows the companies. */
+  site: string | null;
+  /** Radius around the chosen site, in miles. */
+  radius: Radius;
+  /** Whether every defence site is drawn on the map. */
+  sites: boolean;
 }
 
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, sites: false };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -112,6 +119,11 @@ export function fromQuery(query: string): ViewState {
   if (p.get('capmatch') === 'all' && state.filters.cap.length >= 2) state.capMatch = 'all';
   const month = p.get('month');
   if (month && MONTH.test(month)) state.month = month;
+  const site = p.get('site');
+  if (site && ID.test(site)) state.site = site;
+  const radius = Number(p.get('radius'));
+  if (/^\d+$/.test(p.get('radius') ?? '') && isRadius(radius)) state.radius = radius;
+  if (p.get('sites') === '1') state.sites = true;
   return state;
 }
 
@@ -132,6 +144,9 @@ export function toQuery(state: ViewState): string {
   if (state.list.length) add('list', state.list.join(','));
   if (state.capMatch === 'all' && state.filters.cap.length >= 2) add('capmatch', 'all');
   if (state.month) add('month', state.month);
+  if (state.site) add('site', state.site);
+  if (state.radius !== DEFAULT_RADIUS) add('radius', String(state.radius));
+  if (state.sites) add('sites', '1');
   return parts.join('&');
 }
 
@@ -157,4 +172,10 @@ export function sanitiseState(state: ViewState, data: TallyData): ViewState {
   const group = state.matrix.group && t.groups.some((g) => g.slug === state.matrix.group) ? state.matrix.group : null;
   const capMatch = filters.cap.length >= 2 ? state.capMatch : 'any';
   return { ...state, filters, capMatch, sel: state.sel.filter((id) => ids.has(id)), list: state.list.filter((id) => ids.has(id)), matrix: { ...state.matrix, group } };
+}
+
+/** Drops a chosen site the defence sites dataset does not know. */
+export function sanitiseSites(state: ViewState, ids: Iterable<string>): ViewState {
+  if (!state.site) return state;
+  return new Set(ids).has(state.site) ? state : { ...state, site: null };
 }

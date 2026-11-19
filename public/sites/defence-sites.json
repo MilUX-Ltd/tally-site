@@ -1,0 +1,1123 @@
+{
+ "title": "UK defence sites (widely published locations)",
+ "version": "1.0.0",
+ "retrieved": "2026-11-19",
+ "licence": "Coordinates from Wikipedia articles, CC BY-SA 4.0; each site names its article and revision. This file is shared under the same licence.",
+ "attribution": "Defence site locations from Wikipedia contributors, CC BY-SA 4.0.",
+ "method": "Each candidate site was checked against the primary coordinates of the Wikipedia article about the site itself. A site is included only when the candidate point was within 3 km; the coordinates given are the article's. Sites that could not be verified are left out.",
+ "sites": [
+  {
+   "id": "air-command-high-wycombe",
+   "name": "Air Command, High Wycombe",
+   "kind": "hq",
+   "lat": 51.6814,
+   "lon": -0.8019,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF High Wycombe",
+    "url": "https://en.wikipedia.org/wiki/RAF_High_Wycombe",
+    "revision": 1384859561,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.09
+   }
+  },
+  {
+   "id": "aldershot-garrison",
+   "name": "Aldershot Garrison",
+   "kind": "base",
+   "lat": 51.2599,
+   "lon": -0.7598,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Aldershot Garrison",
+    "url": "https://en.wikipedia.org/wiki/Aldershot_Garrison",
+    "revision": 1386550170,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.1
+   }
+  },
+  {
+   "id": "altcar-training-camp",
+   "name": "Altcar Training Camp",
+   "kind": "training-area",
+   "lat": 53.5286,
+   "lon": -3.0591,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Altcar Training Camp",
+    "url": "https://en.wikipedia.org/wiki/Altcar_Training_Camp",
+    "revision": 1365021349,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 2.46
+   }
+  },
+  {
+   "id": "army-headquarters-andover-marlborough-lines",
+   "name": "Army Headquarters, Andover (Marlborough Lines)",
+   "kind": "hq",
+   "lat": 51.2086,
+   "lon": -1.5253,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Marlborough Lines",
+    "url": "https://en.wikipedia.org/wiki/Marlborough_Lines",
+    "revision": 1365032674,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 2.47
+   }
+  },
+  {
+   "id": "barry-buddon-training-area",
+   "name": "Barry Buddon Training Area",
+   "kind": "training-area",
+   "lat": 56.4806,
+   "lon": -2.7542,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Barry Buddon Training Area",
+    "url": "https://en.wikipedia.org/wiki/Barry_Buddon_Training_Area",
+    "revision": 1365022009,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 2.35
+   }
+  },
+  {
+   "id": "boscombe-down",
+   "name": "Boscombe Down",
+   "kind": "air-station",
+   "lat": 51.1575,
+   "lon": -1.7469,
+   "source": {
+    "name": "Wikipedia",
+    "title": "MOD Boscombe Down",
+    "url": "https://en.wikipedia.org/wiki/MOD_Boscombe_Down",
+    "revision": 1383916034,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.86
+   }
+  },
+  {
+   "id": "bovington-camp",
+   "name": "Bovington Camp",
+   "kind": "base",
+   "lat": 50.7,
+   "lon": -2.24,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Bovington Camp",
+    "url": "https://en.wikipedia.org/wiki/Bovington_Camp",
+    "revision": 1365022633,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.32
+   }
+  },
+  {
+   "id": "britannia-royal-naval-college-dartmouth",
+   "name": "Britannia Royal Naval College, Dartmouth",
+   "kind": "naval-base",
+   "lat": 50.3572,
+   "lon": -3.5828,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Britannia Royal Naval College",
+    "url": "https://en.wikipedia.org/wiki/Britannia_Royal_Naval_College",
+    "revision": 1380417868,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.83
+   }
+  },
+  {
+   "id": "bulford-garrison",
+   "name": "Bulford Garrison",
+   "kind": "base",
+   "lat": 51.1911,
+   "lon": -1.7342,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Bulford Camp",
+    "url": "https://en.wikipedia.org/wiki/Bulford_Camp",
+    "revision": 1364981970,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.42
+   }
+  },
+  {
+   "id": "catterick-garrison",
+   "name": "Catterick Garrison",
+   "kind": "base",
+   "lat": 54.3774,
+   "lon": -1.722,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Catterick Garrison",
+    "url": "https://en.wikipedia.org/wiki/Catterick_Garrison",
+    "revision": 1385946570,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.45
+   }
+  },
+  {
+   "id": "colchester-garrison",
+   "name": "Colchester Garrison",
+   "kind": "base",
+   "lat": 51.8845,
+   "lon": 0.9015,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Colchester Garrison",
+    "url": "https://en.wikipedia.org/wiki/Colchester_Garrison",
+    "revision": 1366664517,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.51
+   }
+  },
+  {
+   "id": "commando-training-centre-royal-marines-lympstone",
+   "name": "Commando Training Centre Royal Marines, Lympstone",
+   "kind": "base",
+   "lat": 50.664,
+   "lon": -3.438,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Commando Training Centre Royal Marines",
+    "url": "https://en.wikipedia.org/wiki/Commando_Training_Centre_Royal_Marines",
+    "revision": 1365006778,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.65
+   }
+  },
+  {
+   "id": "crowborough-training-area",
+   "name": "Crowborough Training Area",
+   "kind": "training-area",
+   "lat": 51.048,
+   "lon": 0.133,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Crowborough Training Camp",
+    "url": "https://en.wikipedia.org/wiki/Crowborough_Training_Camp",
+    "revision": 1367400416,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 2.6
+   }
+  },
+  {
+   "id": "de-and-s-abbey-wood-bristol",
+   "name": "DE&S Abbey Wood, Bristol",
+   "kind": "hq",
+   "lat": 51.5033,
+   "lon": -2.5592,
+   "source": {
+    "name": "Wikipedia",
+    "title": "MOD Abbey Wood",
+    "url": "https://en.wikipedia.org/wiki/MOD_Abbey_Wood",
+    "revision": 1364542909,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.49
+   }
+  },
+  {
+   "id": "defence-academy-of-the-united-kingdom-shrivenham",
+   "name": "Defence Academy of the United Kingdom, Shrivenham",
+   "kind": "base",
+   "lat": 51.603,
+   "lon": -1.6404,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Defence Academy of the United Kingdom",
+    "url": "https://en.wikipedia.org/wiki/Defence_Academy_of_the_United_Kingdom",
+    "revision": 1359834039,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.74
+   }
+  },
+  {
+   "id": "dstl-porton-down",
+   "name": "Dstl Porton Down",
+   "kind": "hq",
+   "lat": 51.131,
+   "lon": -1.704,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Porton Down",
+    "url": "https://en.wikipedia.org/wiki/Porton_Down",
+    "revision": 1384905840,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.3
+   }
+  },
+  {
+   "id": "garelochhead-training-area",
+   "name": "Garelochhead Training Area",
+   "kind": "training-area",
+   "lat": 56.0733,
+   "lon": -4.8214,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Garelochhead Training Area",
+    "url": "https://en.wikipedia.org/wiki/Garelochhead_Training_Area",
+    "revision": 1365028970,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.98
+   }
+  },
+  {
+   "id": "hmnb-clyde-faslane",
+   "name": "HMNB Clyde (Faslane)",
+   "kind": "naval-base",
+   "lat": 56.0661,
+   "lon": -4.8175,
+   "source": {
+    "name": "Wikipedia",
+    "title": "HMNB Clyde",
+    "url": "https://en.wikipedia.org/wiki/HMNB_Clyde",
+    "revision": 1377284201,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.46
+   }
+  },
+  {
+   "id": "hmnb-devonport",
+   "name": "HMNB Devonport",
+   "kind": "naval-base",
+   "lat": 50.385,
+   "lon": -4.185,
+   "source": {
+    "name": "Wikipedia",
+    "title": "HMNB Devonport",
+    "url": "https://en.wikipedia.org/wiki/HMNB_Devonport",
+    "revision": 1378353272,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.66
+   }
+  },
+  {
+   "id": "hmnb-portsmouth",
+   "name": "HMNB Portsmouth",
+   "kind": "naval-base",
+   "lat": 50.8042,
+   "lon": -1.1025,
+   "source": {
+    "name": "Wikipedia",
+    "title": "HMNB Portsmouth",
+    "url": "https://en.wikipedia.org/wiki/HMNB_Portsmouth",
+    "revision": 1376888837,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.5
+   }
+  },
+  {
+   "id": "kirkcudbright-training-area",
+   "name": "Kirkcudbright Training Area",
+   "kind": "training-area",
+   "lat": 54.8,
+   "lon": -4,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Dundrennan Range",
+    "url": "https://en.wikipedia.org/wiki/Dundrennan_Range",
+    "revision": 1311432450,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 2.94
+   }
+  },
+  {
+   "id": "land-warfare-centre-warminster",
+   "name": "Land Warfare Centre, Warminster",
+   "kind": "base",
+   "lat": 51.212,
+   "lon": -2.16,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Warminster Garrison",
+    "url": "https://en.wikipedia.org/wiki/Warminster_Garrison",
+    "revision": 1365015944,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.93
+   }
+  },
+  {
+   "id": "larkhill-garrison",
+   "name": "Larkhill Garrison",
+   "kind": "base",
+   "lat": 51.198,
+   "lon": -1.813,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Larkhill",
+    "url": "https://en.wikipedia.org/wiki/Larkhill",
+    "revision": 1379198553,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.19
+   }
+  },
+  {
+   "id": "longmoor-training-area",
+   "name": "Longmoor Training Area",
+   "kind": "training-area",
+   "lat": 51.0731,
+   "lon": -0.8689,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Longmoor Camp",
+    "url": "https://en.wikipedia.org/wiki/Longmoor_Camp",
+    "revision": 1365032243,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.85
+   }
+  },
+  {
+   "id": "middle-wallop-army-aviation-centre",
+   "name": "Middle Wallop (Army Aviation Centre)",
+   "kind": "air-station",
+   "lat": 51.1489,
+   "lon": -1.57,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Middle Wallop Flying Station",
+    "url": "https://en.wikipedia.org/wiki/Middle_Wallop_Flying_Station",
+    "revision": 1380365507,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.99
+   }
+  },
+  {
+   "id": "mod-corsham",
+   "name": "MOD Corsham",
+   "kind": "base",
+   "lat": 51.4206,
+   "lon": -2.2169,
+   "source": {
+    "name": "Wikipedia",
+    "title": "MOD Corsham",
+    "url": "https://en.wikipedia.org/wiki/MOD_Corsham",
+    "revision": 1386179357,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 2.13
+   }
+  },
+  {
+   "id": "mod-lyneham",
+   "name": "MOD Lyneham",
+   "kind": "air-station",
+   "lat": 51.5053,
+   "lon": -1.9933,
+   "source": {
+    "name": "Wikipedia",
+    "title": "MOD Lyneham",
+    "url": "https://en.wikipedia.org/wiki/MOD_Lyneham",
+    "revision": 1379925265,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.63
+   }
+  },
+  {
+   "id": "mod-main-building-whitehall",
+   "name": "MOD Main Building, Whitehall",
+   "kind": "hq",
+   "lat": 51.504,
+   "lon": -0.1249,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Ministry of Defence Main Building (United Kingdom)",
+    "url": "https://en.wikipedia.org/wiki/Ministry_of_Defence_Main_Building_(United_Kingdom)",
+    "revision": 1378371029,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.01
+   }
+  },
+  {
+   "id": "mod-marchwood-military-port",
+   "name": "MOD Marchwood Military Port",
+   "kind": "naval-base",
+   "lat": 50.8933,
+   "lon": -1.4223,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Marchwood Military Port",
+    "url": "https://en.wikipedia.org/wiki/Marchwood_Military_Port",
+    "revision": 1311701197,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.3
+   }
+  },
+  {
+   "id": "pirbright-training-area",
+   "name": "Pirbright Training Area",
+   "kind": "training-area",
+   "lat": 51.3036,
+   "lon": -0.6639,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Pirbright Camp",
+    "url": "https://en.wikipedia.org/wiki/Pirbright_Camp",
+    "revision": 1365034628,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.8
+   }
+  },
+  {
+   "id": "raf-benson",
+   "name": "RAF Benson",
+   "kind": "air-station",
+   "lat": 51.6164,
+   "lon": -1.0958,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Benson",
+    "url": "https://en.wikipedia.org/wiki/RAF_Benson",
+    "revision": 1365035204,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.09
+   }
+  },
+  {
+   "id": "raf-boulmer",
+   "name": "RAF Boulmer",
+   "kind": "air-station",
+   "lat": 55.4219,
+   "lon": -1.6033,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Boulmer",
+    "url": "https://en.wikipedia.org/wiki/RAF_Boulmer",
+    "revision": 1382407533,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.3
+   }
+  },
+  {
+   "id": "raf-brize-norton",
+   "name": "RAF Brize Norton",
+   "kind": "air-station",
+   "lat": 51.75,
+   "lon": -1.5836,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Brize Norton",
+    "url": "https://en.wikipedia.org/wiki/RAF_Brize_Norton",
+    "revision": 1382162642,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.25
+   }
+  },
+  {
+   "id": "raf-college-cranwell",
+   "name": "RAF College Cranwell",
+   "kind": "air-station",
+   "lat": 53.0303,
+   "lon": -0.4833,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Cranwell",
+    "url": "https://en.wikipedia.org/wiki/RAF_Cranwell",
+    "revision": 1384580704,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.23
+   }
+  },
+  {
+   "id": "raf-coningsby",
+   "name": "RAF Coningsby",
+   "kind": "air-station",
+   "lat": 53.0931,
+   "lon": -0.1661,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Coningsby",
+    "url": "https://en.wikipedia.org/wiki/RAF_Coningsby",
+    "revision": 1379195917,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.01
+   }
+  },
+  {
+   "id": "raf-honington",
+   "name": "RAF Honington",
+   "kind": "air-station",
+   "lat": 52.3425,
+   "lon": 0.7731,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Honington",
+    "url": "https://en.wikipedia.org/wiki/RAF_Honington",
+    "revision": 1365009656,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.21
+   }
+  },
+  {
+   "id": "raf-leeming",
+   "name": "RAF Leeming",
+   "kind": "air-station",
+   "lat": 54.2925,
+   "lon": -1.5356,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Leeming",
+    "url": "https://en.wikipedia.org/wiki/RAF_Leeming",
+    "revision": 1369255730,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.28
+   }
+  },
+  {
+   "id": "raf-lossiemouth",
+   "name": "RAF Lossiemouth",
+   "kind": "air-station",
+   "lat": 57.7053,
+   "lon": -3.3392,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Lossiemouth",
+    "url": "https://en.wikipedia.org/wiki/RAF_Lossiemouth",
+    "revision": 1375690773,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.06
+   }
+  },
+  {
+   "id": "raf-marham",
+   "name": "RAF Marham",
+   "kind": "air-station",
+   "lat": 52.6483,
+   "lon": 0.5506,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Marham",
+    "url": "https://en.wikipedia.org/wiki/RAF_Marham",
+    "revision": 1371547083,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.05
+   }
+  },
+  {
+   "id": "raf-northolt",
+   "name": "RAF Northolt",
+   "kind": "air-station",
+   "lat": 51.5531,
+   "lon": -0.4183,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Northolt",
+    "url": "https://en.wikipedia.org/wiki/RAF_Northolt",
+    "revision": 1377227747,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.02
+   }
+  },
+  {
+   "id": "raf-odiham",
+   "name": "RAF Odiham",
+   "kind": "air-station",
+   "lat": 51.2342,
+   "lon": -0.9428,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Odiham",
+    "url": "https://en.wikipedia.org/wiki/RAF_Odiham",
+    "revision": 1382443412,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.02
+   }
+  },
+  {
+   "id": "raf-shawbury",
+   "name": "RAF Shawbury",
+   "kind": "air-station",
+   "lat": 52.7981,
+   "lon": -2.6681,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Shawbury",
+    "url": "https://en.wikipedia.org/wiki/RAF_Shawbury",
+    "revision": 1365015535,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.45
+   }
+  },
+  {
+   "id": "raf-valley",
+   "name": "RAF Valley",
+   "kind": "air-station",
+   "lat": 53.2481,
+   "lon": -4.5353,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Valley",
+    "url": "https://en.wikipedia.org/wiki/RAF_Valley",
+    "revision": 1374623760,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.38
+   }
+  },
+  {
+   "id": "raf-waddington",
+   "name": "RAF Waddington",
+   "kind": "air-station",
+   "lat": 53.1725,
+   "lon": -0.5308,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Waddington",
+    "url": "https://en.wikipedia.org/wiki/RAF_Waddington",
+    "revision": 1382164844,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.77
+   }
+  },
+  {
+   "id": "raf-wittering",
+   "name": "RAF Wittering",
+   "kind": "air-station",
+   "lat": 52.6125,
+   "lon": -0.4764,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RAF Wittering",
+    "url": "https://en.wikipedia.org/wiki/RAF_Wittering",
+    "revision": 1386159494,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.06
+   }
+  },
+  {
+   "id": "rnas-culdrose",
+   "name": "RNAS Culdrose",
+   "kind": "air-station",
+   "lat": 50.0861,
+   "lon": -5.2558,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RNAS Culdrose",
+    "url": "https://en.wikipedia.org/wiki/RNAS_Culdrose",
+    "revision": 1382884015,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.02
+   }
+  },
+  {
+   "id": "rnas-yeovilton",
+   "name": "RNAS Yeovilton",
+   "kind": "air-station",
+   "lat": 51.0086,
+   "lon": -2.6378,
+   "source": {
+    "name": "Wikipedia",
+    "title": "RNAS Yeovilton",
+    "url": "https://en.wikipedia.org/wiki/RNAS_Yeovilton",
+    "revision": 1386416786,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.97
+   }
+  },
+  {
+   "id": "royal-military-academy-sandhurst",
+   "name": "Royal Military Academy Sandhurst",
+   "kind": "base",
+   "lat": 51.3403,
+   "lon": -0.7686,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Royal Military Academy Sandhurst",
+    "url": "https://en.wikipedia.org/wiki/Royal_Military_Academy_Sandhurst",
+    "revision": 1385729076,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 2.43
+   }
+  },
+  {
+   "id": "sennybridge-training-area",
+   "name": "Sennybridge Training Area",
+   "kind": "training-area",
+   "lat": 52.0519,
+   "lon": -3.5589,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Sennybridge Training Area",
+    "url": "https://en.wikipedia.org/wiki/Sennybridge_Training_Area",
+    "revision": 1365037071,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.65
+   }
+  },
+  {
+   "id": "tain-air-weapons-range",
+   "name": "Tain Air Weapons Range",
+   "kind": "range",
+   "lat": 57.8111,
+   "lon": -3.9733,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Tain Air Weapons Range",
+    "url": "https://en.wikipedia.org/wiki/Tain_Air_Weapons_Range",
+    "revision": 1385199622,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 2.51
+   }
+  },
+  {
+   "id": "tidworth-garrison",
+   "name": "Tidworth Garrison",
+   "kind": "base",
+   "lat": 51.2322,
+   "lon": -1.6745,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Tidworth Camp",
+    "url": "https://en.wikipedia.org/wiki/Tidworth_Camp",
+    "revision": 1365038653,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.33
+   }
+  },
+  {
+   "id": "uk-strategic-command-northwood-headquarters",
+   "name": "UK Strategic Command, Northwood Headquarters",
+   "kind": "hq",
+   "lat": 51.6194,
+   "lon": -0.4094,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Northwood Headquarters",
+    "url": "https://en.wikipedia.org/wiki/Northwood_Headquarters",
+    "revision": 1365017374,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 1.24
+   }
+  },
+  {
+   "id": "wattisham-flying-station",
+   "name": "Wattisham Flying Station",
+   "kind": "air-station",
+   "lat": 52.1269,
+   "lon": 0.9558,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Wattisham Flying Station",
+    "url": "https://en.wikipedia.org/wiki/Wattisham_Flying_Station",
+    "revision": 1364989617,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 0.82
+   }
+  }
+ ]
+}
