@@ -9,7 +9,7 @@ import { BRAND_SCALE, colourScale, type LegendEntry } from '../lib/colour';
 import { isLocated } from '../lib/filters';
 import { ATTRIBUTION, FONT, STYLE_URL, UK_BOUNDS } from '../lib/map-config';
 import type { Company } from '../lib/types';
-import type { MapPosition } from '../lib/url-state';
+import type { Bbox, MapPosition } from '../lib/url-state';
 
 export type Binning = typeof import('../lib/binning');
 
@@ -24,7 +24,23 @@ interface Props {
   initialPosition?: MapPosition | null;
   onMove?: (position: MapPosition) => void;
   onMapReady?: (map: MlMap) => void;
+  /** The area taken from or drawn on the map, outlined when set. */
+  area?: Bbox | null;
+  onArea?: (area: Bbox) => void;
 }
+
+const bboxPolygon = ([w, s, e, n]: Bbox) => ({
+  type: 'FeatureCollection' as const,
+  features: [
+    {
+      type: 'Feature' as const,
+      properties: {},
+      geometry: { type: 'Polygon' as const, coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] },
+    },
+  ],
+});
+const EMPTY = { type: 'FeatureCollection' as const, features: [] };
+const round5 = (n: number) => Number(n.toFixed(5));
 
 const PIN_COLOUR = '#113308';
 const CLUSTER_COLOUR = '#A35C17';
@@ -51,6 +67,10 @@ export default function MapView(props: Props) {
   const [legend, setLegend] = useState<LegendEntry[]>([]);
   const [pins, setPins] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [drawing, setDrawing] = useState(false);
+  const drawingRef = useRef(false);
+  drawingRef.current = drawing;
+  const [loaded, setLoaded] = useState(false);
 
   const draw = () => {
     const map = mapRef.current;
@@ -171,8 +191,38 @@ export default function MapView(props: Props) {
             },
           });
 
+          m.addSource('area', { type: 'geojson', data: propsRef.current.area ? bboxPolygon(propsRef.current.area) : EMPTY });
+          m.addLayer({ id: 'area-fill', type: 'fill', source: 'area', paint: { 'fill-color': '#586F7C', 'fill-opacity': 0.12 } });
+          m.addLayer({ id: 'area-line', type: 'line', source: 'area', paint: { 'line-color': '#113308', 'line-width': 2, 'line-dasharray': [2, 1] } });
+
+          // Drawing a rectangle: press, drag and release while "Draw an area" is on.
+          let dragFrom: [number, number] | null = null;
+          const rect = (a: [number, number], b: [number, number]): Bbox => [
+            round5(Math.min(a[0], b[0])),
+            round5(Math.min(a[1], b[1])),
+            round5(Math.max(a[0], b[0])),
+            round5(Math.max(a[1], b[1])),
+          ];
+          m.on('mousedown', (e) => {
+            if (!drawingRef.current) return;
+            e.preventDefault();
+            dragFrom = [e.lngLat.lng, e.lngLat.lat];
+          });
+          m.on('mousemove', (e) => {
+            if (!drawingRef.current || !dragFrom) return;
+            (m.getSource('area') as GeoJSONSource).setData(bboxPolygon(rect(dragFrom, [e.lngLat.lng, e.lngLat.lat])));
+          });
+          m.on('mouseup', (e) => {
+            if (!drawingRef.current || !dragFrom) return;
+            const box = rect(dragFrom, [e.lngLat.lng, e.lngLat.lat]);
+            dragFrom = null;
+            setDrawing(false);
+            if (box[0] < box[2] && box[1] < box[3]) propsRef.current.onArea?.(box);
+          });
+
           const first = (features?: MapGeoJSONFeature[]) => features?.[0]?.properties ?? {};
           m.on('click', 'hex-fill', (e) => {
+            if (drawingRef.current) return;
             const cell = first(e.features).cell;
             if (typeof cell === 'string') propsRef.current.onSelectCell(cell);
           });
@@ -203,6 +253,7 @@ export default function MapView(props: Props) {
             propsRef.current.onMove?.({ zoom: m.getZoom(), lat: c.lat, lon: c.lng });
           });
           setPins(m.getZoom() >= PIN_ZOOM);
+          setLoaded(true);
 
           // H3 loads once the map is running.
           const binning = await import('../lib/binning');
@@ -232,8 +283,50 @@ export default function MapView(props: Props) {
     if (map?.getLayer('hex-selected')) map.setFilter('hex-selected', ['==', ['get', 'cell'], props.selectedCell ?? '']);
   }, [props.selectedCell]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded) return;
+    if (drawing) map.dragPan.disable();
+    else map.dragPan.enable();
+    container.current?.classList.toggle('drawing', drawing);
+  }, [drawing, loaded]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource('area') as GeoJSONSource | undefined;
+    if (loaded && source) source.setData(props.area ? bboxPolygon(props.area) : EMPTY);
+  }, [props.area, loaded]);
+
+  const useCurrentView = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const b = map.getBounds();
+    const clampLat = (n: number) => Math.max(-85, Math.min(85, n));
+    const clampLon = (n: number) => Math.max(-180, Math.min(180, n));
+    props.onArea?.([round5(clampLon(b.getWest())), round5(clampLat(b.getSouth())), round5(clampLon(b.getEast())), round5(clampLat(b.getNorth()))]);
+  };
+
   return (
     <div class="map-wrap">
+      {props.onArea && (
+        <div class="map-tools">
+          <button type="button" class="secondary" disabled={!loaded} onClick={useCurrentView}>
+            Use the map's current view
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            disabled={!loaded}
+            aria-pressed={drawing}
+            onClick={() => setDrawing(!drawing)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setDrawing(false);
+            }}
+          >
+            Draw an area
+          </button>
+          {drawing && <span role="status">Press and drag on the map to draw a rectangle.</span>}
+        </div>
+      )}
       <div id="tally-map" class="map" ref={container} role="region" aria-label="Map of the companies that match the filters">
         {failed && (
           <p class="map-failed">The map cannot be shown in this browser. Every company is in the list below.</p>
