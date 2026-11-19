@@ -42,7 +42,13 @@ for (const [name, value] of Object.entries(expected)) {
 const searchUrl = new URL('/api/search', url).toString();
 const post = (q) =>
   fetch(searchUrl, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q }) });
-const tooLong = await post('x'.repeat(301));
+// A new Worker can take a little while to reach every location; until it does, the
+// old static-only version answers the route with 405. Retry for up to a minute.
+let tooLong = await post('x'.repeat(301));
+for (let attempt = 1; attempt <= 12 && tooLong.status === 405; attempt++) {
+  await new Promise((resolve) => setTimeout(resolve, 5000));
+  tooLong = await post('x'.repeat(301));
+}
 if (tooLong.status !== 413) failures.push(`search: an over-long request should get 413, got ${tooLong.status}`);
 if (process.argv.includes('--expect-search-fallback')) {
   const answer = await post('cyber companies');
