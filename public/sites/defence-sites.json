@@ -1,6 +1,6 @@
 {
  "title": "UK defence sites (widely published locations)",
- "version": "1.0.0",
+ "version": "1.1.0",
  "retrieved": "2026-11-19",
  "licence": "Coordinates from Wikipedia articles, CC BY-SA 4.0; each site names its article and revision. This file is shared under the same licence.",
  "attribution": "Defence site locations from Wikipedia contributors, CC BY-SA 4.0.",
@@ -259,8 +259,8 @@
    }
   },
   {
-   "id": "crowborough-training-area",
-   "name": "Crowborough Training Area",
+   "id": "crowborough-training-camp",
+   "name": "Crowborough Training Camp",
    "kind": "training-area",
    "lat": 51.048,
    "lon": 0.133,
@@ -340,6 +340,27 @@
     "status": "verified",
     "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
     "distance_km": 0.3
+   }
+  },
+  {
+   "id": "dundrennan-range",
+   "name": "Dundrennan Range (Kirkcudbright Training Area)",
+   "kind": "range",
+   "lat": 54.8,
+   "lon": -4,
+   "source": {
+    "name": "Wikipedia",
+    "title": "Dundrennan Range",
+    "url": "https://en.wikipedia.org/wiki/Dundrennan_Range",
+    "revision": 1311432450,
+    "licence": "CC BY-SA 4.0",
+    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-19"
+   },
+   "verification": {
+    "status": "verified",
+    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
+    "distance_km": 2.94
    }
   },
   {
@@ -427,27 +448,6 @@
    }
   },
   {
-   "id": "kirkcudbright-training-area",
-   "name": "Kirkcudbright Training Area",
-   "kind": "training-area",
-   "lat": 54.8,
-   "lon": -4,
-   "source": {
-    "name": "Wikipedia",
-    "title": "Dundrennan Range",
-    "url": "https://en.wikipedia.org/wiki/Dundrennan_Range",
-    "revision": 1311432450,
-    "licence": "CC BY-SA 4.0",
-    "licence_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-    "retrieved": "2026-11-19"
-   },
-   "verification": {
-    "status": "verified",
-    "method": "Candidate point within 3 km of the primary coordinates of the Wikipedia article about the site",
-    "distance_km": 2.94
-   }
-  },
-  {
    "id": "land-warfare-centre-warminster",
    "name": "Land Warfare Centre, Warminster",
    "kind": "base",
@@ -490,8 +490,8 @@
    }
   },
   {
-   "id": "longmoor-training-area",
-   "name": "Longmoor Training Area",
+   "id": "longmoor-camp",
+   "name": "Longmoor Camp",
    "kind": "training-area",
    "lat": 51.0731,
    "lon": -0.8689,
@@ -616,8 +616,8 @@
    }
   },
   {
-   "id": "pirbright-training-area",
-   "name": "Pirbright Training Area",
+   "id": "pirbright-camp",
+   "name": "Pirbright Camp",
    "kind": "training-area",
    "lat": 51.3036,
    "lon": -0.6639,
