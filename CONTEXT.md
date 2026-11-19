@@ -63,4 +63,4 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | Summary | One-paragraph summary |
 
    Downloaded in overlap mode, the file is named `tally-shortlist-overlap.csv`; its content is the same.
-4. **Routes.** `/` (explorer), `/about`, `/404`. Overseas companies are a section of the explorer (Europe, then the rest of the world), not a separate page.
+4. **Routes.** `/` (explorer), `/about`, `/events`, `/404`. Overseas companies are a section of the explorer (Europe, then the rest of the world), not a separate page.
