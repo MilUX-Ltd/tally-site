@@ -112,7 +112,7 @@ export default function ClustersPanel({ data, events, regions, failed, show, clu
         </ul>
       )}
       <p class="clusters-more">
-        <a href="/events/">See all upcoming cluster events</a>
+        <a href="/events">See all upcoming cluster events</a>
         {show && ' Each marker on the map shows how many upcoming events a cluster has.'}
       </p>
       <p class="clusters-attribution">
