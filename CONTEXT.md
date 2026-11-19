@@ -11,7 +11,7 @@
 - **Heatmap**: hexagon density of companies matching the current filters.
 - **Matrix**: a table of companies against top-level capabilities, grouped by capability group. A company is ticked under a capability when it has it or a sub-capability.
 - **Area**: a rectangle taken from the map's current view or drawn on the map; it narrows the area list and the matrix.
-- **Overlap**: places where two or more chosen capabilities coincide.
+- **Overlap**: places where two or more chosen capabilities coincide. A place is an H3 hexagon at resolution 5 (about 250 square kilometres), fixed so the answer does not change with zoom. A place is an overlap when each chosen capability is found there, in one company or several; overlap mode shows the companies in those places that have at least one chosen capability.
 
 ## Public interface (what consumers depend on)
 
@@ -35,6 +35,7 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | `mpage` | Page of matrix rows | whole number from 1 | 1 |
    | `page` | Page of the results list | whole number from 1 | 1 |
    | `list` | Shortlisted companies, in the order added | company ids | none |
+   | `capmatch` | How two or more `cap` values combine: `all` shows only overlap places (see Overlap) | `all` | any of them |
 
    Filters combine: a company must match every facet that has values. Only one of `cell`, `sel` and `area` is set at a time; the area list shows the companies that match the filters within it.
 2. **Data contract.** The build (`scripts/fetch-data.mjs`) reads `tally-data.json` and `taxonomy.json` from `MilUX-Ltd/tally` and writes a slimmed `public/data/tally.json` (not committed). Fields the site depends on:

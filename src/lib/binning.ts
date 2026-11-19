@@ -1,6 +1,7 @@
 // H3 hexagon binning, done in the browser so the map redraws as filters change.
 import { cellToBoundary, getResolution, isValidCell as isValidCellH3, latLngToCell } from 'h3-js';
 import { isLocated } from './filters';
+import { hasCapability } from './matrix';
 import type { Company } from './types';
 
 /** At and above this zoom the map shows clustered pins instead of hexagons. */
@@ -81,4 +82,37 @@ export function companiesInCell(companies: Company[], cell: string): string[] {
 
 export function isValidCell(cell: string): boolean {
   return isValidCellH3(cell);
+}
+
+/**
+ * Places for capability overlap: hexagons at a fixed resolution (about 250
+ * square kilometres), so the answer does not change with the map's zoom.
+ */
+export const OVERLAP_RESOLUTION = 5;
+
+/**
+ * Companies in places where every chosen capability is found. A place is an
+ * overlap when, for each capability, at least one company there has it (or a
+ * sub-capability); the companies returned are those in overlap places with at
+ * least one chosen capability, in input order. With fewer than two
+ * capabilities the companies are returned unchanged.
+ */
+export function overlapCompanies(companies: Company[], caps: string[], resolution = OVERLAP_RESOLUTION): Company[] {
+  if (caps.length < 2) return companies;
+  const cellOf = new Map<string, string>();
+  const found = new Map<string, Set<string>>();
+  for (const c of companies) {
+    if (!isLocated(c)) continue;
+    const has = caps.filter((cap) => hasCapability(c, cap));
+    if (!has.length) continue;
+    const cell = latLngToCell(c.lat, c.lon, resolution);
+    cellOf.set(c.id, cell);
+    let set = found.get(cell);
+    if (!set) found.set(cell, (set = new Set()));
+    for (const cap of has) set.add(cap);
+  }
+  return companies.filter((c) => {
+    const cell = cellOf.get(c.id);
+    return cell !== undefined && (found.get(cell)?.size ?? 0) === caps.length;
+  });
 }

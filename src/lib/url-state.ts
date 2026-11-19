@@ -33,10 +33,14 @@ export interface ViewState {
   page: number;
   /** Shortlisted companies, in the order added. */
   list: string[];
+  /** How chosen capabilities combine: any of them, or only places where all overlap. */
+  capMatch: CapMatch;
 }
 
+export type CapMatch = 'any' | 'all';
+
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [] };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any' };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -101,6 +105,7 @@ export function fromQuery(query: string): ViewState {
   state.matrix.page = pageNumber(p.get('mpage'));
   state.page = pageNumber(p.get('page'));
   state.list = list(p.get('list'), ID);
+  if (p.get('capmatch') === 'all') state.capMatch = 'all';
   return state;
 }
 
@@ -119,6 +124,7 @@ export function toQuery(state: ViewState): string {
   if (state.matrix.page > 1) add('mpage', String(state.matrix.page));
   if (state.page > 1) add('page', String(state.page));
   if (state.list.length) add('list', state.list.join(','));
+  if (state.capMatch === 'all') add('capmatch', 'all');
   return parts.join('&');
 }
 

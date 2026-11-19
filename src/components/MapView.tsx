@@ -17,6 +17,8 @@ export type { MapPosition };
 
 interface Props {
   companies: Company[];
+  /** Draw hexagons at this resolution whatever the zoom (capability overlap places). */
+  fixedResolution?: number | null;
   selectedCell: string | null;
   onSelectCell: (cell: string) => void;
   onSelectIds: (ids: string[]) => void;
@@ -78,7 +80,7 @@ export default function MapView(props: Props) {
     const el = container.current;
     if (!map || !binning || !el || !map.getSource('hexes')) return;
     const { companies } = propsRef.current;
-    const resolution = binning.resolutionForZoom(map.getZoom());
+    const resolution = propsRef.current.fixedResolution ?? binning.resolutionForZoom(map.getZoom());
     lastResolution.current = resolution;
     const bins = binning.binCompanies(companies, resolution);
     const scale = colourScale(bins.reduce((m, b) => Math.max(m, b.count), 0));
@@ -246,7 +248,8 @@ export default function MapView(props: Props) {
           }
           m.on('zoomend', () => {
             setPins(m.getZoom() >= PIN_ZOOM);
-            if (binningRef.current && binningRef.current.resolutionForZoom(m.getZoom()) !== lastResolution.current) draw();
+            const b = binningRef.current;
+            if (b && (propsRef.current.fixedResolution ?? b.resolutionForZoom(m.getZoom())) !== lastResolution.current) draw();
           });
           m.on('moveend', () => {
             const c = m.getCenter();
@@ -276,7 +279,7 @@ export default function MapView(props: Props) {
 
   useEffect(() => {
     draw();
-  }, [props.companies]);
+  }, [props.companies, props.fixedResolution]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -333,7 +336,7 @@ export default function MapView(props: Props) {
         )}
       </div>
       <div class="legend">
-        <h2 id="legend-heading">Companies per hexagon</h2>
+        <h2 id="legend-heading">{props.fixedResolution != null ? 'Companies in places where all chosen capabilities overlap' : 'Companies per hexagon'}</h2>
         {legend.length > 0 ? (
           <ul aria-labelledby="legend-heading">
             {legend.map((entry) => (
