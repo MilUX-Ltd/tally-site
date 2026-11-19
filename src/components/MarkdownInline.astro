@@ -1,0 +1,20 @@
+---
+// Inline nodes from src/lib/company-page.ts, rendered as escaped text and a
+// fixed set of elements. Links are http or https only (checked when parsed).
+import type { Inline } from '../lib/company-page';
+interface Props {
+  nodes: Inline[];
+}
+const { nodes } = Astro.props;
+---
+{nodes.map((n) =>
+  n.type === 'text' ? (
+    n.text
+  ) : n.type === 'strong' ? (
+    <strong><Astro.self nodes={n.children} /></strong>
+  ) : n.type === 'em' ? (
+    <em><Astro.self nodes={n.children} /></em>
+  ) : (
+    <a href={n.href} rel="noopener nofollow"><Astro.self nodes={n.children} /></a>
+  ),
+)}

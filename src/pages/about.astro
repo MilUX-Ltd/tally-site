@@ -1,0 +1,40 @@
+---
+// About Tally: what it is, where the data comes from, licences, how it was
+// built, and how to get listed or correct a listing. Static, no script.
+import Base from '../layouts/Base.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import { CONTACT_EMAIL, getListedMailto } from '../lib/contact';
+import '../styles/company.css';
+---
+<Base title="About Tally: an open directory of UK defence capability" description="What Tally is, where its data comes from, its licences, and how to get your company listed or a listing corrected.">
+  <header class="site-header">
+    <p><a href="/">Back to the explorer</a></p>
+    <h1>About Tally</h1>
+  </header>
+  <div class="about">
+    <p>Tally is an open map and directory of UK defence capability. It helps people who buy for defence find companies that can do what they need, see where they are, and share a shortlist. It is free to use, with no sign-up and no cookies.</p>
+
+    <h2>Where the information comes from</h2>
+    <p>Everything in Tally comes from public sources only: company websites, Companies House, LinkedIn company pages, published framework and accreditation lists, and the public pages of the UK's regional defence and security clusters. We record what a company publishes about itself and nothing about individual people. Each company page shows when its public sources were last verified. The directory is refreshed regularly.</p>
+    <p>Company locations are shown as published: a postcode, a town, or only a region. A company whose UK location is not published, or which is based overseas, is listed but not placed on the map.</p>
+
+    <h2>Get listed</h2>
+    <p>If your company works in UK defence and is not in Tally, <a href={getListedMailto()}>get listed</a> by emailing us at {CONTACT_EMAIL} with your company name, website and what you do. We list public information only, so please point us to a public page that shows it. There is no form and nothing to sign up to.</p>
+
+    <h2>Correct a listing</h2>
+    <p>Every company page has a "Correct this listing" link. It opens an email to us with the company's name in the subject. Tell us what is wrong and where we can see the right details in public, and we will correct it.</p>
+
+    <h2>Licences and credits</h2>
+    <ul>
+      <li>Company data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, under CC BY 4.0. You may reuse it with credit.</li>
+      <li>This website's code: <a href="https://github.com/MilUX-Ltd/tally-site">tally-site</a>, under CC BY-NC 4.0.</li>
+      <li>Map tiles: <a href="https://openfreemap.org">OpenFreeMap</a> and <a href="https://www.openmaptiles.org/">OpenMapTiles</a>, with map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</li>
+      <li>Cluster areas and the UK outline on company pages: Office for National Statistics, Open Government Licence v3.0; contains OS data © Crown copyright and database right 2025.</li>
+      <li>Defence site locations: Wikipedia articles, CC BY-SA 4.0.</li>
+    </ul>
+
+    <h2>How it was built</h2>
+    <p>Tally was built by <a href="https://milux.co.uk">MilUX</a>. It was built with AI, using our agentic engineering method: decisions recorded first, acceptance tests written before code, and every change through automated checks and human review. If you would like to know more, please <a href="https://milux.co.uk/contact/">get in touch</a>.</p>
+  </div>
+  <SiteFooter />
+</Base>

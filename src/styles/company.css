@@ -1,0 +1,25 @@
+/* Company pages. Brand colours only (see base.css). */
+.company-header .lede { font-size: 1.15rem; }
+.company-page-actions { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; }
+.company-layout { display: grid; gap: 2rem; grid-template-columns: minmax(0, 1fr); margin-top: 1.5rem; }
+@media (min-width: 52rem) {
+  .company-layout { grid-template-columns: minmax(0, 1fr) 18rem; align-items: start; }
+}
+.company-main, .company-facts { overflow-wrap: anywhere; }
+.company-main h2 { margin: 1.5rem 0 0.5rem; }
+.company-main section:first-child h2 { margin-top: 0; }
+.capability-group h3 { font-size: 1.05rem; margin: 1rem 0 0.25rem; }
+.capability-group ul { margin: 0; padding-left: 1.25rem; }
+.company-facts { padding: 1rem; border: 2px solid var(--beige); background: #fff; }
+.company-facts h2 { margin: 0 0 0.5rem; font-size: 1.2rem; }
+.company-facts dl { margin: 0; }
+.company-facts dt { font-weight: 600; margin-top: 0.5rem; }
+.company-facts dd { margin: 0; }
+.company-facts .note { display: block; color: var(--blue-grey); }
+.company-map { margin: 1rem 0; }
+.company-map svg { display: block; width: 100%; max-width: 12rem; height: auto; }
+.company-map .marker { fill: var(--orange); stroke: var(--green); stroke-width: 2; }
+.company-map figcaption { font-size: 0.9rem; color: var(--blue-grey); }
+.company-links { list-style: none; padding: 0; margin: 1rem 0; display: flex; gap: 1rem; flex-wrap: wrap; }
+.company-links a, .company-facts p a, .company-page-actions a { display: inline-block; min-height: 24px; }
+.about h2 { margin-top: 2rem; }

@@ -1,5 +1,6 @@
 // One company in a list.
 import type { ComponentChildren } from 'preact';
+import { companyPath } from '../lib/company-page';
 import { isLocated } from '../lib/filters';
 import type { Company } from '../lib/types';
 
@@ -8,7 +9,9 @@ export default function CompanyItem({ company, headingLevel = 3, children }: { c
   const place = company.hq || (company.country ? company.country : 'Location not known');
   return (
     <li class="company">
-      <Heading>{company.name}</Heading>
+      <Heading>
+        <a href={companyPath(company.id)}>{company.name}</a>
+      </Heading>
       <p class="meta">
         {place}
         {!isLocated(company) && <span> (not on the map)</span>}
