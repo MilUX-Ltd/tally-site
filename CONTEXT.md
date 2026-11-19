@@ -45,7 +45,7 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | `at` | Point of the `near` place; companies are narrowed to those within `within` miles | `lat,lon` to 4 decimal places, inside the UK bounds | none |
    | `within` | Radius around the `near` place, in miles; left out without a place | `5`, `10`, `25` or `50` | `25` |
    | `sites` | Draw every defence site on the map | `1` | not drawn |
-   | `clusters` | The cluster map: every cluster's area drawn in its colour and labelled, with a marker counting its upcoming events and a legend of members and events; company hexagons and pins fade behind it. Selecting an area or a legend entry chooses that cluster | `1` | not drawn |
+   | `clusters` | The cluster map: every cluster's area drawn in a map colour that tells the areas apart and labelled, with a legend of members and upcoming events (no event markers on the map); company hexagons and pins fade behind it. Selecting an area or a legend entry chooses that cluster | `1` | not drawn |
    | `ontop` | Keep company hexagons and pins at full strength over the cluster map | `1` | faded |
    | `cluster` | Chosen cluster; its area is drawn, and companies narrow to its recorded members when Tally records them (`mbr-` tag), otherwise they are not narrowed | cluster id from `clusters.json`, for example `SCRDSC` | none |
    | `q` | Keyword search, set when plain-English search falls back: companies whose name, summary or tag labels contain every word (common words ignored; a word matches the start of a word) | text, up to 300 characters | none |

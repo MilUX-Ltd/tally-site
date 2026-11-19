@@ -86,6 +86,21 @@ export const MAP_COLOURS: Record<string, string> = {
   NERDSC: '#CC6677',
 };
 
+/** Shorter names for the map's labels, where the full name crowds its neighbours. The legend keeps full names. */
+export const MAP_LABELS: Record<string, string> = {
+  OBCRDSC: 'Oxon, Bucks, Chilterns',
+  GLRDSC: 'Gtr Lincolnshire',
+};
+
+/**
+ * Label points moved for the map, where an area's own point sits under a
+ * smaller area drawn on top: East Midlands' falls inside Greater Lincolnshire.
+ * Each stays inside its own area.
+ */
+export const MAP_LABEL_POINTS: Record<string, [number, number]> = {
+  EMRDSC: [-1.3, 52.8],
+};
+
 /** Clusters that are not yet live are drawn as an outline only, in this colour. */
 export const NOT_LIVE_COLOUR = '#5B6770';
 
@@ -225,12 +240,18 @@ export function rankedRegions(features: RegionFeature[], chosen: string | null, 
 /** One name label per cluster, at its region's label point (inside its largest part). */
 export function clusterLabels(features: RegionFeature[], clusters: Cluster[]) {
   const names = new Map(clusters.map((c) => [c.id, c.name]));
+  const live = new Map(clusters.map((c) => [c.id, c.status === 'live']));
   return {
     type: 'FeatureCollection' as const,
     features: features.map((f) => ({
       type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: [f.properties.lon, f.properties.lat] },
-      properties: { id: f.properties.id, name: names.get(f.properties.id) ?? f.properties.name },
+      geometry: { type: 'Point' as const, coordinates: MAP_LABEL_POINTS[f.properties.id] ?? [f.properties.lon, f.properties.lat] },
+      properties: {
+        id: f.properties.id,
+        name: names.get(f.properties.id) ?? f.properties.name,
+        label: MAP_LABELS[f.properties.id] ?? names.get(f.properties.id) ?? f.properties.name,
+        live: live.get(f.properties.id) ?? true,
+      },
     })),
   };
 }

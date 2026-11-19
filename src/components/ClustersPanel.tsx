@@ -109,7 +109,7 @@ export default function ClustersPanel({ data, events, regions, failed, show, clu
       )}
       <p class="clusters-more">
         <a href="/events">See all upcoming cluster events</a>
-        {show && ' Each marker on the map shows how many upcoming events a cluster has; the cluster map legend lists every cluster.'}
+        {show && ' The cluster map legend gives each cluster\'s upcoming events.'}
       </p>
       <p class="clusters-attribution">
         Cluster areas: Office for National Statistics boundaries, licensed under the{' '}

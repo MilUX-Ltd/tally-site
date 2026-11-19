@@ -348,28 +348,33 @@ export default function MapView(props: Props) {
             },
           });
 
-          // Cluster names: dark text on a white halo, beside the event marker.
-          // Labels that would collide are left out at that zoom; every
-          // cluster is in the legend.
+          // Cluster names: dark text on a white halo, centred on the area's
+          // label point or moved just aside if that would collide. Labels
+          // that still collide are left out at that zoom; every cluster is
+          // in the legend.
           m.addSource('cluster-labels', { type: 'geojson', data: (propsRef.current.clusterLabels ?? EMPTY) as GeoData });
           m.addLayer({
             id: 'cluster-label',
             type: 'symbol',
             source: 'cluster-labels',
             layout: {
-              'text-field': ['get', 'name'],
+              'text-field': ['coalesce', ['get', 'label'], ['get', 'name']],
               'text-font': FONT,
-              'text-size': 13,
-              'text-max-width': 8,
-              'text-variable-anchor': ['top', 'bottom', 'left', 'right'],
-              'text-radial-offset': 1.2,
+              'text-size': 12,
+              'text-max-width': 7,
+              'text-padding': 0,
+              'text-variable-anchor': ['center', 'top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'],
+              'text-radial-offset': 0.4,
+              // Live clusters are placed first; clusters not yet live give way.
+              'symbol-sort-key': ['case', ['get', 'live'], 0, 1],
               'text-justify': 'auto',
             },
             paint: { 'text-color': LABEL_TEXT, 'text-halo-color': '#FFFFFF', 'text-halo-width': 2 },
           });
 
-          // Event markers sit above the labels, so they are placed first and
-          // the labels move aside rather than being covered.
+          // Event markers count each cluster's upcoming events. They are not
+          // drawn on the cluster map, where the legend gives the counts and
+          // the areas and their names come first.
           m.addImage('event-dot', eventDot(), { sdf: true });
           m.addSource('cluster-events', { type: 'geojson', data: (propsRef.current.clusterEvents ?? EMPTY) as GeoData });
           m.addLayer({
@@ -377,6 +382,7 @@ export default function MapView(props: Props) {
             type: 'symbol',
             source: 'cluster-events',
             layout: {
+              visibility: propsRef.current.clusterMap ? 'none' : 'visible',
               'icon-image': 'event-dot',
               'icon-allow-overlap': true,
               'text-field': ['to-string', ['get', 'count']],
@@ -541,6 +547,7 @@ export default function MapView(props: Props) {
     map.setPaintProperty('cluster-line', 'line-width', style['line-width']);
     map.setPaintProperty('cluster-line-not-live', 'line-width', style['line-width']);
     for (const [layer, name, value] of companyPaint(faded)) map.setPaintProperty(layer, name, value);
+    map.setLayoutProperty('cluster-event-points', 'visibility', props.clusterMap ? 'none' : 'visible');
   }, [props.clusterMap, faded, loaded]);
 
   useEffect(() => {
