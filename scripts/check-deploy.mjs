@@ -2,7 +2,8 @@
 // and carries every security header exactly as public/_headers sets it; the
 // search route runs and refuses an over-long request without calling the
 // model. With --expect-search-fallback (previews, which never hold the key),
-// a normal search must answer {"fallback": true}.
+// a normal search must answer {"fallback": true}. The Ask Tally connector at
+// /mcp must answer an MCP initialize and list its four tools.
 // Usage: node scripts/check-deploy.mjs <deployed-url> [--expect-search-fallback]
 /* global setTimeout */
 import { readFileSync } from 'node:fs';
@@ -55,6 +56,28 @@ if (process.argv.includes('--expect-search-fallback')) {
   const text = await answer.text();
   if (answer.status !== 200 || text !== '{"fallback":true}') failures.push(`search: expected 200 {"fallback":true}, got ${answer.status} ${text.slice(0, 200)}`);
 }
+
+// Ask Tally: an MCP initialize and a tools/list on /mcp.
+const mcpUrl = new URL('/mcp', url).toString();
+const rpc = async (id, method, params = {}) => {
+  const res = await fetch(mcpUrl, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', 'mcp-protocol-version': '2025-06-18' },
+    body: JSON.stringify({ jsonrpc: '2.0', id, method, params }),
+  });
+  const text = await res.text();
+  const line = (res.headers.get('content-type') ?? '').includes('text/event-stream') ? text.split('\n').find((l) => l.startsWith('data:'))?.slice(5) : text;
+  try {
+    return { status: res.status, message: JSON.parse(line ?? '') };
+  } catch {
+    return { status: res.status, message: null };
+  }
+};
+const init = await rpc(1, 'initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'deploy-check', version: '1.0.0' } });
+if (init.status !== 200 || !init.message?.result?.serverInfo) failures.push(`mcp: initialize should answer 200 with serverInfo, got ${init.status}`);
+const list = await rpc(2, 'tools/list');
+const tools = (list.message?.result?.tools ?? []).map((t) => t.name).sort().join(',');
+if (tools !== 'get_company,list_capabilities,list_clusters_and_events,search_companies') failures.push(`mcp: tools/list returned ${tools || 'nothing'}`);
 
 if (failures.length) {
   console.error(`Deploy check FAILED for ${url}\n\n${failures.join('\n')}`);

@@ -1,6 +1,6 @@
 // Cloudflare Workers static assets (docs/adr/0001) with one Worker route,
-// /api/search (docs/adr/0004). Pages and data are served straight from
-// assets; only /api/* runs the Worker. Deploys run from CI only.
+// /api/search (docs/adr/0004), plus the read-only Ask Tally connector at /mcp.
+// Pages and data are served straight from assets; only /api/* and /mcp run the Worker. Deploys run from CI only.
 // The custom domain is bound at go-live; until then the workers.dev URL is the
 // preview and verification surface.
 //
@@ -17,13 +17,14 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*", "/mcp"]
   },
   "keep_vars": true,
   // The daily search budget is a dashboard variable (SEARCH_DAILY_BUDGET), not kept here.
   // Without it the route falls back to keyword search.
   "ratelimits": [
-    { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } }
+    { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } },
+    { "name": "MCP_RATE_LIMIT", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } }
   ],
   "durable_objects": {
     "bindings": [{ "name": "SEARCH_BUDGET", "class_name": "SearchBudget" }]
@@ -33,7 +34,8 @@
   // preview gets its own Durable Object namespace.
   "previews": {
     "ratelimits": [
-      { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+      { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
+      { "name": "MCP_RATE_LIMIT", "namespace_id": "1004", "simple": { "limit": 60, "period": 60 } }
     ],
     "durable_objects": {
       "bindings": [{ "name": "SEARCH_BUDGET", "class_name": "SearchBudget" }]

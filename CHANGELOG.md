@@ -22,6 +22,9 @@ All notable changes to the Tally site. Versions follow semantic versioning.
 - Bundle-size check in the build, and journey tests run under the production CSP.
 - Plain-English search: a search box sends the request to `POST /api/search`, a Worker route on the same site that asks Claude Haiku for filter values through one strict tool, validates them against the filter schema and the known values, and returns filters only. The route is rate-limited and budget-capped; without a key, at a limit, or on any failure it answers `{"fallback": true}` and the browser runs a keyword search over names, summaries and tag labels, held in the URL (`q`), and says so. Contract in `CONTEXT.md`.
 
+- Ask Tally: a read-only remote MCP server at `/mcp` on the same Worker, so anyone can connect an AI assistant to Tally. Four tools (`search_companies`, `get_company`, `list_capabilities`, `list_clusters_and_events`) answer from the site's own public data with strict input schemas, at most 25 results, generic errors, a per-visitor rate limit and no model calls. A new `/ask-tally` page explains how to add it in Claude and other MCP clients. Contract in `CONTEXT.md`.
+
 ### Changed
 - Pull-request previews use Worker Previews (`wrangler preview`), since a Worker that implements a Durable Object gets no version preview URL; the deploy check also exercises the search route.
+- The deploy check also calls `/mcp` with an MCP initialize and a tools list.
 - CSP allows the map tile host (`tiles.openfreemap.org`) for connect and images only.
