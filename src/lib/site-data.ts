@@ -22,3 +22,11 @@ export function companyTexts(): Record<string, CompanyText> {
   texts ??= JSON.parse(readFileSync(join(process.cwd(), '.tally', 'company-text.json'), 'utf8')) as Record<string, CompanyText>;
   return texts;
 }
+
+let added: Record<string, string> | null = null;
+
+/** When each company was first listed, by id (scripts/build-history.mjs). */
+export function addedDates(): Record<string, string> {
+  added ??= JSON.parse(readFileSync(join(process.cwd(), '.tally', 'added.json'), 'utf8')) as Record<string, string>;
+  return added;
+}

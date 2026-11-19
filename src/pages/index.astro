@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import SiteFooter from '../components/SiteFooter.astro';
 import { getListedMailto } from '../lib/contact';
 ---
-<Base title="Tally: UK defence capability" description="An open map and directory of UK defence capability. Public information, free to use." wide>
+<Base title="Tally: UK defence capability" description="An open map and directory of UK defence capability. Public information, free to use." wide feed>
   <header class="site-header">
     <div class="header-row">
       <h1>Tally</h1>
@@ -11,6 +11,7 @@ import { getListedMailto } from '../lib/contact';
         <ul>
           <li><a href="/events">Upcoming cluster events</a></li>
           <li><a href="/opportunities">Funding calls and opportunities</a></li>
+          <li><a href="/new">New companies</a></li>
         </ul>
       </nav>
     </div>
