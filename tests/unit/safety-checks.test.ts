@@ -52,3 +52,11 @@ describe('register wording parity', () => {
     expect(compare(site, gatePattern(GATE.replace('re.I,', '0,')))).toEqual(['case sensitivity differs']);
   });
 });
+
+describe('feed text', () => {
+  it('drops lone surrogates and keeps valid pairs', async () => {
+    const { xmlEscape } = await import('../../src/lib/new-companies');
+    expect(xmlEscape('A\uD800B\uDC00C \u{1F680} & D')).toBe('ABC \u{1F680} &amp; D');
+  });
+});
+
