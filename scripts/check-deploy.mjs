@@ -16,11 +16,7 @@ if (!url) {
 
 const expected = Object.fromEntries(
   readFileSync(new URL('../public/_headers', import.meta.url), 'utf8')
-    // Only the "/*" block: the security headers every page carries. Rules
-    // for single paths (such as the feed's Content-Type) are not checked here.
-    .split(/\n(?=\S)/)
-    .filter((block) => block.startsWith('/*\n'))
-    .flatMap((block) => block.split('\n'))
+    .split('\n')
     .filter((l) => /^\s+[A-Za-z-]+:/.test(l))
     .map((l) => {
       const i = l.indexOf(':');

@@ -60,9 +60,3 @@ describe('feed text', () => {
   });
 });
 
-describe('feed headers', () => {
-  const headers = readFileSync(new URL('../../public/_headers', import.meta.url), 'utf8');
-  it('serves the feed as RSS', () => {
-    expect(headers).toMatch(/^\/new\/feed\.xml\n\s+Content-Type: application\/rss\+xml; charset=utf-8$/m);
-  });
-});
