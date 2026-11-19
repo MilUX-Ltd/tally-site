@@ -1,0 +1,13 @@
+/* Ask Tally connect page. Brand colours only (see base.css). */
+.connect-url {
+  display: block;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid var(--beige);
+  font-size: 1.1rem;
+  overflow-wrap: anywhere;
+}
+.ask-tally code { overflow-wrap: anywhere; }
+.ask-tally section { max-width: 60rem; }
+.ask-tally dt { font-weight: 600; margin-top: 0.75rem; }
+.ask-tally dd { margin: 0.25rem 0 0; }

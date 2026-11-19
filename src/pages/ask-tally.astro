@@ -1,0 +1,72 @@
+---
+// Ask Tally: how to connect an AI assistant to Tally's read-only MCP
+// connector at /mcp (worker/mcp.ts). Static, no script.
+import Base from '../layouts/Base.astro';
+import SiteFooter from '../components/SiteFooter.astro';
+import '../styles/ask-tally.css';
+
+const URL_MCP = 'https://tally.milux.co.uk/mcp';
+---
+<Base title="Ask Tally from your AI assistant: Tally" description="Connect Claude or another AI assistant to Tally, the open directory of UK defence capability, and ask it questions in your own words.">
+  <div class="ask-tally">
+    <header class="site-header">
+      <p><a href="/">Back to the Tally map</a></p>
+      <h1>Ask Tally from your AI assistant</h1>
+      <p>Tally has a connector that any AI assistant supporting the Model Context Protocol (MCP) can use. Add it once, then ask your assistant things like "who does counter-drone work within 25 miles of Portsmouth?" and it will look the answer up in Tally, with links back to each company on the map.</p>
+    </header>
+
+    <section aria-labelledby="url-heading">
+      <h2 id="url-heading">The connector address</h2>
+      <p>Use this address wherever your assistant asks for a remote MCP server URL:</p>
+      <p><code class="connect-url">{URL_MCP}</code></p>
+      <p>There is nothing to sign up for and no key. It is free to use.</p>
+    </section>
+
+    <section aria-labelledby="claude-heading">
+      <h2 id="claude-heading">Add it in Claude</h2>
+      <ol>
+        <li>In Claude on the web or the desktop app, open <strong>Customize</strong>, then <strong>Connectors</strong>.</li>
+        <li>Choose <strong>+ Add</strong>, then <strong>Add custom connector</strong>.</li>
+        <li>Paste <code>{URL_MCP}</code> and choose <strong>Continue</strong>.</li>
+        <li>For <strong>Authentication</strong>, choose <strong>No sign in</strong>, then choose <strong>Add</strong>.</li>
+        <li>In a chat, choose <strong>+</strong>, then <strong>Connectors</strong>, and turn Tally on. Then ask your question.</li>
+      </ol>
+      <h3>For Claude Team and Enterprise owners</h3>
+      <p>An owner can add Tally for everyone in the organisation: open <strong>Organization settings</strong>, then <strong>Connectors</strong>, choose <strong>Add</strong>, then <strong>Custom</strong>, then <strong>Web</strong>, and paste the address above. Members then turn it on in a chat as above.</p>
+      <h3>Claude Code</h3>
+      <p>Run <code>claude mcp add --transport http tally {URL_MCP}</code>.</p>
+    </section>
+
+    <section aria-labelledby="other-heading">
+      <h2 id="other-heading">Add it in other MCP clients</h2>
+      <p>Any client that supports remote MCP servers over Streamable HTTP can use Tally. Add a server with the address above, the HTTP (Streamable HTTP) transport and no authentication. Look for a setting called connectors, tools, integrations or MCP servers.</p>
+    </section>
+
+    <section aria-labelledby="tools-heading">
+      <h2 id="tools-heading">What your assistant can do</h2>
+      <p>The connector is read-only. It offers four tools:</p>
+      <dl>
+        <dt><code>search_companies</code></dt>
+        <dd>Find companies by capability or capability group, region, size, accreditation, framework, membership, regional cluster or keyword, and near a UK postcode or a point within a radius. Returns up to 25 companies at a time with a summary, capabilities, location and a link to the company on the Tally map.</dd>
+        <dt><code>get_company</code></dt>
+        <dd>The public profile Tally holds for one company.</dd>
+        <dt><code>list_capabilities</code></dt>
+        <dd>Tally's grouped capability taxonomy and the accepted values for the other filters.</dd>
+        <dt><code>list_clusters_and_events</code></dt>
+        <dd>The UK's regional defence and security clusters and their upcoming events. Members-only events are shown only as a date and a link to join the cluster.</dd>
+      </dl>
+    </section>
+
+    <section aria-labelledby="data-heading">
+      <h2 id="data-heading">What it uses and what it keeps</h2>
+      <ul>
+        <li>Answers come only from the same public data the Tally map shows. Your assistant's own model does the thinking; Tally runs no AI model for the connector.</li>
+        <li>Tally does not log or keep what your assistant asks. To apply a fair-use limit, it counts requests per network address (for IPv6, per /64 network). Each count covers one minute, is held only in memory, and is never stored. Everyone sharing one network address shares one allowance.</li>
+        <li>Postcodes are placed from Tally's own data. If Tally cannot place one, your assistant can give a latitude and longitude instead.</li>
+        <li>The limit is generous for normal use. If you hit it, wait a minute and try again.</li>
+      </ul>
+      <p>Something wrong or missing? Please <a href="https://milux.co.uk/contact/">get in touch</a>.</p>
+    </section>
+  </div>
+  <SiteFooter />
+</Base>

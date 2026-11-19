@@ -1,14 +1,17 @@
 // The Tally Worker. Pages and data are static assets served before this code
-// runs; only /api/* reaches it (run_worker_first in wrangler.jsonc).
+// runs; only /api/* and /mcp reach it (run_worker_first in wrangler.jsonc).
+import { handleMcp } from './mcp';
 import { handleSearch } from './search';
 import type { Env } from './types';
 
 export { SearchBudget } from './budget';
+export { McpRateLimiter } from './mcp-limiter';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url);
     if (pathname === '/api/search') return handleSearch(request, env);
+    if (pathname === '/mcp') return handleMcp(request, env);
     if (pathname.startsWith('/api/')) {
       return new Response(JSON.stringify({ error: 'not-found' }), {
         status: 404,

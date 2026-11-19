@@ -5,6 +5,7 @@ All notable changes to the Tally site. Versions follow semantic versioning.
 ## [Unreleased]
 
 ### Added
+- New companies (`/new`): companies added in the 12 weeks up to the latest addition, grouped by week, newest first, each with a link to its company page, its region, top capabilities and the date added, and an RSS 2.0 feed of the same list at `/new/feed.xml`, advertised in the page head. The added date is when a company first appeared on the data repo's `main`, read from its git history at build time. Linked from the explorer header and the footer, and listed in the sitemap.
 - Walking skeleton: holding page, 404 page, security headers baseline, public-terms guard, CI with lint, type check, unit tests and the accessibility floor, preview and production deploy jobs.
 - Capability heatmap: a full-width UK map (MapLibre, OpenFreeMap tiles) with companies binned into H3 hexagons in the browser, coloured by count with a brand legend, turning into clustered pins when zoomed in. Selecting a hexagon, cluster or pin lists its companies.
 - Filters for capability (by group), size, region, framework, accreditation and membership, redrawing the map and the paged results list.
@@ -30,8 +31,11 @@ All notable changes to the Tally site. Versions follow semantic versioning.
 - `/about`: what Tally is, public sources only, licences and credits, built with AI, and how to get listed or correct a listing. Every page shares one footer linking to it.
 - Near-me search: type a UK postcode, the first part of one, or a town or city, and pick 5, 10, 25 or 50 miles; a ring is drawn and the map, count, matrix and list narrow to companies within it. Places are looked up with postcodes.io from the browser, only on Find, sending only the typed place. The resolved place is held in the URL (`near`, `at`, `within`). One location filter at a time: a place and a defence site replace each other. Combines with filters, clusters and overlap mode.
 
+- Ask Tally: a read-only remote MCP server at `/mcp` on the same Worker, so anyone can connect an AI assistant to Tally. Four tools (`search_companies`, `get_company`, `list_capabilities`, `list_clusters_and_events`) answer from the site's own public data with strict input schemas, at most 25 results, generic errors that never repeat the request, no batches, foreign browser origins refused, a strict rate limit per connection and per address, and no model calls. A new `/ask-tally` page explains how to add it in Claude and other MCP clients. Contract in `CONTEXT.md`.
+
 ### Changed
 - CSP allows the place lookup (`api.postcodes.io`) for connect only.
 - Region-level companies are refused by the browser's `isLocated` guard too, so they are never mapped or inside any radius.
 - Pull-request previews use Worker Previews (`wrangler preview`), since a Worker that implements a Durable Object gets no version preview URL; the deploy check also exercises the search route.
+- The deploy check also calls `/mcp` with an MCP initialize and a tools list.
 - CSP allows the map tile host (`tiles.openfreemap.org`) for connect and images only.

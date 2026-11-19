@@ -30,6 +30,12 @@ export interface Env {
   /** Daily model call budget (wrangler var). Missing or invalid means none. */
   SEARCH_DAILY_BUDGET?: string;
   SEARCH_RATE_LIMIT: RateLimit;
+  /** Coarse per-visitor rate limit for the Ask Tally connector at /mcp (approximate). */
+  MCP_RATE_LIMIT: RateLimit;
+  /** Strict per-client limiter for /mcp (worker/mcp-limiter.ts). */
+  MCP_LIMITER?: CounterNamespace;
+  /** Requests per client (network address, IPv6 by /64) per minute for /mcp (wrangler var). */
+  MCP_ADDRESS_LIMIT?: string;
   SEARCH_BUDGET: CounterNamespace;
   ASSETS: Assets;
 }

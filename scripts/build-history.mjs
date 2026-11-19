@@ -10,7 +10,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { slimTaxonomy } from './fetch-data.mjs';
+import { companyIds, slimTaxonomy } from './fetch-data.mjs';
 
 const REPO = 'https://github.com/MilUX-Ltd/tally';
 const FILE = 'tally-data.json';
@@ -74,6 +74,50 @@ export function historyFromSnapshots(snapshots, taxonomy) {
   return { groups: t.groups.map((g) => ({ slug: g.slug, label: g.label })), months };
 }
 
+// Added dates: when each company was first listed. A company is matched across
+// snapshots by its name in lower case without accents or punctuation, "&" as
+// "and", and a trailing Limited, Ltd, PLC, LLP, Inc or LLC ignored, so a
+// Limited-to-Ltd rename keeps its first date.
+const LEGAL_SUFFIX = /(?:\s(?:limited|ltd|plc|llp|inc|llc))+$/;
+
+/** The key a company's name is matched by across snapshots. */
+export function nameKey(name) {
+  return String(name ?? '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(LEGAL_SUFFIX, '');
+}
+
+/** An ISO date in UTC to the second, for example 2026-06-29T11:20:37Z. */
+const utc = (date) => new Date(date).toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+/**
+ * The date each company was first listed, by company id.
+ * @param {{ id: string, name: string }[]} companies today's companies
+ * @param {{ date: string, names: string[] }[]} snapshots oldest first
+ * @returns {Record<string, string>} id to ISO date (UTC); companies never seen are left out
+ */
+export function addedDates(companies, snapshots) {
+  const first = new Map();
+  for (const s of snapshots) {
+    const when = utc(s.date);
+    for (const n of s.names) {
+      const key = nameKey(n);
+      if (key && !first.has(key)) first.set(key, when);
+    }
+  }
+  const out = {};
+  for (const c of companies) {
+    const when = first.get(nameKey(c.name));
+    if (when) out[c.id] = when;
+  }
+  return out;
+}
+
 const companiesOf = (raw) => (Array.isArray(raw?.companies) ? raw.companies : []);
 
 function fromGit() {
@@ -95,15 +139,27 @@ function fromGit() {
       return { month: p.month, carried: p.carried, companies: cache.get(p.sha) };
     });
     const taxonomy = JSON.parse(git('show', `HEAD:taxonomy.json`));
-    return historyFromSnapshots(snapshots, taxonomy);
+    // Added dates: every first-parent commit on main that touches the data,
+    // oldest first, so a merged pull request counts from its merge. Only
+    // commit dates and company names are read; never messages or authors.
+    const mainline = git('log', '--first-parent', '--reverse', '--format=%H %cI', '--', FILE)
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const [sha, date] = line.split(' ');
+        return { date, names: companiesOf(JSON.parse(git('show', `${sha}:${FILE}`))).map((c) => c.name) };
+      });
+    return { history: historyFromSnapshots(snapshots, taxonomy), mainline };
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 }
 
+const readFixture = (name) => JSON.parse(readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8'));
+
 /** The synthetic history in tests/fixtures: commits that each list the fixture companies present then. */
 export function fromFixture() {
-  const read = (name) => JSON.parse(readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8'));
+  const read = readFixture;
   const data = read('tally-data.json');
   const { commits } = read('history.json');
   const byName = new Map(companiesOf(data).map((c) => [c.name, c]));
@@ -113,9 +169,22 @@ export function fromFixture() {
   return historyFromSnapshots(snapshots, read('taxonomy.json'));
 }
 
+/** Added dates for the fixture companies, from the synthetic history. */
+export function addedFromFixture() {
+  const { commits } = readFixture('history.json');
+  const ordered = [...commits].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const companies = companiesOf(readFixture('tally-data.json'));
+  const ids = companyIds(companies);
+  return addedDates(
+    companies.map((c, i) => ({ id: ids[i], name: c.name })),
+    ordered.map((c) => ({ date: c.date, names: c.companies })),
+  );
+}
+
 async function main() {
   const fixture = process.env.TALLY_DATA_SOURCE === 'fixture';
-  const history = { generated: new Date().toISOString(), ...(fixture ? fromFixture() : fromGit()) };
+  const fromRepo = fixture ? null : fromGit();
+  const history = { generated: new Date().toISOString(), ...(fixture ? fromFixture() : fromRepo.history) };
   if (!history.months.length) throw new Error('no history found; refusing to write an empty file');
   const dir = new URL('../public/data/', import.meta.url);
   mkdirSync(dir, { recursive: true });
@@ -123,6 +192,16 @@ async function main() {
   writeFileSync(new URL('history.json', dir), json);
   const span = `${history.months[0].month} to ${history.months.at(-1).month}`;
   console.log(`Wrote public/data/history.json from ${fixture ? 'the test fixture' : 'the data repo history'}: ${history.months.length} months (${span}), ${json.length} bytes.`);
+
+  // Added dates, joined to today's company ids from public/data/tally.json
+  // (written by fetch-data.mjs, which runs first). Build-only, never served.
+  const today = JSON.parse(readFileSync(new URL('tally.json', dir), 'utf8'));
+  const added = fixture ? addedFromFixture() : addedDates(today.companies, fromRepo.mainline);
+  const missing = today.companies.length - Object.keys(added).length;
+  const buildDir = new URL('../.tally/', import.meta.url);
+  mkdirSync(buildDir, { recursive: true });
+  writeFileSync(new URL('added.json', buildDir), JSON.stringify(added));
+  console.log(`Wrote .tally/added.json: ${Object.keys(added).length} companies dated${missing ? `, ${missing} not yet in the history (left off the new companies list)` : ''}.`);
 }
 
 const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop());

@@ -1,6 +1,6 @@
 // Cloudflare Workers static assets (docs/adr/0001) with one Worker route,
-// /api/search (docs/adr/0004). Pages and data are served straight from
-// assets; only /api/* runs the Worker. Deploys run from CI only.
+// /api/search (docs/adr/0004), plus the read-only Ask Tally connector at /mcp.
+// Pages and data are served straight from assets; only /api/* and /mcp run the Worker. Deploys run from CI only.
 // The custom domain is bound at go-live; until then the workers.dev URL is the
 // preview and verification surface.
 //
@@ -17,26 +17,43 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": ["/api/*", "/mcp"]
   },
   "keep_vars": true,
   // The daily search budget is a dashboard variable (SEARCH_DAILY_BUDGET), not kept here.
   // Without it the route falls back to keyword search.
   "ratelimits": [
-    { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } }
+    { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } },
+    { "name": "MCP_RATE_LIMIT", "namespace_id": "1003", "simple": { "limit": 1200, "period": 60 } }
   ],
+  // The connector at /mcp: a coarse rate-limit binding (approximate, per location)
+  // in front of a strict per-client limiter (worker/mcp-limiter.ts), both keyed on
+  // the client's network address; the limit per client per minute is this var.
+  "vars": { "MCP_ADDRESS_LIMIT": "1200" },
   "durable_objects": {
-    "bindings": [{ "name": "SEARCH_BUDGET", "class_name": "SearchBudget" }]
+    "bindings": [
+      { "name": "SEARCH_BUDGET", "class_name": "SearchBudget" },
+      { "name": "MCP_LIMITER", "class_name": "McpRateLimiter" }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SearchBudget"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["SearchBudget"] },
+    { "tag": "v2", "new_sqlite_classes": ["McpRateLimiter"] }
+  ],
   // Worker Previews do not inherit the top-level vars and bindings; each
   // preview gets its own Durable Object namespace.
   "previews": {
     "ratelimits": [
-      { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } }
+      { "name": "SEARCH_RATE_LIMIT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
+      { "name": "MCP_RATE_LIMIT", "namespace_id": "1004", "simple": { "limit": 120, "period": 60 } }
     ],
+    // Previews use a low limit so a short burst can show the limiter working.
+    "vars": { "MCP_ADDRESS_LIMIT": "15" },
     "durable_objects": {
-      "bindings": [{ "name": "SEARCH_BUDGET", "class_name": "SearchBudget" }]
+      "bindings": [
+        { "name": "SEARCH_BUDGET", "class_name": "SearchBudget" },
+        { "name": "MCP_LIMITER", "class_name": "McpRateLimiter" }
+      ]
     }
   }
 }

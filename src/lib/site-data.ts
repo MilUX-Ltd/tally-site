@@ -25,6 +25,14 @@ export function companyTexts(): Record<string, CompanyText> {
   return texts;
 }
 
+let added: Record<string, string> | null = null;
+
+/** When each company was first listed, by id (scripts/build-history.mjs). */
+export function addedDates(): Record<string, string> {
+  added ??= JSON.parse(readFileSync(join(process.cwd(), '.tally', 'added.json'), 'utf8')) as Record<string, string>;
+  return added;
+}
+
 /** Recorded certification checks, keyed by company id (build-only, from scripts/fetch-data.mjs). */
 export function certificationChecks(): Record<string, CertificationCheck[]> {
   checks ??= JSON.parse(readFileSync(join(process.cwd(), '.tally', 'certification-checks.json'), 'utf8')) as Record<string, CertificationCheck[]>;
