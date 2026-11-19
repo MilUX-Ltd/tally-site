@@ -22,7 +22,10 @@ All notable changes to the Tally site. Versions follow semantic versioning.
 - `/events`: upcoming cluster events as a month calendar and a list, built at build time; past events are dropped. Members-only events show only a signpost and a link to join the cluster, and the build refuses a members-only event that carries anything more.
 - Bundle-size check in the build, and journey tests run under the production CSP.
 - Plain-English search: a search box sends the request to `POST /api/search`, a Worker route on the same site that asks Claude Haiku for filter values through one strict tool, validates them against the filter schema and the known values, and returns filters only. The route is rate-limited and budget-capped; without a key, at a limit, or on any failure it answers `{"fallback": true}` and the browser runs a keyword search over names, summaries and tag labels, held in the URL (`q`), and says so. Contract in `CONTEXT.md`.
+- Near-me search: type a UK postcode, the first part of one, or a town or city, and pick 5, 10, 25 or 50 miles; a ring is drawn and the map, count, matrix and list narrow to companies within it. Places are looked up with postcodes.io from the browser, only on Find, sending only the typed place. The resolved place is held in the URL (`near`, `at`, `within`). One location filter at a time: a place and a defence site replace each other. Combines with filters, clusters and overlap mode.
 
 ### Changed
+- CSP allows the place lookup (`api.postcodes.io`) for connect only.
+- Region-level companies are refused by the browser's `isLocated` guard too, so they are never mapped or inside any radius.
 - Pull-request previews use Worker Previews (`wrangler preview`), since a Worker that implements a Durable Object gets no version preview URL; the deploy check also exercises the search route.
 - CSP allows the map tile host (`tiles.openfreemap.org`) for connect and images only.

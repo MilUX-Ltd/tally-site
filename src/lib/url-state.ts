@@ -8,6 +8,7 @@
 import { emptyFilters, FACETS, type Facet, type Filters } from './filters';
 import { MONTH } from './history';
 import { MAX_QUERY_LENGTH } from './search';
+import { DEFAULT_NEAR_RADIUS, inUk, isNearRadius, isPlaceName, type NearRadius, type Place } from './near';
 import { DEFAULT_RADIUS, isRadius, type Radius } from './sites';
 import type { TallyData } from './types';
 
@@ -44,6 +45,10 @@ export interface ViewState {
   site: string | null;
   /** Radius around the chosen site, in miles. */
   radius: Radius;
+  /** A typed place (resolved name and point) whose radius narrows the companies. Never set with a site. */
+  near: Place | null;
+  /** Radius around the place, in miles. */
+  within: NearRadius;
   /** Whether every defence site is drawn on the map. */
   sites: boolean;
   /** Whether cluster areas and their events are drawn on the map. */
@@ -57,7 +62,7 @@ export interface ViewState {
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, sites: false, clusters: false, cluster: null, q: '' };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, cluster: null, q: '' };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -138,6 +143,13 @@ export function fromQuery(query: string): ViewState {
   if (site && ID.test(site)) state.site = site;
   const radius = Number(p.get('radius'));
   if (/^\d+$/.test(p.get('radius') ?? '') && isRadius(radius)) state.radius = radius;
+  // A place needs both its name and its point, inside the UK. One location
+  // filter at a time: with a site chosen, the place is dropped.
+  const place = p.get('near');
+  const at = numbers(p.get('at'), ',', 2);
+  if (!state.site && place && isPlaceName(place) && at && inUk(at[0], at[1])) state.near = { name: place, lat: round(at[0], 4), lon: round(at[1], 4) };
+  const within = Number(p.get('within'));
+  if (/^\d+$/.test(p.get('within') ?? '') && isNearRadius(within)) state.within = within;
   if (p.get('sites') === '1') state.sites = true;
   if (p.get('clusters') === '1') state.clusters = true;
   const cluster = p.get('cluster');
@@ -165,6 +177,11 @@ export function toQuery(state: ViewState): string {
   if (state.month) add('month', state.month);
   if (state.site) add('site', state.site);
   if (state.radius !== DEFAULT_RADIUS) add('radius', String(state.radius));
+  if (state.near && !state.site) {
+    add('near', state.near.name);
+    add('at', `${fmt(state.near.lat, 4)},${fmt(state.near.lon, 4)}`);
+    if (state.within !== DEFAULT_NEAR_RADIUS) add('within', String(state.within));
+  }
   if (state.sites) add('sites', '1');
   if (state.clusters) add('clusters', '1');
   if (state.cluster) add('cluster', state.cluster);

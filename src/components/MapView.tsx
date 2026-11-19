@@ -23,8 +23,10 @@ interface Props {
   sites?: Site[] | null;
   /** The chosen site, drawn larger. */
   chosenSite?: string | null;
-  /** A distance ring around the chosen site, as [lon, lat] points. */
+  /** A distance ring around the chosen site or place, as [lon, lat] points. */
   ring?: number[][] | null;
+  /** A typed place (near-me search), drawn at the ring's centre. */
+  place?: { lat: number; lon: number } | null;
   /** Cluster outlines to draw, each with its colour and whether it is chosen. */
   clusterRegions?: { type: 'FeatureCollection'; features: unknown[] } | null;
   /** One marker per cluster with upcoming events. */
@@ -68,6 +70,14 @@ function sitesGeoJSON(sites: Site[] | null | undefined, chosen: string | null | 
       geometry: { type: 'Point' as const, coordinates: [s.lon, s.lat] },
       properties: { id: s.id, name: s.name, chosen: s.id === chosen },
     })),
+  };
+}
+
+function placeGeoJSON(place: { lat: number; lon: number } | null | undefined) {
+  if (!place) return EMPTY;
+  return {
+    type: 'FeatureCollection' as const,
+    features: [{ type: 'Feature' as const, properties: {}, geometry: { type: 'Point' as const, coordinates: [place.lon, place.lat] } }],
   };
 }
 
@@ -249,6 +259,13 @@ export default function MapView(props: Props) {
           m.addSource('site-ring', { type: 'geojson', data: ringGeoJSON(propsRef.current.ring) });
           m.addLayer({ id: 'site-ring-fill', type: 'fill', source: 'site-ring', paint: { 'fill-color': RING_COLOUR, 'fill-opacity': 0.06 } });
           m.addLayer({ id: 'site-ring-line', type: 'line', source: 'site-ring', paint: { 'line-color': RING_COLOUR, 'line-width': 2.5 } });
+          m.addSource('near-place', { type: 'geojson', data: placeGeoJSON(propsRef.current.place) });
+          m.addLayer({
+            id: 'near-place-point',
+            type: 'circle',
+            source: 'near-place',
+            paint: { 'circle-color': RING_COLOUR, 'circle-radius': 7, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 2 },
+          });
           m.addSource('sites', { type: 'geojson', data: sitesGeoJSON(propsRef.current.sites, propsRef.current.chosenSite) });
           m.addLayer({
             id: 'site-points',
@@ -383,6 +400,11 @@ export default function MapView(props: Props) {
     const source = mapRef.current?.getSource('sites') as GeoJSONSource | undefined;
     if (loaded && source) source.setData(sitesGeoJSON(props.sites, props.chosenSite));
   }, [props.sites, props.chosenSite, loaded]);
+
+  useEffect(() => {
+    const source = mapRef.current?.getSource('near-place') as GeoJSONSource | undefined;
+    if (loaded && source) source.setData(placeGeoJSON(props.place));
+  }, [props.place?.lat, props.place?.lon, loaded]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource('cluster-regions') as GeoJSONSource | undefined;

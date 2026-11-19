@@ -28,7 +28,7 @@ Current version: **0.1.0** (unreleased). Before changing anything, state the cur
 ## Security floor (non-negotiable)
 
 - Security headers from `public/_headers` on every page, asserted in unit tests and after every deploy. No inline scripts or styles; no `unsafe-inline` or `unsafe-eval`.
-- No cookies. No third-party request except the map tile host once the map lands (added to the CSP in that card).
+- No cookies. No third-party request except the map tile host and the place lookup for near-me search (postcodes.io, `connect-src` only, sent only the place a buyer types when they press Find).
 - WCAG 2.2 AA on every page; the matrix and list reach everything the map shows; every task works by keyboard.
 - Pinned dependencies and pinned action SHAs, Dependabot, secret scanning with push protection. No unverified installs.
 - Model output (plain-English search) is validated against the filter schema and never shown or stored.
