@@ -13,10 +13,33 @@ interface Props {
   actions?: (company: Company) => ComponentChildren;
 }
 
-export default function ResultsList({ companies, page, onPage, actions }: Props) {
-  const pages = Math.max(1, Math.ceil(companies.length / PAGE_SIZE));
+/** Previous and next buttons for a paged list; nothing when there is one page. */
+export function Pager({ label, current, pages, onPage }: { label: string; current: number; pages: number; onPage: (page: number) => void }) {
+  if (pages <= 1) return null;
+  return (
+    <nav class="pager" aria-label={label}>
+      <button type="button" class="secondary" disabled={current === 1} onClick={() => onPage(current - 1)}>
+        Previous<span class="vh"> page</span>
+      </button>
+      <span>
+        Page {current} of {pages}
+      </span>
+      <button type="button" class="secondary" disabled={current === pages} onClick={() => onPage(current + 1)}>
+        Next<span class="vh"> page</span>
+      </button>
+    </nav>
+  );
+}
+
+/** The companies on one page of a list, with the page clamped to those that exist. */
+export function pageOf<T>(items: T[], page: number): { shown: T[]; current: number; pages: number } {
+  const pages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
   const current = Math.min(Math.max(1, page), pages);
-  const shown = companies.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+  return { shown: items.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE), current, pages };
+}
+
+export default function ResultsList({ companies, page, onPage, actions }: Props) {
+  const { shown, current, pages } = pageOf(companies, page);
   return (
     <section class="results" aria-labelledby="results-heading">
       <h2 id="results-heading">Companies</h2>
@@ -31,19 +54,7 @@ export default function ResultsList({ companies, page, onPage, actions }: Props)
           ))}
         </ul>
       )}
-      {pages > 1 && (
-        <nav class="pager" aria-label="Results pages">
-          <button type="button" class="secondary" disabled={current === 1} onClick={() => onPage(current - 1)}>
-            Previous<span class="vh"> page</span>
-          </button>
-          <span>
-            Page {current} of {pages}
-          </span>
-          <button type="button" class="secondary" disabled={current === pages} onClick={() => onPage(current + 1)}>
-            Next<span class="vh"> page</span>
-          </button>
-        </nav>
-      )}
+      <Pager label="Results pages" current={current} pages={pages} onPage={onPage} />
     </section>
   );
 }

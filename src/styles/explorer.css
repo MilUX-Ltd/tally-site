@@ -1,9 +1,30 @@
 /* Explorer layout. Brand colours only (see base.css). */
+/* One column on a phone, in source order: search, shortlist and filters, then
+   place, map and views. On a wide screen the sidebar holds the shortlist and
+   filters, and the search sits above the map beside it. */
 .explorer { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 60rem) {
-  .explorer { grid-template-columns: 18rem minmax(0, 1fr); align-items: start; }
-  .explorer-filters { position: sticky; top: 0; max-height: 100vh; overflow-y: auto; }
+  .explorer { grid-template-columns: 18rem minmax(0, 1fr); row-gap: 0; align-items: start; }
+  .explorer-search { grid-column: 2; grid-row: 1; }
+  .explorer-filters { grid-column: 1; grid-row: 1 / span 2; position: sticky; top: 0; max-height: 100vh; overflow-y: auto; }
+  .explorer-main { grid-column: 2; grid-row: 2; }
 }
+.explorer-filters .shortlist { margin-top: 0; }
+/* Near a place and defence sites come before the map: above it on a narrow
+   screen, in a column beside it when there is room, so the map stays high. */
+.map-area { display: grid; gap: 0 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.place-panels .sites-panel { margin: 0 0 0.75rem; }
+@media (min-width: 70rem) {
+  .map-area { grid-template-columns: 18rem minmax(0, 1fr); }
+}
+/* The views bar: plain links, the current one marked by a bar as well as colour. */
+.views { margin: 1.5rem 0 0; border-bottom: 2px solid var(--beige); }
+.views ul { list-style: none; display: flex; flex-wrap: wrap; gap: 0 0.25rem; margin: 0; padding: 0; }
+.views a { display: inline-block; min-height: 44px; padding: 0.55rem 0.9rem; font-weight: 600; text-decoration: none; border-bottom: 4px solid transparent; margin-bottom: -2px; }
+.views a:hover { text-decoration: underline; }
+.views a[aria-current='page'] { border-bottom-color: var(--green); background: #fff; }
+.views .views-shortlist { margin-left: auto; }
+.view-area { margin: 1rem 0 0; }
 .notice { padding: 2rem 0; }
 button {
   font: inherit;
@@ -97,7 +118,7 @@ button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .growth-table { border-collapse: collapse; width: 100%; max-width: 40rem; }
 .growth-table th, .growth-table td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--beige); }
 .growth-table .num-bar { display: inline-flex; align-items: center; gap: 0.5rem; }
-.growth-table .bar { width: 10rem; max-width: 40vw; height: 0.9rem; flex: none; }
+.growth-table .bar { width: 10rem; max-width: 30vw; height: 0.9rem; flex: none; }
 .growth-table .bar rect { fill: var(--gold); }
 .sites-panel { border: 2px solid var(--blue-grey); background: #fff; margin: 0.75rem 0; padding: 0.5rem 1rem; min-width: 0; }
 .sites-panel legend { font-weight: 600; padding: 0 0.25rem; }
@@ -138,3 +159,8 @@ button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .cluster-map-entry[aria-pressed='true'] { border-color: var(--green); border-width: 3px; padding: calc(0.35rem - 2px) calc(0.5rem - 2px); background: var(--neutral); }
 .cluster-map-name { grid-column: 2; grid-row: 1; font-weight: 600; }
 .cluster-map-detail { grid-column: 2; grid-row: 2; font-size: 0.9rem; color: #2f3b42; }
+
+/* On a wide screen the company lists in the Companies view run in two columns, so the view stays short. */
+@media (min-width: 70rem) {
+  .view-companies .company-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2rem; }
+}

@@ -1,8 +1,9 @@
 // Overseas companies that match the filters, listed by country: Europe first,
-// then the rest of the world. They are never drawn on the UK map.
+// then the rest of the world, a page at a time. They are never drawn on the UK map.
 import { useMemo } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import CompanyItem from './CompanyItem';
+import { Pager, pageOf } from './ResultsList';
 import { overseasByCountry, type CountryGroup } from '../lib/countries';
 import type { Company } from '../lib/types';
 
@@ -10,6 +11,8 @@ interface Props {
   companies: Company[];
   /** Overlap mode is about places on the UK map; overseas companies with any chosen capability are listed. */
   overlap?: boolean;
+  page: number;
+  onPage: (page: number) => void;
   actions?: (company: Company) => ComponentChildren;
 }
 
@@ -34,8 +37,14 @@ function Region({ title, id, groups, actions }: { title: string; id: string; gro
   );
 }
 
-export default function OverseasList({ companies, overlap = false, actions }: Props) {
-  const { europe, world } = useMemo(() => overseasByCountry(companies), [companies]);
+export default function OverseasList({ companies, overlap = false, page, onPage, actions }: Props) {
+  // Europe first, then the rest of the world, by country; one page of that order is shown.
+  const ordered = useMemo(() => {
+    const all = overseasByCountry(companies);
+    return [...all.europe, ...all.world].flatMap((g) => g.companies);
+  }, [companies]);
+  const { shown, current, pages } = pageOf(ordered, page);
+  const { europe, world } = overseasByCountry(shown);
   return (
     <section class="overseas" aria-labelledby="overseas-heading">
       <h2 id="overseas-heading">Overseas companies</h2>
@@ -49,6 +58,7 @@ export default function OverseasList({ companies, overlap = false, actions }: Pr
         <>
           <Region title="Europe" id="overseas-europe" groups={europe} actions={actions} />
           <Region title="Rest of the world" id="overseas-world" groups={world} actions={actions} />
+          <Pager label="Overseas pages" current={current} pages={pages} onPage={onPage} />
         </>
       )}
     </section>

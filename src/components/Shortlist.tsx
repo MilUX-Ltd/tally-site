@@ -40,7 +40,7 @@ export default function Shortlist({ companies, taxonomy, shareUrl, onRemove, ove
     }
   };
   return (
-    <section class="shortlist" aria-label="Shortlist">
+    <section class="shortlist" id="shortlist" aria-label="Shortlist">
       <h2>{companies.length ? `Shortlist (${companies.length})` : 'Shortlist'}</h2>
       {companies.length === 0 ? (
         <p>Add companies from the list or a map area to build a shortlist you can share or download.</p>

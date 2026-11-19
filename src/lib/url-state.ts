@@ -59,12 +59,22 @@ export interface ViewState {
   cluster: string | null;
   /** Keyword search text, set when plain-English search falls back; '' for none. */
   q: string;
+  /** Which view shows below the map. */
+  view: View;
+  /** Page of the overseas list. */
+  opage: number;
 }
+
+/** The views below the map, in the order the views bar shows them. The first is the default. */
+export const VIEWS = ['companies', 'compare', 'clusters', 'growth'] as const;
+export type View = (typeof VIEWS)[number];
+export const DEFAULT_VIEW: View = 'companies';
+export const isView = (value: string | null): value is View => (VIEWS as readonly string[]).includes(value ?? '');
 
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '' };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '', view: DEFAULT_VIEW, opage: 1 };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -136,6 +146,7 @@ export function fromQuery(query: string): ViewState {
   if (group && ID.test(group)) state.matrix.group = group;
   state.matrix.page = pageNumber(p.get('mpage'));
   state.page = pageNumber(p.get('page'));
+  state.opage = pageNumber(p.get('opage'));
   state.list = list(p.get('list'), ID);
   // Overlap needs two or more capabilities.
   if (p.get('capmatch') === 'all' && state.filters.cap.length >= 2) state.capMatch = 'all';
@@ -158,6 +169,8 @@ export function fromQuery(query: string): ViewState {
   const cluster = p.get('cluster');
   if (cluster && CLUSTER.test(cluster)) state.cluster = cluster;
   state.q = keywordText(p.get('q'));
+  const view = p.get('view');
+  if (isView(view)) state.view = view;
   return state;
 }
 
@@ -175,6 +188,7 @@ export function toQuery(state: ViewState): string {
   if (state.matrix.group) add('mgroup', state.matrix.group);
   if (state.matrix.page > 1) add('mpage', String(state.matrix.page));
   if (state.page > 1) add('page', String(state.page));
+  if (state.opage > 1) add('opage', String(state.opage));
   if (state.list.length) add('list', state.list.join(','));
   if (state.capMatch === 'all' && state.filters.cap.length >= 2) add('capmatch', 'all');
   if (state.month) add('month', state.month);
@@ -190,6 +204,7 @@ export function toQuery(state: ViewState): string {
   if (state.onTop) add('ontop', '1');
   if (state.cluster) add('cluster', state.cluster);
   if (state.q) add('q', state.q);
+  if (state.view !== DEFAULT_VIEW) add('view', state.view);
   return parts.join('&');
 }
 
