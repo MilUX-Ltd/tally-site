@@ -50,13 +50,13 @@ export function pickMonthly(commits) {
  * Counts per month: the total, and companies per capability group (once per
  * group; a sub-capability counts for its group). Tags are read through the
  * given taxonomy, so tags it does not know are not counted.
- * @param {{ month: string, companies: { tags?: string[] }[] }[]} snapshots
+ * @param {{ month: string, carried?: boolean, companies: { tags?: string[] }[] }[]} snapshots
  * @param {object} taxonomy raw taxonomy.json
  */
 export function historyFromSnapshots(snapshots, taxonomy) {
   const t = slimTaxonomy(taxonomy);
   const groupOf = new Map(t.capabilities.map((c) => [c.slug, c.group]));
-  const months = snapshots.map(({ month, companies }) => {
+  const months = snapshots.map(({ month, carried = false, companies }) => {
     const groups = Object.fromEntries(t.groups.map((g) => [g.slug, 0]));
     for (const c of companies) {
       const seen = new Set();
@@ -69,7 +69,7 @@ export function historyFromSnapshots(snapshots, taxonomy) {
         }
       }
     }
-    return { month, total: companies.length, groups };
+    return { month, carried, total: companies.length, groups };
   });
   return { groups: t.groups.map((g) => ({ slug: g.slug, label: g.label })), months };
 }
@@ -92,7 +92,7 @@ function fromGit() {
     const cache = new Map();
     const snapshots = picked.map((p) => {
       if (!cache.has(p.sha)) cache.set(p.sha, companiesOf(JSON.parse(git('show', `${p.sha}:${FILE}`))));
-      return { month: p.month, companies: cache.get(p.sha) };
+      return { month: p.month, carried: p.carried, companies: cache.get(p.sha) };
     });
     const taxonomy = JSON.parse(git('show', `HEAD:taxonomy.json`));
     return historyFromSnapshots(snapshots, taxonomy);
@@ -109,7 +109,7 @@ export function fromFixture() {
   const byName = new Map(companiesOf(data).map((c) => [c.name, c]));
   const picked = pickMonthly(commits);
   const shaNames = new Map(commits.map((c) => [c.sha, c.companies]));
-  const snapshots = picked.map((p) => ({ month: p.month, companies: shaNames.get(p.sha).map((n) => byName.get(n)).filter(Boolean) }));
+  const snapshots = picked.map((p) => ({ month: p.month, carried: p.carried, companies: shaNames.get(p.sha).map((n) => byName.get(n)).filter(Boolean) }));
   return historyFromSnapshots(snapshots, read('taxonomy.json'));
 }
 

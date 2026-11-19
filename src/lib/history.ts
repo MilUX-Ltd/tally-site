@@ -4,6 +4,8 @@
 export interface HistoryMonth {
   /** YYYY-MM */
   month: string;
+  /** True when the data did not change that month: the month before is repeated. */
+  carried: boolean;
   total: number;
   /** Companies per capability group slug. */
   groups: Record<string, number>;

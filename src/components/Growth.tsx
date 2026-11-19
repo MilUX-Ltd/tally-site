@@ -30,6 +30,11 @@ export default function Growth({ month, onMonth }: Props) {
   const index = found >= 0 ? found : last;
   const choose = (i: number) => onMonth(i >= last ? null : months[i].month);
 
+  // A month the history does not hold (or the latest, which is the default) leaves the URL.
+  useEffect(() => {
+    if (history && month && found < 0) onMonth(null);
+  }, [history, month, found]);
+
   useEffect(() => {
     if (!playing) return undefined;
     timer.current = window.setTimeout(() => {
@@ -50,7 +55,7 @@ export default function Growth({ month, onMonth }: Props) {
       <h2 id="growth-heading">Growth over time</h2>
       <p>
         Replay how the directory has grown, month by month, from its public history. The history starts in {monthLabel(months[0].month)}, so
-        earlier growth is not shown.
+        earlier growth is not shown. Group counts use today's capability list, so tags that have since changed are not counted.
       </p>
       <div class="growth-controls">
         <label for="growth-month">Month</label>
@@ -82,6 +87,7 @@ export default function Growth({ month, onMonth }: Props) {
       <p class="growth-total">
         <output for="growth-month" id="growth-total">
           {label}: {nf.format(current.total)} companies
+          {current.carried && index > 0 ? ` (no update that month; same as ${monthLabel(months[index - 1].month).split(' ')[0]})` : ''}
         </output>
       </p>
       <table class="growth-table">
