@@ -28,21 +28,30 @@ describe('capability tags', () => {
     const groups = capabilityTagGroups(byName('Example Cyber Defence'), data.taxonomy);
     expect(groups).toEqual([{ slug: 'cyber-data-software', label: 'Cyber, data and software', tags: ['Cyber', 'Cyber / Pen Testing'] }]);
   });
-  it('never repeats the group name in its tags', () => {
+  it('does not repeat the group name beside other tags', () => {
     const [space] = capabilityTagGroups(byName('Example Space Systems'), data.taxonomy).filter((g) => g.slug === 'space');
     expect(space).toEqual({ slug: 'space', label: 'Space', tags: ['Satellite', 'Ground Systems'] });
     for (const company of data.companies) {
       for (const g of capabilityTagGroups(company, data.taxonomy)) {
         for (const tag of g.tags) {
-          expect(tag.toLowerCase()).not.toBe(g.label.toLowerCase());
+          if (g.tags.length > 1) expect(tag.toLowerCase()).not.toBe(g.label.toLowerCase());
           expect(tag.startsWith(`${g.label} / `)).toBe(false);
         }
       }
     }
   });
-  it('keeps a group whose only capability is the group itself', () => {
+  it('shows the capability as the tag when the group itself is the only capability', () => {
     const only = { ...byName('Example Space Systems'), tags: ['space'] };
-    expect(capabilityTagGroups(only, data.taxonomy)).toEqual([{ slug: 'space', label: 'Space', tags: [] }]);
+    expect(capabilityTagGroups(only, data.taxonomy)).toEqual([{ slug: 'space', label: 'Space', tags: ['Space'] }]);
+  });
+  it('never leaves a group heading with no tag under it', () => {
+    const space = byName('Example Space Systems');
+    for (const tags of [['space'], ['space', 'satellite'], ['space', 'space/ground-systems'], ['manufacturing'], ['space', 'manufacturing', 'cyber']]) {
+      const groups = capabilityTagGroups({ ...space, tags }, data.taxonomy);
+      expect(groups.length).toBeGreaterThan(0);
+      for (const g of groups) expect(g.tags.length, `${tags.join(',')} in ${g.label}`).toBeGreaterThan(0);
+    }
+    for (const company of data.companies) for (const g of capabilityTagGroups(company, data.taxonomy)) expect(g.tags.length).toBeGreaterThan(0);
   });
 });
 

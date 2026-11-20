@@ -124,10 +124,11 @@ export function capabilityGroups(company: Company, taxonomy: Taxonomy): Array<{ 
 }
 
 /**
- * The capability tags a page shows under each group heading. A tag never
- * repeats its heading: "Space" under Space is left out (the heading says it)
- * and "Space / Ground Systems" under Space reads "Ground Systems". A group
- * whose only capability is the group itself keeps its heading and no tags.
+ * The capability tags a page shows under each group heading. A tag does not
+ * repeat its heading: "Space / Ground Systems" under Space reads "Ground
+ * Systems", and "Space" under Space is left out beside other tags (the
+ * heading says it). When the group itself is the company's one capability
+ * there, it is shown as the tag, so no heading is left with nothing under it.
  */
 export function capabilityTagGroups(company: Company, taxonomy: Taxonomy): Array<{ slug: string; label: string; tags: string[] }> {
   return capabilityGroups(company, taxonomy).map((g) => {
@@ -135,7 +136,7 @@ export function capabilityTagGroups(company: Company, taxonomy: Taxonomy): Array
     const tags = g.capabilities
       .filter((c) => c.toLowerCase() !== g.label.toLowerCase())
       .map((c) => (c.toLowerCase().startsWith(prefix) ? c.slice(prefix.length) : c));
-    return { slug: g.slug, label: g.label, tags };
+    return { slug: g.slug, label: g.label, tags: tags.length ? tags : g.capabilities.slice(0, 1) };
   });
 }
 
