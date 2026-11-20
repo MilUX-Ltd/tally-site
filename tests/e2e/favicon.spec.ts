@@ -7,6 +7,7 @@ test('1. every page names an SVG icon and an Apple touch icon', async ({ page })
     await page.goto(path);
     await expect(page.locator('link[rel="icon"][type="image/svg+xml"]')).toHaveAttribute('href', '/favicon.svg');
     await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveAttribute('href', '/apple-touch-icon.png');
+    await expect(page.locator('link[rel="icon"][href="/favicon.ico"]')).toHaveCount(1);
   }
 });
 
@@ -15,7 +16,7 @@ test('2. the icons are served from the site', async ({ request }) => {
   expect(svg.status()).toBe(200);
   expect(await svg.text()).toContain('<svg');
   for (const [path, type] of [
-    ['/favicon.ico', 'image/'],
+    ['/favicon.ico', 'image/'],  // x-icon or vnd.microsoft.icon, by host
     ['/apple-touch-icon.png', 'image/png'],
   ]) {
     const res = await request.get(path);

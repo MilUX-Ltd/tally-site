@@ -99,6 +99,11 @@ jobs:
   deploy-production:
     name: Production deploy (main)
     if: github.ref == 'refs/heads/main' && contains(fromJSON('["push", "schedule", "workflow_dispatch"]'), github.event_name)
+    # One production deploy at a time, in order, so a scheduled build cannot finish
+    # after a newer push and roll it back.
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
     needs: test
     runs-on: ubuntu-latest
     env:
