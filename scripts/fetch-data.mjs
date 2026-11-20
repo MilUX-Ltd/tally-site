@@ -10,7 +10,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 const BASE = 'https://raw.githubusercontent.com/MilUX-Ltd/tally/main';
 // Defence contract money (the Money view). Read from the data repo's branch
 // while the Money view is in review; this switches to 'main' at release.
-const MONEY_REF = 'feature/money-data';
+const MONEY_REF = 'main';
 const MONEY_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${MONEY_REF}/money.json`;
 
 // West, south, east, north: the UK map's bounds. Must match UK_BOUNDS in
