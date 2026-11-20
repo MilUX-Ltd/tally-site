@@ -124,3 +124,8 @@
 .company-contracts .contract-meta { grid-column: 1 / -1; font-size: 12px; color: var(--clay); overflow-wrap: anywhere; }
 .company-contracts .contracts a { font-weight: 700; overflow-wrap: anywhere; }
 .company-contracts .contract-value { font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* Companies House status (D-iyz0k): a closed company, or one in an insolvency process. */
+.company-closed,
+.company-flagged { margin: 0 0 20px; padding: 12px 16px; border-left: 4px solid var(--signal); background: var(--white); color: var(--ink); font-size: 15px; font-weight: 700; max-width: 62ch; }
+.company-flagged { border-left-color: var(--gold); font-weight: 400; }

@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { moneyIds, slimCompaniesHouse, slimData, withoutClosed } from '../../scripts/fetch-data.mjs';
-import { closedNote, flaggedNote, trendSummary, yearLabel, type CompaniesHouse } from '../../src/lib/companies-house';
+import { closedNote, flaggedNote, recentTrend, trendSummary, yearLabel, type CompaniesHouse } from '../../src/lib/companies-house';
 import type { TallyData } from '../../src/lib/types';
 
 const fixture = (name: string) => JSON.parse(readFileSync(new URL(`../fixtures/${name}`, import.meta.url), 'utf8'));
@@ -35,17 +35,17 @@ describe('slimCompaniesHouse', () => {
   });
   it('refuses a malformed file', () => {
     const bad = [
-      (d: any) => { d.attribution = 'something else'; },
-      (d: any) => { d.extra = 1; },
-      (d: any) => { d.closed[0].status = 'active'; },
-      (d: any) => { d.closed[0].date = '14/05/2024'; },
-      (d: any) => { d.flagged[0].status = 'dissolved'; },
-      (d: any) => { d.trend.years[0].formed.total = 300; },
-      (d: any) => { d.trend.years[0].formed.total = 100; },
-      (d: any) => { d.trend.years[1].year = 2023; },
-      (d: any) => { d.trend.years[0].partial = true; },
-      (d: any) => { d.trend.years[0].dissolved['25400'] = -1; },
-      (d: any) => { d.trend.codes['25400'] = '<b>x</b>'; },
+      (d: typeof rawCh) => { d.attribution = 'something else'; },
+      (d: typeof rawCh) => { d.extra = 1; },
+      (d: typeof rawCh) => { d.closed[0].status = 'active'; },
+      (d: typeof rawCh) => { d.closed[0].date = '14/05/2024'; },
+      (d: typeof rawCh) => { d.flagged[0].status = 'dissolved'; },
+      (d: typeof rawCh) => { d.trend.years[0].formed.total = 300; },
+      (d: typeof rawCh) => { d.trend.years[0].formed.total = 100; },
+      (d: typeof rawCh) => { d.trend.years[1].year = 2023; },
+      (d: typeof rawCh) => { d.trend.years[0].partial = true; },
+      (d: typeof rawCh) => { d.trend.years[0].dissolved['25400'] = -1; },
+      (d: typeof rawCh) => { d.trend.codes['25400'] = '<b>x</b>'; },
     ];
     for (const change of bad) {
       const doc = copy();
@@ -61,8 +61,8 @@ describe('withoutClosed', () => {
     const ch = slimCompaniesHouse(rawCh, ids) as CompaniesHouse;
     const { open, closed } = withoutClosed(data, ch);
     expect(open.count).toBe(57);
-    expect(open.companies.some((c) => c.id === 'example-closed-engineering')).toBe(false);
-    expect(closed.map((c) => c.id)).toEqual(['example-closed-engineering']);
+    expect(open.companies.some((c: { id: string }) => c.id === 'example-closed-engineering')).toBe(false);
+    expect(closed.map((c: { id: string }) => c.id)).toEqual(['example-closed-engineering']);
   });
 });
 
@@ -82,5 +82,13 @@ describe('page wording', () => {
     expect(yearLabel(ch.trend.years[2], ch.generated)).toBe('2026 to 19 November');
     expect(yearLabel(ch.trend.years[0], ch.generated)).toBe('2024');
     expect(trendSummary(ch.trend)).toBe('Defence companies formed and dissolved each year, 2024 to 2026. In 2025, 162 formed and 104 dissolved.');
+  });
+});
+
+describe('recentTrend', () => {
+  it('keeps the last ten full years and this year', () => {
+    const years = Array.from({ length: 17 }, (_, i) => ({ year: 2010 + i, partial: i === 16, formed: { total: 1 }, dissolved: { total: 1 } }));
+    const shown = recentTrend({ codes: {}, years });
+    expect(shown.years.map((y) => y.year)).toEqual([2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026]);
   });
 });

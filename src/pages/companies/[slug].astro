@@ -25,10 +25,12 @@ import {
 import { correctionMailto } from '../../lib/contact';
 import { isLocated } from '../../lib/filters';
 import { companyAwards, formatMoney } from '../../lib/money';
-import { certificationChecks, companyTexts, defenceSites, moneyData, siteData } from '../../lib/site-data';
+import { closedNote, flaggedNote } from '../../lib/companies-house';
+import { certificationChecks, closedCompanies, companiesHouse, companyTexts, defenceSites, moneyData, siteData } from '../../lib/site-data';
 import type { Company } from '../../lib/types';
 
-export const getStaticPaths = (() => siteData().companies.map((company) => ({ params: { slug: company.id }, props: { company } }))) satisfies GetStaticPaths;
+// Closed companies are out of the directory but keep their page, so old links still work (D-iyz0k).
+export const getStaticPaths = (() => [...siteData().companies, ...closedCompanies()].map((company) => ({ params: { slug: company.id }, props: { company } }))) satisfies GetStaticPaths;
 
 interface Props {
   company: Company;
@@ -50,12 +52,16 @@ const check = checkLine(text.verified);
 // Defence contracts this company has won, from public award notices (newest first).
 const money = moneyData();
 const awards = companyAwards(money, company.id);
-const onMap = isLocated(company) ? `/?sel=${company.id}&map=9/${company.lat.toFixed(5)}/${company.lon.toFixed(5)}` : null;
+// Companies House status: a closed company's page says so and offers no shortlist, website or map link.
+const status = companiesHouse();
+const closed = status.closed[company.id];
+const flagged = status.flagged[company.id];
+const onMap = !closed && isLocated(company) ? `/?sel=${company.id}&map=9/${company.lat.toFixed(5)}/${company.lon.toFixed(5)}` : null;
 const correction = correctionMailto(company.name, canonicalUrl(companyPath(company.id)));
 // The headline ends in the signal full stop unless the name already ends in punctuation.
 const stop = !/[.!?)]$/.test(company.name.trim());
 ---
-<Base title={pageTitle(company)} description={metaDescription(company)}>
+<Base title={pageTitle(company)} description={metaDescription(company)} noindex={Boolean(closed)}>
   <div class="company-top">
     <div class="company-main">
       <header class="page-hero company-hero">
@@ -63,12 +69,14 @@ const stop = !/[.!?)]$/.test(company.name.trim());
         <p class="mono kicker">Company profile</p>
         <h1 class:list={{ 'has-stop': stop }}>{company.name}</h1>
         <p class="mono company-location">{where.text}</p>
+        {closed && <p class="company-closed">{closedNote(closed)}</p>}
+        {flagged && <p class="company-flagged">{flaggedNote(flagged)}</p>}
         {company.summary && <p class="lede">{company.summary}</p>}
-        <p class="company-actions">
+        {!closed && <p class="company-actions">
           <a class="btn btn-primary btn-lg" href={`/?list=${company.id}`} data-shortlist={company.id}><span>Add<span class="vh"> {company.name}</span> to shortlist</span></a>
           {company.website && <a class="btn btn-lg" href={company.website} rel="noopener nofollow"><span>Website<span class="vh"> of {company.name}</span></span></a>}
           {company.linkedin && <a class="link" href={company.linkedin} rel="noopener nofollow">LinkedIn<span class="vh"> page of {company.name}</span></a>}
-        </p>
+        </p>}
         <p class="company-check">{check.before}{check.iso && <time datetime={check.iso}>{check.date}</time>}{check.after}</p>
       </header>
 

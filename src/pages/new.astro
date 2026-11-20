@@ -13,7 +13,8 @@ import '../styles/new.css';
 import { growthChart, groupMax, monthReadout, rampStep } from '../lib/growth-chart';
 import { monthLabel, type History } from '../lib/history';
 import { dayText, FEED_PATH, recentAdditions, weeklyCounts, WEEKS } from '../lib/new-companies';
-import { addedDates, siteData } from '../lib/site-data';
+import { addedDates, companiesHouse, siteData } from '../lib/site-data';
+import { recentTrend, trendChart, trendSummary, yearLabel } from '../lib/companies-house';
 
 const nf = new Intl.NumberFormat('en-GB');
 const data = siteData();
@@ -34,6 +35,11 @@ const current = months[last];
 const readout = months.length ? monthReadout(months, last) : null;
 const max = groupMax(history);
 const many = months.length > 9;
+// Defence companies formed and dissolved each year, from Companies House (D-iyz0k).
+const ch = companiesHouse();
+const trend = recentTrend(ch.trend);
+const tchart = trendChart(trend);
+const codeList = Object.entries(trend.codes);
 const utc = (iso: string, options: Intl.DateTimeFormatOptions) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', ...options });
 ---
 <Base title="New on Tally: companies added to the directory" description="Companies added to Tally, the open directory of UK defence capability, newest first, and how the directory has grown." feed wide>
@@ -148,6 +154,45 @@ const utc = (iso: string, options: Intl.DateTimeFormatOptions) => new Date(`${is
         </div>
       </section>
     )}
+
+    <section class="trend" id="formed-closed" aria-labelledby="trend-heading">
+      <div class="trend-head">
+        <h2 id="trend-heading">Defence companies formed and closed</h2>
+        <p class="trend-intro">Companies registered at Companies House under the three defence activity codes, by the year they were formed or dissolved. This counts all UK companies with these codes, not only those in Tally.</p>
+      </div>
+      <svg class="trend-chart" viewBox={`0 0 ${tchart.width} ${tchart.height}`} role="img" aria-label={trendSummary(trend)}>
+        {tchart.ticks.map((t) => (
+          <g>
+            <line class="trend-grid" x1="44" x2={tchart.width - 8} y1={t.y} y2={t.y} />
+            <text class="trend-tick" x="38" y={t.y + 4} text-anchor="end">{nf.format(t.value)}</text>
+          </g>
+        ))}
+        {tchart.bars.map((b) => (
+          <g class:list={['trend-year', { 'is-partial': b.partial }]}>
+            <rect class="trend-formed" x={b.x} y={b.formed.y} width={tchart.barWidth} height={b.formed.height} />
+            <rect class="trend-dissolved" x={b.x + tchart.barWidth + 2} y={b.dissolved.y} width={tchart.barWidth} height={b.dissolved.height} />
+            <text class="trend-label" x={b.x + tchart.barWidth + 1} y={tchart.base + 18} text-anchor="middle">{b.label}</text>
+          </g>
+        ))}
+      </svg>
+      <p class="trend-key mono"><span class="key-formed"></span>Formed <span class="key-dissolved"></span>Dissolved</p>
+      <div class="trend-table">
+        <table>
+          <caption>Defence companies formed and dissolved each year</caption>
+          <thead><tr><th scope="col">Year</th><th scope="col">Formed</th><th scope="col">Dissolved</th></tr></thead>
+          <tbody>
+            {[...trend.years].reverse().map((y) => (
+              <tr><th scope="row">{yearLabel(y, ch.generated)}</th><td>{nf.format(y.formed.total)}</td><td>{nf.format(y.dissolved.total)}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div class="trend-notes">
+        <p>The codes are {codeList.map(([code, label], i) => <>{i > 0 && (i === codeList.length - 1 ? ' and ' : ', ')}<span class="mono">{code}</span> {label}</>)}. A company with more than one of them counts once.</p>
+        <p>Companies choose their own codes, and many defence firms register under general engineering, electronics or IT codes, so these figures cover only firms that describe themselves as defence. Companies House removes dissolved companies from its records after some years, so the chart starts ten years back, and even those earlier years undercount companies that formed and later closed.</p>
+        <p class="mono trend-source">Source: Companies House, {utc(ch.generated, { day: 'numeric', month: 'long', year: 'numeric' })}. {ch.attribution}</p>
+      </div>
+    </section>
 
     {count === 0 ? (
       <p class="new-empty">No new companies are listed at the moment.</p>

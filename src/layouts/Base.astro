@@ -18,8 +18,10 @@ interface Props {
   current?: NavId | null;
   /** Whether the page loads the visitor counter. False on the script-free pages (D-z6mw4). */
   counted?: boolean;
+  /** Whether search engines are asked to leave the page out (a closed company's page). */
+  noindex?: boolean;
 }
-const { title, description, wide = false, canonical = true, feed = false, current, counted = true } = Astro.props;
+const { title, description, wide = false, canonical = true, feed = false, current, counted = true, noindex = false } = Astro.props;
 // Slots: the default slot is the page; "actions" sits at the right of the top
 // bar (the shortlist button); "credits" is the page's own data credit lines
 // at the top of the footer.
@@ -34,6 +36,7 @@ const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.ur
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex" />}
     {canonical && <link rel="canonical" href={canonicalUrl(path)} />}
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

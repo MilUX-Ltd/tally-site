@@ -12,6 +12,9 @@ const BASE = 'https://raw.githubusercontent.com/MilUX-Ltd/tally/main';
 // while the Money view is in review; this switches to 'main' at release.
 const MONEY_REF = 'main';
 const MONEY_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${MONEY_REF}/money.json`;
+// Where companies-house.json is read from: the same rule as money.json.
+const CH_REF = 'feature/companies-house';
+const CH_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${CH_REF}/companies-house.json`;
 
 // West, south, east, north: the UK map's bounds. Must match UK_BOUNDS in
 // src/lib/map-config.ts (a unit test checks they agree).
@@ -470,6 +473,119 @@ export function moneyIds(raw) {
   return new Map([...seen].filter(([, id]) => id));
 }
 
+// ---------------------------------------------------------------------------
+// Companies House (D-iyz0k): closed Tally companies and defence companies
+// formed and dissolved each year. Checked against the contract in the data
+// repo's docs/companies-house-data.md; anything outside it stops the build.
+// ---------------------------------------------------------------------------
+
+const CH_KEYS = ['attribution', 'checked', 'closed', 'flagged', 'generated', 'not_found', 'source', 'trend'];
+export const CH_CLOSED = ['closed', 'converted-closed', 'dissolved', 'removed'];
+export const CH_FLAGGED = ['administration', 'insolvency-proceedings', 'liquidation', 'receivership', 'voluntary-arrangement'];
+const CH_DETAIL = /^[a-z][a-z-]{2,60}$/;
+const CH_NUMBER = /^(?:[0-9]{8}|[A-Z]{2}[0-9]{6})$/;
+export const CH_LIMITS = { rows: 5000, years: 60, count: 1_000_000 };
+
+function chFail(message) {
+  throw new Error(`companies-house.json: ${message}; refusing to build`);
+}
+function chKeys(v, keys, where, required = keys) {
+  if (!isObject(v)) chFail(`${where} is not an object`);
+  for (const k of Object.keys(v)) if (!keys.includes(k)) chFail(`${where} carries a field outside the contract (${JSON.stringify(k)})`);
+  for (const k of required) if (!(k in v)) chFail(`${where} has no ${k}`);
+}
+const chCount = (v, where) => (Number.isInteger(v) && v >= 0 && v <= CH_LIMITS.count ? v : chFail(`${where} is not a whole number`));
+
+function chRows(list, where, check) {
+  if (!Array.isArray(list)) chFail(`${where} is not a list`);
+  if (list.length > CH_LIMITS.rows) chFail(`${where} has more than ${CH_LIMITS.rows} rows`);
+  for (const row of list) {
+    if (!isObject(row) || typeof row.name !== 'string' || !row.name.trim() || hasControl(row.name) || row.name.length > 200) chFail(`${where} has a row with a bad name`);
+    if (!CH_NUMBER.test(str(row.ch))) chFail(`${where} has a bad company number for ${row.name}`);
+    check(row);
+  }
+  return list;
+}
+
+/**
+ * Checks companies-house.json and slims it for the build: closed and flagged
+ * companies keyed by Tally id (`ids`, as for money.json; a name Tally does not
+ * hold, or holds more than once, is left out), and the trend. The list of
+ * numbers Companies House does not know stays in the data repo.
+ */
+export function slimCompaniesHouse(raw, ids) {
+  chKeys(raw, CH_KEYS, 'the file');
+  if (str(raw.attribution) !== OGL) chFail('the attribution is not the Open Government Licence statement');
+  if (!validDate(str(raw.generated))) chFail('generated is not a date');
+  const closed = {};
+  chRows(raw.closed, 'closed', (row) => {
+    chKeys(row, ['ch', 'date', 'name', 'status'], `closed ${row.name}`, ['ch', 'name', 'status']);
+    if (!CH_CLOSED.includes(row.status)) chFail(`closed ${row.name} has a status that is not closed (${JSON.stringify(row.status)})`);
+    if ('date' in row && !validDate(str(row.date))) chFail(`closed ${row.name} has a bad date`);
+    const id = ids.get(str(row.name));
+    if (id) closed[id] = { status: row.status, date: 'date' in row ? row.date : null };
+  });
+  const flagged = {};
+  chRows(raw.flagged, 'flagged', (row) => {
+    chKeys(row, ['ch', 'detail', 'name', 'status'], `flagged ${row.name}`, ['ch', 'name', 'status']);
+    const detail = 'detail' in row ? str(row.detail) : null;
+    if (detail !== null && !CH_DETAIL.test(detail)) chFail(`flagged ${row.name} has a bad detail`);
+    if (!CH_FLAGGED.includes(row.status) && !(row.status === 'active' && detail)) chFail(`flagged ${row.name} has a status that is not flagged (${JSON.stringify(row.status)})`);
+    const id = ids.get(str(row.name));
+    if (id && !closed[id]) flagged[id] = { status: row.status, detail };
+  });
+  chRows(raw.not_found, 'not_found', (row) => chKeys(row, ['ch', 'name'], `not_found ${row.name}`));
+
+  chKeys(raw.trend, ['codes', 'years'], 'trend');
+  const codes = raw.trend.codes;
+  if (!isObject(codes) || !Object.keys(codes).length || Object.keys(codes).length > 20) chFail('trend.codes is not a set of codes');
+  for (const [code, label] of Object.entries(codes)) {
+    if (!/^\d{5}$/.test(code)) chFail(`trend.codes has a bad code (${JSON.stringify(code)})`);
+    if (typeof label !== 'string' || !/^[A-Za-z][A-Za-z ,'()-]{2,99}$/.test(label)) chFail(`trend.codes has a bad label for ${code}`);
+  }
+  const keys = Object.keys(codes).sort();
+  const list = raw.trend.years;
+  if (!Array.isArray(list) || !list.length || list.length > CH_LIMITS.years) chFail('trend.years is not a list of years');
+  const years = list.map((y, i) => {
+    chKeys(y, ['dissolved', 'formed', 'partial', 'year'], `trend year ${i + 1}`);
+    if (!Number.isInteger(y.year) || y.year < 1900 || y.year > 2099) chFail(`trend year ${i + 1} is not a year`);
+    if (i > 0 && y.year !== list[i - 1].year + 1) chFail(`trend years are not consecutive at ${y.year}`);
+    if (y.partial !== (i === list.length - 1)) chFail(`trend ${y.year} is marked partial wrongly`);
+    const out = { year: y.year, partial: y.partial };
+    for (const kind of ['formed', 'dissolved']) {
+      chKeys(y[kind], ['total', ...keys], `trend ${y.year} ${kind}`);
+      const per = keys.map((k) => chCount(y[kind][k], `trend ${y.year} ${kind} ${k}`));
+      const total = chCount(y[kind].total, `trend ${y.year} ${kind} total`);
+      if (total < Math.max(...per) || total > per.reduce((a, b) => a + b, 0)) chFail(`trend ${y.year} ${kind} total is outside its codes`);
+      out[kind] = { total, ...Object.fromEntries(keys.map((k, j) => [k, per[j]])) };
+    }
+    return out;
+  });
+  return {
+    attribution: OGL,
+    closed,
+    flagged,
+    generated: str(raw.generated),
+    trend: { codes: Object.fromEntries(keys.map((k) => [k, codes[k]])), years },
+  };
+}
+
+/** The directory without its closed companies, and the closed ones for their pages. */
+export function withoutClosed(data, ch) {
+  const open = data.companies.filter((c) => !ch.closed[c.id]);
+  const closed = data.companies.filter((c) => ch.closed[c.id]);
+  return { open: { ...data, count: open.length, companies: open }, closed };
+}
+
+/**
+ * Stops a build from main that would read a data file from anywhere but main.
+ * Fixture builds (tests) read no data repo, so they are not stopped.
+ */
+export function assertDataRef(file, ref, githubRef, fixture = false) {
+  if (fixture || githubRef !== 'refs/heads/main') return;
+  if (ref !== 'main') throw new Error(`${file} is read from ${ref}; a build from main must read it from main.`);
+}
+
 async function fetchJson(url) {
   const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
   if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
@@ -480,12 +596,18 @@ async function main() {
   const fixture = process.env.TALLY_DATA_SOURCE === 'fixture';
   // Production never builds from a data branch; checked before anything is fetched.
   assertMoneyRef(MONEY_REF, process.env.GITHUB_REF, fixture);
+  assertDataRef('companies-house.json', CH_REF, process.env.GITHUB_REF, fixture);
   const read = (name) => JSON.parse(readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8'));
   const names = ['tally-data.json', 'taxonomy.json', 'clusters.json', 'events.json', 'opportunities.json'];
   const [raw, taxonomy, rawClusters, rawEvents, rawOpportunities] = fixture
     ? names.map(read)
     : await Promise.all(names.map((name) => fetchJson(`${BASE}/${name}`)));
-  const data = slimData(raw, taxonomy);
+  // Fixture builds add the companies only the Companies House tests use, kept
+  // apart so the older tests' fixture is unchanged.
+  if (fixture) raw.companies = [...raw.companies, ...read('tally-data-closed.json').companies];
+  const ch = slimCompaniesHouse(fixture ? read('companies-house.json') : await fetchJson(CH_URL), moneyIds(raw));
+  // Closed companies leave the directory (D-iyz0k); their pages are built from .tally/closed.json.
+  const { open: data, closed: closedCompanies } = withoutClosed(slimData(raw, taxonomy), ch);
   if (data.companies.length === 0) throw new Error('no companies; refusing to build an empty site');
   const dir = new URL('../public/data/', import.meta.url);
   mkdirSync(dir, { recursive: true });
@@ -494,6 +616,9 @@ async function main() {
   const buildDir = new URL('../.tally/', import.meta.url);
   mkdirSync(buildDir, { recursive: true });
   writeFileSync(new URL('company-text.json', buildDir), JSON.stringify(companyTexts(raw)));
+  writeFileSync(new URL('closed.json', buildDir), JSON.stringify(closedCompanies));
+  writeFileSync(new URL('companies-house.json', buildDir), JSON.stringify(ch));
+  console.log(`Wrote companies-house.json (build-only): ${closedCompanies.length} closed companies left out of the directory, ${Object.keys(ch.flagged).length} flagged.`);
   const clusters = slimClusters(rawClusters);
   // Past events are dropped at build, by the build's own date (UTC).
   const todayUtc = new Date().toISOString().slice(0, 10);
