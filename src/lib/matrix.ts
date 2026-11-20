@@ -4,7 +4,7 @@ import { isLocated } from './filters';
 import type { Capability, Company, Group, Taxonomy } from './types';
 import type { Bbox } from './url-state';
 
-export const MATRIX_PAGE_SIZE = 25;
+export const MATRIX_PAGE_SIZE = 50;
 
 export interface ColumnGroup {
   group: Group;
