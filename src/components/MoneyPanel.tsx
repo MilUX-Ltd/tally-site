@@ -92,7 +92,8 @@ export default function MoneyPanel(p: Props) {
               <p class="money-sme">
                 Small and medium-sized firms won {sharePercent(figures.sme.sme, figures.sme.sme + figures.sme.large)} ({formatMoney(figures.sme.sme)}) of UK regional contract money where the
                 supplier’s size is known.
-                {figures.sme.unknown >= 1 ? ` Size is not known for ${formatMoney(figures.sme.unknown)}.` : ''}
+                {/* Below £1,000 is rounding between the size figures, not money of unknown size. */}
+                {figures.sme.unknown >= 1000 ? ` Size is not known for ${formatMoney(figures.sme.unknown)}.` : ''}
               </p>
             )}
 
@@ -238,7 +239,7 @@ export default function MoneyPanel(p: Props) {
               {figures.sme && (
                 <p>
                   SME means a small or medium-sized firm. Supplier size is as the supplier declared it on {andList(money.sources)}; it is not checked, and a UK firm owned by a larger
-                  group may declare itself an SME. The SME share leaves out overseas suppliers and money with no known size.
+                  group may declare itself an SME. The SME share leaves out overseas suppliers, UK suppliers that could not be placed in a region, and money with no known size.
                 </p>
               )}
               <p>{money.attribution}</p>
