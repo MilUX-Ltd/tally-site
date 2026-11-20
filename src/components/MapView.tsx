@@ -785,7 +785,7 @@ export default function MapView(props: Props) {
     if (bounds) {
       map.setMinZoom(1);
       // The map's own padding keeps the panel clear; this adds a margin round the arcs.
-      map.fitBounds(bounds, { padding: 24, pitch: 0, bearing: 0, maxZoom: 5, duration: 1400, animate: !reducedMotion() });
+      map.fitBounds(bounds, { padding: 48, pitch: 0, bearing: 0, maxZoom: 5, duration: 1400, animate: !reducedMotion() });
     } else if (was) {
       map.setMinZoom(3);
       frame(false);

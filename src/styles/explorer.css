@@ -392,6 +392,10 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
   body:has(.find) .topbar { gap: 8px; padding: 0 10px; }
   body:has(.find) .brand b { font-size: 18px; }
   body:has(.find) .topbar-button { padding-left: 10px; gap: 6px; }
-  .controls { gap: 5px; }
-  .controls .btn { padding: 0 8px; font-size: 13px; }
+  .controls { gap: 4px; }
+  .controls .btn { padding: 0 7px; font-size: 13px; }
+}
+/* The narrowest phones: four views, Filters and Layers still fit one row. */
+@media (max-width: 360px) {
+  .controls .btn { gap: 4px; padding: 0 5px; }
 }
