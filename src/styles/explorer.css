@@ -169,6 +169,10 @@ button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .cluster-map-name { grid-column: 2; grid-row: 1; font-weight: 600; }
 .cluster-map-detail { grid-column: 2; grid-row: 2; font-size: 0.9rem; color: #2f3b42; }
 
+/* Company items in the Companies view are compact, so the default view stays short. */
+.view-companies .company { padding: 0.45rem 0; }
+.view-companies .company p { margin: 0.1rem 0; }
+.view-companies .company-actions { gap: 0.25rem 1rem; }
 /* On a wide screen the company lists in the Companies view run in two columns, so the view stays short. */
 @media (min-width: 70rem) {
   .view-companies .company-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2rem; }
