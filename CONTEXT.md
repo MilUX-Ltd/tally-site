@@ -37,7 +37,7 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | `mpage` | Page of matrix rows | whole number from 1 | 1 |
    | `page` | Page of the results list | whole number from 1 | 1 |
    | `list` | Shortlisted companies, in the order added | company ids | none |
-   | `month` | Month shown by the growth slider; dropped if the history does not hold it | `YYYY-MM` | the latest month |
+   | `month` | Month shown by the growth slider on New companies (`/new?month=`); dropped if the history does not hold it | `YYYY-MM` | the latest month |
    | `capmatch` | How two or more `cap` values combine: `all` shows only overlap places (see Overlap); ignored and left out with fewer than two capabilities | `all` | any of them |
    | `site` | Chosen defence site; companies are narrowed to those within the radius | site id from the dataset | none |
    | `radius` | Radius around the chosen site, in miles | `10`, `25` or `50` | `25` |

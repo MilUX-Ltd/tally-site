@@ -1,18 +1,121 @@
-/* Funding calls and opportunities page. Not yet redesigned; colours come from the tokens in base.css. */
-.opp-filter { display: flex; flex-wrap: wrap; gap: 0.75rem 2rem; align-items: flex-end; margin: 0 0 1rem; }
-.opp-filter[hidden] { display: none; }
-.opp-filter .field { display: flex; flex-direction: column; gap: 0.25rem; padding: 0; background: none; border: 0; box-shadow: none; }
-.opp-filter label { font-weight: 600; }
-.opp-filter .field select { width: auto; font: inherit; padding: 0.4rem 0.5rem; min-height: 2.75rem; max-width: 100%; border: 1px solid var(--blue-grey); background: #fff; }
-.opp-filter fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; align-items: center; }
-.opp-filter legend { font-weight: 600; padding: 0; margin-bottom: 0.25rem; }
-.opp-filter fieldset label { font-weight: 400; display: inline-flex; align-items: center; gap: 0.35rem; min-height: 2.75rem; }
-.opp-filter input[type='radio'] { width: 1.25rem; height: 1.25rem; margin: 0; }
-.opp-filter select:focus-visible, .opp-filter input:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
-.opp-list { list-style: none; padding: 0; margin: 0; }
-.opportunity { padding: 0.75rem 1rem; margin: 0.5rem 0; background: #fff; border-left: 4px solid var(--gold); max-width: 50rem; }
-.opportunity[hidden] { display: none; }
-.opportunity h3 { margin: 0; font-size: 1.05rem; }
-.opportunity p { margin: 0.25rem 0; overflow-wrap: anywhere; }
-.opportunity .meta { color: var(--blue-grey); }
-.opportunity .deadline { font-weight: 600; }
+/* Funding (/opportunities): the deadline board. Tokens and shared components
+   come from base.css. Sizes that follow the data are SVG attributes set by
+   src/scripts/opportunities.ts; the CSP allows no style attributes. */
+.fund { max-width: 1440px; margin: 0 auto; }
+
+/* Top: the hero beside the call that closes next. */
+.fund-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 460px); gap: 32px 56px; align-items: end; margin: 28px 0 44px; }
+.fund-top .page-hero { margin: 0; max-width: 52rem; }
+.fund-top .lede { margin-bottom: 0; }
+.next-up { position: relative; min-width: 0; background: var(--white); border: 2px solid var(--ink); box-shadow: var(--shadow-search); padding: 20px 24px 20px 38px; }
+.next-up::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 14px; background: var(--line); border-right: 2px solid var(--ink); }
+.next-up[data-urgency='1']::before { background: var(--ramp-1); }
+.next-up[data-urgency='2']::before { background: var(--ramp-2); }
+.next-up[data-urgency='3']::before { background: var(--ramp-3); }
+.next-up[data-urgency='4']::before { background: var(--ramp-4); }
+.next-up p { margin: 0; }
+.next-label { color: var(--ink-3); }
+.next-count { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; margin: 6px 0 12px !important; color: var(--ink); }
+.next-count .n { font-weight: 800; font-size: clamp(88px, 10vw, 156px); line-height: 0.86; letter-spacing: -0.06em; font-variant-numeric: tabular-nums; }
+.next-count .u { font-weight: 800; font-size: clamp(20px, 2vw, 28px); letter-spacing: -0.02em; line-height: 1; }
+.next-title { font-weight: 800; font-size: 20px; line-height: 1.2; letter-spacing: -0.02em; color: var(--ink); overflow-wrap: anywhere; }
+.next-title a { text-decoration: none; box-shadow: inset 0 -2px 0 var(--signal); }
+.next-title a:hover { box-shadow: inset 0 -4px 0 var(--signal); }
+.next-meta { margin-top: 10px !important; color: var(--ink-3); line-height: 1.6; }
+
+/* Body: the board, with the note beside it. */
+.fund-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px 40px; align-items: start; }
+.fund-empty { font-size: 18px; }
+
+/* Filter chips: radio buttons drawn as buttons. */
+.opp-filter { display: flex; flex-wrap: wrap; gap: 16px 36px; margin: 0 0 18px; }
+.opp-filter fieldset { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.opp-filter legend { float: left; margin: 0 6px 0 0; padding: 0; color: var(--ink-3); line-height: 38px; }
+.chip { position: relative; display: inline-flex; }
+.chip { cursor: pointer; }
+.chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; pointer-events: none; }
+.chip span { display: inline-flex; align-items: center; height: 38px; padding: 0 14px; background: var(--white); border: 1.5px solid var(--ink); color: var(--ink); font-weight: 700; font-size: 13.5px; white-space: nowrap; }
+.chip:hover span { background: var(--paper); }
+.chip input:checked + span { background: var(--ink); color: var(--white); }
+.chip input:focus-visible + span { outline: 3px solid var(--signal); outline-offset: 2px; }
+.opp-count { margin: 0 0 14px; color: var(--ink-3); }
+.opp-none { margin: 0 0 28px; font-weight: 600; color: var(--ink); }
+
+/* The board */
+.board { margin: 0 0 36px; }
+.board-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; border-bottom: 1.5px solid var(--ink); }
+.board-note { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 0; font-size: 13px; color: var(--ink-3); }
+.bar-note { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.ramp-key { display: inline-flex; border: 1px solid var(--ink); }
+.ramp-key i { width: 16px; height: 8px; }
+.k1 { background: var(--ramp-1); }
+.k2 { background: var(--ramp-2); }
+.k3 { background: var(--ramp-3); }
+.k4 { background: var(--ramp-4); }
+.opp-list { list-style: none; margin: 0; padding: 0; }
+.opportunity { display: grid; grid-template-columns: 148px minmax(0, 1fr) minmax(200px, 270px); border-bottom: 1px solid var(--line); }
+.opportunity:last-child { border-bottom: 0; }
+.opportunity p { margin: 0; }
+
+/* The countdown tile: the days left, on the deadline's step of the data ramp.
+   Before the script runs it holds the closing day and month. */
+.countdown { display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 16px 18px; background: var(--paper); border-right: 1.5px solid var(--ink); color: var(--ink); }
+.countdown .n { font-weight: 800; font-size: 52px; line-height: 0.9; letter-spacing: -0.05em; font-variant-numeric: tabular-nums; }
+.countdown .u { color: inherit; }
+.opportunity:not([data-deadline]) .countdown .n, .opportunity[data-closed] .countdown .n { font-size: 30px; letter-spacing: -0.03em; }
+.opportunity[data-urgency='1'] .countdown { background: var(--ramp-1); }
+.opportunity[data-urgency='2'] .countdown { background: var(--ramp-2); }
+.opportunity[data-urgency='3'] .countdown { background: var(--ramp-3); }
+.opportunity[data-urgency='4'] .countdown { background: var(--ramp-4); color: var(--white); }
+.opportunity[data-closed] .countdown { background: var(--white); color: var(--ink-3); }
+
+.what { padding: 16px 20px 18px; min-width: 0; }
+.what .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; color: var(--ink-3); }
+.what .meta .mono { color: var(--clay); }
+.opportunity h3 { margin: 8px 0 6px; font-size: 20px; font-weight: 800; line-height: 1.2; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.opportunity h3 a { text-decoration: none; }
+.opportunity h3 a:hover { box-shadow: inset 0 -2px 0 var(--signal); }
+.opportunity .summary { max-width: 46em; font-size: 15px; overflow-wrap: anywhere; }
+.when { display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 16px 20px 16px 0; min-width: 0; }
+.deadline { color: var(--ink); line-height: 1.5; }
+.deadline-bar { display: block; width: 100%; height: 14px; background: var(--white); border: 1.5px solid var(--ink); }
+.deadline-bar .fill { fill: var(--ink-3); }
+.opportunity[data-urgency='1'] .fill { fill: var(--ramp-1); }
+.opportunity[data-urgency='2'] .fill { fill: var(--ramp-2); }
+.opportunity[data-urgency='3'] .fill { fill: var(--ramp-3); }
+.opportunity[data-urgency='4'] .fill { fill: var(--ramp-4); }
+.flag { align-self: flex-start; padding: 2px 8px; background: var(--ink); color: var(--white); font-weight: 700; font-size: 12.5px; }
+
+/* Beside the list */
+.fund-aside { position: sticky; top: 24px; padding: 20px 22px 22px; }
+.fund-aside h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.1em; line-height: 1.5; text-transform: uppercase; color: var(--clay); }
+.fund-aside h2::before { content: ''; flex: none; width: 26px; height: 2px; background: var(--signal); }
+.fund-aside p { margin: 0 0 12px; font-size: 14.5px; }
+.fund-aside p:last-child { margin: 16px 0 0; }
+.fund-aside .aside-lead { font-weight: 800; font-size: 24px; line-height: 1.1; letter-spacing: -0.03em; color: var(--ink); }
+
+@media (max-width: 1100px) {
+  .fund-top { grid-template-columns: minmax(0, 1fr); align-items: start; margin-top: 16px; }
+  .next-up { max-width: 560px; }
+  .fund-body { grid-template-columns: minmax(0, 1fr); }
+  .fund-aside { position: static; }
+}
+@media (max-width: 860px) {
+  .opportunity { grid-template-columns: 128px minmax(0, 1fr); }
+  .countdown { grid-row: 1; border-bottom: 1px solid var(--line); }
+  .when { grid-row: 1; grid-column: 2; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .what { grid-column: 1 / -1; padding: 14px 16px 18px; }
+}
+@media (max-width: 760px) {
+  .fund-top { margin-bottom: 32px; }
+  .next-up { padding: 16px 16px 16px 30px; box-shadow: var(--shadow-card); }
+  .next-title { font-size: 18px; }
+  .opp-filter legend { float: none; width: 100%; line-height: 1.5; margin: 0 0 4px; }
+  .opportunity { grid-template-columns: 104px minmax(0, 1fr); }
+  .countdown { padding: 14px 12px; }
+  .countdown .n { font-size: 40px; }
+  .opportunity:not([data-deadline]) .countdown .n, .opportunity[data-closed] .countdown .n { font-size: 24px; }
+  .when { padding: 12px 14px; }
+  .opportunity h3 { font-size: 18px; }
+  .board-head h2 { font-size: 22px; }
+}
