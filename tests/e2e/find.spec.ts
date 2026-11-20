@@ -302,11 +302,25 @@ test('4. Old links: every link that worked before opens showing the same compani
   expect(second.length).toBe(fixture.companies.length - 25);
 
   // Growth over time has moved; a month link still opens every company and points to it.
+  const heading = page.getByRole('region', { name: 'Results' }).getByRole('heading', { level: 2 });
   await open('month=2026-09');
-  await expect(page.locator('#result-count')).toContainText(`${fixture.companies.length} companies`);
+  await expect(heading).toBeVisible();
+  await expect(heading).toHaveText(`${fixture.companies.length} companies`);
+  await expect(results(page).getByRole('listitem')).toHaveCount(20);
   const moved = page.getByRole('link', { name: /growth over time/i });
   await expect(moved).toBeVisible();
   await expect(moved).toHaveAttribute('href', /^\/new\/?(\?month=2026-09)?$/);
+
+  // Links that only switch on a layer or place the map listed every company, and still do.
+  for (const query of ['clusters=1', 'sites=1', 'clusters=1&ontop=1', 'map=8/51.5/-2.55']) {
+    await open(query);
+    await expect(heading).toBeVisible();
+    await expect(heading).toHaveText(`${fixture.companies.length} companies`);
+    await expect(results(page).getByRole('listitem')).toHaveCount(20);
+  }
+  await open('clusters=1&sites=1');
+  await expect.poll(() => featureCount(page, 'cluster-regions')).toBe(16);
+  await expect.poll(() => featureCount(page, 'sites')).toBe(sites.sites.length);
 });
 
 test('5. Filters: the groups open in a side panel that ends Show n companies, with the capability match toggle', async ({ page }) => {

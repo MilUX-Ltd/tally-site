@@ -219,7 +219,9 @@ export default function Explorer() {
   // the List view. Anything that narrows the companies, a page of them, or
   // the shortlist being open, makes it results.
   // Paging through every company is still looking at results, on any page.
-  const [browsing, setBrowsing] = useState(false);
+  // A link that only switches on a layer, moves the map or names a month showed
+  // every company before the redesign, and still opens on the results.
+  const [browsing, setBrowsing] = useState(() => Boolean(state.month || state.clusters || state.sites || state.onTop || state.map));
   const active = narrows(state) || browsing;
   const mode: 'landing' | 'results' | 'list' = state.view === 'list' ? 'list' : active || showList ? 'results' : 'landing';
   const listed = mode !== 'landing';
@@ -429,7 +431,7 @@ export default function Explorer() {
 
   // The room the panels take over the map, so the camera frames what is left.
   const padding = useMemo<Padding>(() => {
-    if (phone) return mode === 'landing' ? { top: 120, right: 0, bottom: 0, left: 0 } : { top: 170, right: 0, bottom: Math.round(window.innerHeight * 0.46), left: 0 };
+    if (phone) return mode === 'landing' ? { top: 120, right: 0, bottom: 0, left: 0 } : { top: 170, right: 0, bottom: Math.round(window.innerHeight * (window.innerHeight < 700 ? 0.6 : 0.46)), left: 0 };
     return { top: 60, right: 0, bottom: 0, left: Math.min(mode === 'landing' ? 592 : 480, Math.round(window.innerWidth * 0.45)) };
   }, [phone, mode === 'landing']);
   // What the camera frames, once everything a link may name has loaded.
@@ -460,7 +462,11 @@ export default function Explorer() {
     if (site && isRadius(miles)) update({ radius: miles, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } });
     else if (!site && isNearRadius(miles)) update({ within: miles, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } });
   };
-  const setView = (view: ViewState['view']) => update(view === 'map' ? { view, matrix: defaultState().matrix } : { view });
+  const setView = (view: ViewState['view']) => {
+    // Having looked at the list, the map comes back with the results beside it.
+    if (view === 'list') setBrowsing(true);
+    update(view === 'map' ? { view, matrix: defaultState().matrix } : { view });
+  };
 
   const panelKind = showList ? 'shortlist' : areaCompanies ? 'area' : 'results';
   const sub = !data
@@ -543,6 +549,9 @@ export default function Explorer() {
       </button>
     </div>
   );
+  // The landing page keeps to the four main controls; the map tools join them
+  // once there are results, the map has been moved or a layer is on.
+  const showTools = (mode !== 'list' && (mode === 'results' || Boolean(state.map) || state.clusters || state.sites));
   const mapStyle = (
     <div class="seg" role="group" aria-label="Map style">
       <button type="button" class="btn" aria-pressed={!state.flat} onClick={() => update({ flat: false })}>
@@ -710,7 +719,12 @@ export default function Explorer() {
           Layers
         </button>
       </div>
-      {mode !== 'list' && !phone && <div class="tools">{mapTools}</div>}
+      {showTools && !phone && <div class="tools">{mapTools}</div>}
+      {phone && mode === 'landing' && (
+        <p class="map-credit">
+          Map: <a href="https://openfreemap.org">OpenFreeMap</a>, <a href="https://www.openmaptiles.org/">© OpenMapTiles</a>, data from <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
+        </p>
+      )}
       {drawing && <p class="draw-hint">Press and drag on the map to draw a rectangle. Escape stops.</p>}
 
       <MapView
@@ -812,7 +826,7 @@ export default function Explorer() {
           {phone && mode !== 'list' && (
             <div class="layer layer-map">
               {mapStyle}
-              {mapTools}
+              {showTools && mapTools}
             </div>
           )}
         </LayersPanel>

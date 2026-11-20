@@ -72,6 +72,14 @@ test('selected companies and the results page are restored from the URL', async 
   await expect(area).toContainText('Example Robotics');
   await expect(area).toContainText('Example Subsea');
   await expect(area).not.toContainText('Example Avionics');
+  // A link with both still opens: the two selected companies show, and the
+  // page number falls back to the only page there is.
+  await page.goto('/?sel=example-robotics,example-subsea&page=2');
+  await waitForMap(page);
+  await expect(area).toContainText('Example Robotics');
+  await expect(area).toContainText('Example Subsea');
+  await expect(area.getByRole('list', { name: 'Results' }).getByRole('listitem')).toHaveCount(2);
+  await expect(page.getByText('Page 2 of')).toHaveCount(0);
   await page.goto('/?page=2');
   await waitForMap(page);
   await expect(page.getByText('Page 2 of 2')).toBeVisible();

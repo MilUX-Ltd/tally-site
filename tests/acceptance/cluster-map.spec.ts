@@ -29,7 +29,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('the cluster map button draws every area labelled and fades the companies', async ({ page }) => {
-  await page.goto('/');
+  // The map tools show once the page is past the landing state; a link with a map position is.
+  await page.goto('/?map=5/54.5/-3');
   await waitForMap(page);
   await openLayers(page);
   const button = page.getByRole('button', { name: 'Cluster map' });
