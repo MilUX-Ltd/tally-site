@@ -5,6 +5,7 @@
 import { isLocated } from './filters';
 import { UK_BOUNDS } from './map-config';
 import { addToShortlist } from './shortlist';
+import { distanceMiles, type Site } from './sites';
 import type { Company, Taxonomy } from './types';
 
 export const SITE_URL = 'https://tally.milux.co.uk';
@@ -122,6 +123,22 @@ export function capabilityGroups(company: Company, taxonomy: Taxonomy): Array<{ 
     .filter((g) => g.capabilities.length > 0);
 }
 
+/**
+ * The capability tags a page shows under each group heading. A tag never
+ * repeats its heading: "Space" under Space is left out (the heading says it)
+ * and "Space / Ground Systems" under Space reads "Ground Systems". A group
+ * whose only capability is the group itself keeps its heading and no tags.
+ */
+export function capabilityTagGroups(company: Company, taxonomy: Taxonomy): Array<{ slug: string; label: string; tags: string[] }> {
+  return capabilityGroups(company, taxonomy).map((g) => {
+    const prefix = `${g.label} / `.toLowerCase();
+    const tags = g.capabilities
+      .filter((c) => c.toLowerCase() !== g.label.toLowerCase())
+      .map((c) => (c.toLowerCase().startsWith(prefix) ? c.slice(prefix.length) : c));
+    return { slug: g.slug, label: g.label, tags };
+  });
+}
+
 /** Labels of the tags a company has from one facet, in taxonomy order. */
 export const labelsFor = (company: Company, options: Array<{ slug: string; label: string }>) =>
   options.filter((o) => company.tags.includes(o.slug)).map((o) => o.label);
@@ -206,6 +223,15 @@ export interface CompanyLocation {
   note: string;
 }
 
+/** The town a UK company gives, without "United Kingdom" or a repeat of its region: "London", not "London, United Kingdom, London". */
+function townOf(company: Company): string[] {
+  const skip = new Set(['united kingdom', 'uk', 'great britain', (company.region || '').toLowerCase()]);
+  return (company.hq || '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter((part) => part && !skip.has(part.toLowerCase()));
+}
+
 export function companyLocation(company: Company): CompanyLocation {
   const overseas = Boolean(company.country) || company.region === 'Overseas';
   if (overseas) {
@@ -221,9 +247,118 @@ export function companyLocation(company: Company): CompanyLocation {
   // With a postcode, describe the point we place (postcode and region), not a headquarters elsewhere.
   const text = company.postcode
     ? [company.postcode, company.region].filter(Boolean).join(', ')
-    : [company.hq, company.region].filter(Boolean).join(', ') || 'Location not known';
+    : [...townOf(company), company.region].filter(Boolean).join(', ') || 'Location not known';
   if (isLocated(company)) return { text, point: projectUk(company.lon, company.lat), note: '' };
   return { text, point: null, note: 'No published location to put on the map.' };
+}
+
+// The locator: what the "Where they are" graphic draws. A located company
+// gets its point on the UK outline, its coordinates and a local window 60
+// miles across with a 25 mile ring; a company whose location is published
+// only as a region gets that region shaded; anything else gets no drawing.
+
+const MILES_PER_DEGREE = 69.055;
+/** The local window is this many miles across; the ring is this many miles in radius. */
+export const LOCAL_WINDOW_MILES = 60;
+export const LOCAL_RING_MILES = 25;
+
+/** The UK regions and countries a region-level company can be in, as the taxonomy names them. */
+export const UK_REGIONS = [
+  'North East',
+  'North West',
+  'Yorkshire and The Humber',
+  'East Midlands',
+  'West Midlands',
+  'East of England',
+  'London',
+  'South East',
+  'South West',
+  'Scotland',
+  'Wales',
+  'Northern Ireland',
+] as const;
+
+/** A region name as a file name: "East of England" is "east-of-england". */
+export const regionSlug = (name: string) =>
+  name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+
+/** The shared outline of one region, in the same projection as /maps/uk.svg. */
+export const regionMapPath = (name: string) => `/maps/region/${regionSlug(name)}.svg`;
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+export type Locator =
+  | {
+      kind: 'point';
+      x: number;
+      y: number;
+      /** Latitude and longitude to two decimal places, as "51.51°N" and "0.13°W". */
+      north: string;
+      east: string;
+      /** The local window on the UK map: its top-left corner and side, in map units. */
+      window: { x: number; y: number; size: number };
+      /** The 25 mile ring around the point, in map units: not quite a circle, because the map is drawn for the UK's middle latitude. */
+      ring: { rx: number; ry: number };
+    }
+  | { kind: 'region'; region: string; href: string }
+  | { kind: 'none' };
+
+export function companyLocator(company: Company): Locator {
+  const overseas = Boolean(company.country) || company.region === 'Overseas';
+  if (overseas) return { kind: 'none' };
+  if (company.location_source === 'region') {
+    const region = UK_REGIONS.find((r) => r === company.region);
+    return region ? { kind: 'region', region, href: regionMapPath(region) } : { kind: 'none' };
+  }
+  if (!isLocated(company)) return { kind: 'none' };
+  const { x, y } = projectUk(company.lon, company.lat);
+  const size = round1((LOCAL_WINDOW_MILES / MILES_PER_DEGREE) * SCALE);
+  const ry = (LOCAL_RING_MILES / MILES_PER_DEGREE) * SCALE;
+  // A mile of longitude is drawn at X_SCALE for the whole map; on the ground it depends on the latitude.
+  const rx = (LOCAL_RING_MILES / (MILES_PER_DEGREE * Math.cos((company.lat * Math.PI) / 180))) * X_SCALE;
+  return {
+    kind: 'point',
+    x,
+    y,
+    north: `${Math.abs(company.lat).toFixed(2)}°${company.lat >= 0 ? 'N' : 'S'}`,
+    east: `${Math.abs(company.lon).toFixed(2)}°${company.lon >= 0 ? 'E' : 'W'}`,
+    window: { x: round1(x - size / 2), y: round1(y - size / 2), size },
+    ring: { rx: round1(rx), ry: round1(ry) },
+  };
+}
+
+export interface NearSite {
+  id: string;
+  name: string;
+  /** Great-circle distance in whole miles. */
+  miles: number;
+  /** The site's point on the UK map. */
+  x: number;
+  y: number;
+}
+
+/** The defence sites nearest a company the map places, nearest first; none for any other company. */
+export function nearestSites(company: Company, sites: Site[], count: number): NearSite[] {
+  if (!isLocated(company) || company.location_source === 'region') return [];
+  return sites
+    .map((site) => ({ site, miles: distanceMiles(company.lat, company.lon, site.lat, site.lon) }))
+    .sort((a, b) => a.miles - b.miles)
+    .slice(0, count)
+    .map(({ site, miles }) => ({ id: site.id, name: site.name, miles: Math.round(miles), ...projectUk(site.lon, site.lat) }));
+}
+
+/**
+ * The check line under a company's name: when its public sources were last
+ * checked, or that they have not been yet. The date is returned apart so the
+ * page can mark it up as a time.
+ */
+export function checkLine(verified: string | null | undefined): { before: string; iso: string | null; date: string | null; after: string } {
+  const date = verified ? longDate(verified) : null;
+  if (!verified || !date) return { before: 'From public sources. Not yet checked.', iso: null, date: null, after: '' };
+  return { before: 'Last checked against public sources on ', iso: verified, date, after: '.' };
 }
 
 export const pageTitle = (company: Company) => `${company.name}: company profile on Tally`;

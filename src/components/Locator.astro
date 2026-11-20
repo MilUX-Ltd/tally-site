@@ -1,0 +1,56 @@
+---
+// The locator on a company page: the company's point on the UK outline with
+// its local area beside it, or its region shaded when only the region is
+// published. The default slot sits under the local area. Drawn at build time from shared, cached outlines
+// (/maps/uk.svg, /maps/uk-local.svg, /maps/region/<slug>.svg); no script and no map library.
+import { UK_MAP, type Locator, type NearSite } from '../lib/company-page';
+import { graticule } from '../lib/uk-map';
+interface Props {
+  locator: Exclude<Locator, { kind: 'none' }>;
+  /** Where the company is, in words, for the text alternative. */
+  place: string;
+  /** Defence sites to mark in the local area. */
+  sites: NearSite[];
+}
+const { locator, place, sites } = Astro.props;
+const { width, height } = UK_MAP;
+const { lats, lons } = graticule();
+const point = locator.kind === 'point' ? locator : null;
+const win = point?.window;
+const inWindow = win ? sites.filter((s) => s.x > win.x + 1 && s.x < win.x + win.size - 1 && s.y > win.y + 1 && s.y < win.y + win.size - 1) : [];
+---
+<div class:list={['locator', { 'locator-region': !point }]}>
+  <svg class="locator-uk" viewBox={`0 0 ${width} ${height}`} role="img" aria-labelledby="map-title">
+    <title id="map-title">{point ? `Map of the UK with a marker at ${place}` : `Map of the UK with ${locator.kind === 'region' ? locator.region : place} shaded`}</title>
+    <image href="/maps/uk.svg" width={width} height={height} />
+    {locator.kind === 'region' && <image href={locator.href} width={width} height={height} />}
+    <g class="locator-scale" aria-hidden="true">
+      {lats.map((l) => <text x="3" y={l.y - 2.5}>{l.label}</text>)}
+      {lons.map((l) => <text x={l.x + 2.5} y="9">{l.label}</text>)}
+    </g>
+    {point && win && (
+      <>
+        <path class="locator-cross" d={`M0 ${point.y}H${width}M${point.x} 0V${height}`} />
+        <rect class="locator-window" x={win.x} y={win.y} width={win.size} height={win.size} />
+        <circle class="locator-dot" cx={point.x} cy={point.y} r="3.2" />
+      </>
+    )}
+  </svg>
+  {point && win && (
+    <div class="locator-side">
+      <svg class="locator-local" viewBox={`${win.x} ${win.y} ${win.size} ${win.size}`} aria-hidden="true" focusable="false">
+        <image href="/maps/uk-local.svg" width={width} height={height} />
+        <ellipse class="locator-ring" cx={point.x} cy={point.y} rx={point.ring.rx} ry={point.ring.ry} />
+        <path class="locator-cross" d={`M${win.x} ${point.y}h${win.size}M${point.x} ${win.y}v${win.size}`} />
+        {inWindow.map((s) => <rect class="locator-site" x={s.x - 0.45} y={s.y - 0.45} width="0.9" height="0.9" />)}
+        <rect class="locator-here" x={point.x - 0.7} y={point.y - 0.7} width="1.4" height="1.4" />
+      </svg>
+      <slot />
+      <p class="mono locator-key">
+        <span class="key-here">Company</span>
+        <span class="key-ring">25 miles</span>
+        {inWindow.length > 0 && <span class="key-site">Defence site</span>}
+      </p>
+    </div>
+  )}
+</div>

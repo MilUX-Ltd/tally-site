@@ -60,7 +60,10 @@ describe('locator', () => {
     // The window is square on the ground and holds the 25 mile ring.
     expect(locator.ring.ry).toBeLessThan(locator.window.size / 2);
     expect(locator.ring.rx).toBeLessThan(locator.window.size / 2);
-    expect(locator.ring.rx).toBeGreaterThan(locator.ring.ry);
+    // The map is drawn for the UK's middle latitude, so the ring is narrower than tall in the south and wider in the north.
+    expect(locator.ring.rx).toBeLessThan(locator.ring.ry);
+    const north = companyLocator(byName('Example Space Systems'));
+    expect(north.kind === 'point' && north.ring.rx > north.ring.ry).toBe(true);
   });
   it('writes east of Greenwich as E', () => {
     const east = companyLocator({ ...byName('Example Cyber Defence'), lat: 52.6, lon: 1.25 });
