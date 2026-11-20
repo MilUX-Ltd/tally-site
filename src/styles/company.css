@@ -1,4 +1,4 @@
-/* Company pages. Brand colours only (see base.css). */
+/* Company pages. Not yet redesigned; colours come from the tokens in base.css. */
 .company-header .lede { font-size: 1.15rem; }
 .company-page-actions { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; }
 .company-layout { display: grid; gap: 2rem; grid-template-columns: minmax(0, 1fr); margin-top: 1.5rem; }

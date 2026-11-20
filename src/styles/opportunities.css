@@ -1,14 +1,14 @@
-/* Funding calls and opportunities page. Brand colours only (see base.css). */
+/* Funding calls and opportunities page. Not yet redesigned; colours come from the tokens in base.css. */
 .opp-filter { display: flex; flex-wrap: wrap; gap: 0.75rem 2rem; align-items: flex-end; margin: 0 0 1rem; }
 .opp-filter[hidden] { display: none; }
-.opp-filter .field { display: flex; flex-direction: column; gap: 0.25rem; }
+.opp-filter .field { display: flex; flex-direction: column; gap: 0.25rem; padding: 0; background: none; border: 0; box-shadow: none; }
 .opp-filter label { font-weight: 600; }
-.opp-filter select { font: inherit; padding: 0.4rem 0.5rem; min-height: 2.75rem; max-width: 100%; border: 1px solid var(--blue-grey); background: #fff; }
+.opp-filter .field select { width: auto; font: inherit; padding: 0.4rem 0.5rem; min-height: 2.75rem; max-width: 100%; border: 1px solid var(--blue-grey); background: #fff; }
 .opp-filter fieldset { border: 0; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; align-items: center; }
 .opp-filter legend { font-weight: 600; padding: 0; margin-bottom: 0.25rem; }
 .opp-filter fieldset label { font-weight: 400; display: inline-flex; align-items: center; gap: 0.35rem; min-height: 2.75rem; }
 .opp-filter input[type='radio'] { width: 1.25rem; height: 1.25rem; margin: 0; }
-.opp-filter select:focus-visible, .opp-filter input:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+.opp-filter select:focus-visible, .opp-filter input:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
 .opp-list { list-style: none; padding: 0; margin: 0; }
 .opportunity { padding: 0.75rem 1rem; margin: 0.5rem 0; background: #fff; border-left: 4px solid var(--gold); max-width: 50rem; }
 .opportunity[hidden] { display: none; }

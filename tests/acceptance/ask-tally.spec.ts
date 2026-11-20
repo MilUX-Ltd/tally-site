@@ -7,7 +7,7 @@ import { AXE_TAGS, useOfflineMap } from '../support/offline-map';
 test('ask-tally page explains how to connect', async ({ page }) => {
   await useOfflineMap(page);
   await page.goto('/');
-  await page.getByRole('link', { name: /ask tally/i }).first().click();
+  await page.getByRole('link', { name: /use tally in your ai assistant/i }).first().click();
   await expect(page).toHaveURL(/\/ask-tally\/?$/);
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText(/ask tally/i);

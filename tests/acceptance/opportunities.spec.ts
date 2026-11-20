@@ -52,11 +52,13 @@ test('lists opportunities by deadline with their links', async ({ page }) => {
   await noSideScroll(page);
   await expectNoAxeViolations(page);
 
-  // Linked from the explorer header and the events page.
+  // Linked from the events page and from the shared top bar on the home page
+  // (at this phone width the bar's navigation is behind its Menu button).
   await page.goto('/events');
   await expect(page.getByRole('link', { name: /funding calls and opportunities/i }).first()).toHaveAttribute('href', '/opportunities');
   await page.goto('/');
-  await expect(page.locator('.site-header').getByRole('link', { name: /funding calls and opportunities/i })).toHaveAttribute('href', '/opportunities');
+  await page.locator('header.topbar summary').click();
+  await expect(page.locator('header.topbar').getByRole('link', { name: 'Funding', exact: true })).toHaveAttribute('href', '/opportunities');
 });
 
 test('filters by cluster and kind by keyboard', async ({ page }) => {

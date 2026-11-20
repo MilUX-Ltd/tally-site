@@ -1,5 +1,8 @@
 ---
 import '../styles/base.css';
+import SiteFooter from '../components/SiteFooter.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+import type { NavId } from '../lib/nav';
 import { canonicalUrl } from '../lib/company-page';
 import { FEED_PATH } from '../lib/new-companies';
 interface Props {
@@ -10,8 +13,13 @@ interface Props {
   canonical?: boolean;
   /** Whether to advertise the new companies feed in the head. */
   feed?: boolean;
+  /** The navigation item to mark as current; worked out from the address when left out. */
+  current?: NavId | null;
 }
-const { title, description, wide = false, canonical = true, feed = false } = Astro.props;
+const { title, description, wide = false, canonical = true, feed = false, current } = Astro.props;
+// Slots: the default slot is the page; "actions" sits at the right of the top
+// bar (the shortlist button); "credits" is the page's own data credit lines
+// at the top of the footer.
 // Canonical addresses are on tally.milux.co.uk and end in a slash, as served.
 const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
 ---
@@ -23,12 +31,16 @@ const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.ur
     <title>{title}</title>
     <meta name="description" content={description} />
     {canonical && <link rel="canonical" href={canonicalUrl(path)} />}
+    <link rel="preload" href="/fonts/manrope-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/manrope-800.woff2" as="font" type="font/woff2" crossorigin />
     {feed && <link rel="alternate" type="application/rss+xml" title="New companies in Tally" href={FEED_PATH} />}
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
+    <SiteHeader current={current}><slot name="actions" /></SiteHeader>
     <main id="main" class:list={{ wide }}>
       <slot />
     </main>
+    {Astro.slots.has('credits') ? <SiteFooter><slot name="credits" /></SiteFooter> : <SiteFooter />}
   </body>
 </html>

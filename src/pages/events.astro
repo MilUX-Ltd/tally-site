@@ -6,7 +6,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
-import SiteFooter from '../components/SiteFooter.astro';
 import '../styles/events.css';
 import { longDate, type ClusterEvent, type ClustersData, type EventsData } from '../lib/clusters';
 
@@ -119,7 +118,7 @@ const publicCount = events.filter((e) => e.audience === 'public').length;
     </>
   )}
 
-  <SiteFooter>
+  <Fragment slot="credits">
     <p>Cluster and event data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from the clusters' public websites and pages. Dates and details can change; check with the organiser before you travel.</p>
-  </SiteFooter>
+  </Fragment>
 </Base>
