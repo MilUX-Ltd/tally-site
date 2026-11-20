@@ -25,7 +25,7 @@ export interface RegionBucket extends Bucket {
 
 export interface MoneyData {
   attribution: string;
-  /** Awards to Tally companies, keyed by the company's name in Tally. */
+  /** Awards to Tally companies, newest first, keyed by Tally company id. */
   companies: Record<string, Award[]>;
   excluded: { frameworks: number; non_gbp: number };
   generated: string;
@@ -118,13 +118,13 @@ export interface Winner {
   count: number;
 }
 
-/** Tally companies that won contracts in a year, highest value first. Names not in Tally are left out. */
+/** Tally companies that won contracts in a year, highest value first. Ids not in Tally are left out. */
 export function tallyWinners(money: MoneyData, year: number, companies: Company[]): Winner[] {
-  const byName = new Map(companies.map((c) => [c.name, c]));
+  const byId = new Map(companies.map((c) => [c.id, c]));
   const prefix = `${year}-`;
   const out: Winner[] = [];
-  for (const [name, awards] of Object.entries(money.companies)) {
-    const company = byName.get(name);
+  for (const [id, awards] of Object.entries(money.companies)) {
+    const company = byId.get(id);
     if (!company) continue;
     const won = awards.filter((a) => a.date.startsWith(prefix));
     if (!won.length) continue;
@@ -142,15 +142,16 @@ export interface CapabilityRow {
 }
 
 /**
- * Tally companies' contract money for a year by top-level capability. A
- * company with several capabilities counts in each, so the rows add up to more
- * than the total.
+ * Tally companies' contract money for a year by top-level capability. Each
+ * tag rolls up to its parent (cyber/pen-testing counts under cyber), and a
+ * company counts once under each parent. A company with several capabilities
+ * counts in each, so the rows add up to more than the total.
  */
 export function capabilityRows(winners: Winner[], taxonomy: Taxonomy): CapabilityRow[] {
   const labels = new Map(taxonomy.capabilities.filter((c) => !c.slug.includes('/')).map((c) => [c.slug, c.label]));
   const rows = new Map<string, CapabilityRow>();
   for (const w of winners) {
-    for (const tag of new Set(w.company.tags)) {
+    for (const tag of new Set(w.company.tags.map((t) => t.split('/')[0]))) {
       const label = labels.get(tag);
       if (!label) continue;
       const row = rows.get(tag) ?? { slug: tag, label, value: 0, companies: 0 };
@@ -163,8 +164,8 @@ export function capabilityRows(winners: Winner[], taxonomy: Taxonomy): Capabilit
 }
 
 /** The awards a company has won, newest first. */
-export function companyAwards(money: Pick<MoneyData, 'companies'>, name: string): Award[] {
-  return [...(money.companies[name] ?? [])].sort((a, b) => b.date.localeCompare(a.date) || b.value - a.value);
+export function companyAwards(money: Pick<MoneyData, 'companies'>, id: string): Award[] {
+  return [...(money.companies[id] ?? [])].sort((a, b) => b.date.localeCompare(a.date) || b.value - a.value);
 }
 
 /** A share as a whole percentage, with "under 1%" for small non-zero shares. */

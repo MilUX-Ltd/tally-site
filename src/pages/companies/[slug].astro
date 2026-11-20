@@ -49,7 +49,7 @@ const certifications = companyCertifications(company, taxonomy, certificationChe
 const check = checkLine(text.verified);
 // Defence contracts this company has won, from public award notices (newest first).
 const money = moneyData();
-const awards = companyAwards(money, company.name);
+const awards = companyAwards(money, company.id);
 const onMap = isLocated(company) ? `/?sel=${company.id}&map=9/${company.lat.toFixed(5)}/${company.lon.toFixed(5)}` : null;
 const correction = correctionMailto(company.name, canonicalUrl(companyPath(company.id)));
 // The headline ends in the signal full stop unless the name already ends in punctuation.

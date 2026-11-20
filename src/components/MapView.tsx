@@ -916,7 +916,7 @@ export default function MapView(props: Props) {
           </div>
           <p class="legend-note">
             <span class="legend-arc" aria-hidden="true" />
-            Lines run to the countries of overseas suppliers, thicker for more money. Every figure is in the tables.
+            Regions with no contract money are left unshaded. Lines run to the countries of overseas suppliers, thicker for more money. Every figure is in the tables.
           </p>
         </div>
       ) : (

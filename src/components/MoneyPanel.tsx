@@ -118,7 +118,7 @@ export default function MoneyPanel(p: Props) {
                     Contracts
                   </th>
                   <th scope="col" class="num">
-                    To Tally companies
+                    Share to Tally companies
                   </th>
                 </tr>
               </thead>
@@ -176,7 +176,7 @@ export default function MoneyPanel(p: Props) {
                 ))}
               </ol>
             ) : (
-              <p class="money-none">No Tally companies won contracts in {year}.</p>
+              <p class="money-none">No Tally companies are matched to contracts awarded in {year}.</p>
             )}
 
             {figures.capabilities.length > 0 && (

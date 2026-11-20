@@ -137,6 +137,8 @@ export function companyTexts(raw) {
 // carries; anything else is dropped, so the certification stays "Stated by the
 // company". Written to a build-only file that is never served.
 const CHECK_HTTPS = /^https:\/\/[^\s<>"\\]+$/i;
+/** Whether text carries a control character (below space, or DEL). */
+const hasControl = (text) => [...text].some((ch) => ch.charCodeAt(0) < 0x20 || ch.charCodeAt(0) === 0x7f);
 // Negative or status wording a register name may not carry. The same list is in
 // the data repo's gate (.github/scripts/check.py, REGISTER_DENIED); keep them alike.
 const REGISTER_DENIED =
@@ -160,7 +162,7 @@ export function certificationChecks(raw, taxonomy, today = new Date().toISOStrin
       const checked = validDate(str(check.checked));
       const link = check.link == null || str(check.link) === '' ? null : str(check.link);
       if (!accreditation.startsWith('accr-') || !known.has(accreditation) || !tags.has(accreditation) || seen.has(accreditation)) continue;
-      if (register.length < 2 || register.length > 80 || [...register].some((ch) => ch.charCodeAt(0) < 0x20 || ch.charCodeAt(0) === 0x7f) || /\\|:\/\/|www\./i.test(register)) continue;
+      if (register.length < 2 || register.length > 80 || hasControl(register) || /\\|:\/\/|www\./i.test(register)) continue;
       if (REGISTER_DENIED.test(register)) continue;
       if (!checked || checked > today) continue;
       if (link !== null && !CHECK_HTTPS.test(link)) continue;
@@ -276,7 +278,7 @@ export function slimOpportunities(raw, clusters, today) {
 // Tender (Open Government Licence v3.0), built by the data repo. The build
 // checks the whole shape and refuses any field outside the contract, as for
 // opportunities. Supplier names outside Tally (the "top" lists) are not
-// passed on: the site names only Tally companies.
+// passed on: the site names only Tally companies, keyed by their Tally id.
 export const MONEY_REGIONS = [
   'North East', 'North West', 'Yorkshire and The Humber', 'East Midlands', 'West Midlands', 'East of England',
   'London', 'South East', 'South West', 'Scotland', 'Wales', 'Northern Ireland',
@@ -288,6 +290,30 @@ const REGION_KEYS = ['count', 'tally_count', 'tally_value', 'top', 'value'];
 const TOP_KEYS = ['count', 'name', 'tally', 'value'];
 const OGL = 'Contains public sector information licensed under the Open Government Licence v3.0.';
 const YEAR_KEY = /^20\d{2}$/;
+// Limits on what the build passes on. Anything over a text or count limit is
+// refused; a company with more awards keeps only its newest.
+export const MONEY_LIMITS = { title: 300, buyer: 200, name: 200, awards: 200, companies: 5000, countries: 250 };
+// Award notices link only to the two public services.
+const NOTICE_HOSTS = new Set(['www.contractsfinder.service.gov.uk', 'www.find-tender.service.gov.uk']);
+
+/** Whether a link is https on Contracts Finder or Find a Tender. */
+export function isNoticeUrl(v) {
+  if (!CHECK_HTTPS.test(str(v))) return false;
+  try {
+    const u = new URL(str(v));
+    return u.protocol === 'https:' && NOTICE_HOSTS.has(u.hostname) && !u.username && !u.password && !u.port;
+  } catch {
+    return false;
+  }
+}
+
+/** Text within a length, with no control characters; otherwise the build stops. */
+function moneyText(v, max, where) {
+  if (typeof v !== 'string' || !v.trim()) moneyFail(`${where} is empty`);
+  if (hasControl(v)) moneyFail(`${where} carries a control character`);
+  if (v.trim().length > max) moneyFail(`${where} is longer than ${max} characters`);
+  return v.trim();
+}
 
 function moneyFail(message) {
   throw new Error(`money.json: ${message}; refusing to build`);
@@ -321,8 +347,13 @@ function moneyByYear(v, where, years, each) {
   return out;
 }
 
-/** Checks money.json against the contract and slims it for the browser. Throws on anything outside it. */
-export function slimMoney(raw) {
+/**
+ * Checks money.json against the contract and slims it for the browser. Throws
+ * on anything outside it. Awards are keyed by Tally company id: `ids` maps
+ * each company name to its id (companyIds), and a name Tally does not hold, or
+ * holds more than once, is left out.
+ */
+export function slimMoney(raw, ids) {
   onlyKeys(raw, MONEY_KEYS, 'the file');
   if (str(raw.attribution) !== OGL) moneyFail('the attribution is not the Open Government Licence statement');
   if (!Array.isArray(raw.sources) || !raw.sources.length || !raw.sources.every((s) => typeof s === 'string' && str(s))) moneyFail('sources is not a list of names');
@@ -352,6 +383,7 @@ export function slimMoney(raw) {
   const overseas = moneyByYear(raw.overseas, 'overseas', years, (byCountry, where) => {
     if (!isObject(byCountry)) moneyFail(`${where} is not an object`);
     const out = {};
+    if (Object.keys(byCountry).length > MONEY_LIMITS.countries) moneyFail(`${where} has more than ${MONEY_LIMITS.countries} countries`);
     for (const [country, b] of Object.entries(byCountry)) {
       if (!/^[\p{L}][\p{L} .,'()-]{1,59}$/u.test(country)) moneyFail(`${where} has a bad country name (${JSON.stringify(country)})`);
       onlyKeys(b, BUCKET_KEYS, `${where}.${country}`, ['count', 'value']);
@@ -365,17 +397,28 @@ export function slimMoney(raw) {
     return { count: whole(b.count, `${where} count`), value: amount(b.value, `${where} value`) };
   });
   if (!isObject(raw.companies)) moneyFail('companies is not an object');
+  if (Object.keys(raw.companies).length > MONEY_LIMITS.companies) moneyFail(`companies has more than ${MONEY_LIMITS.companies} entries`);
   const companies = {};
-  for (const [name, awards] of Object.entries(raw.companies)) {
-    if (!str(name) || !Array.isArray(awards)) moneyFail(`companies.${JSON.stringify(name)} is not a list of awards`);
-    companies[name] = awards.map((a) => {
+  for (const [rawName, awards] of Object.entries(raw.companies)) {
+    const name = moneyText(rawName, MONEY_LIMITS.name, 'a company name');
+    if (!Array.isArray(awards)) moneyFail(`companies.${JSON.stringify(name)} is not a list of awards`);
+    const checked = awards.map((a) => {
       onlyKeys(a, AWARD_KEYS, `an award to ${name}`);
       const date = validDate(str(a.date));
       if (!date || date < raw.period.from || date > raw.period.to) moneyFail(`an award to ${name} has a date outside the period`);
-      if (!str(a.title) || !str(a.buyer)) moneyFail(`an award to ${name} has no title or buyer`);
-      if (!CHECK_HTTPS.test(str(a.url))) moneyFail(`an award to ${name} has a link that is not https`);
-      return { buyer: str(a.buyer), date, title: str(a.title), url: str(a.url), value: amount(a.value, `an award to ${name} value`) };
+      if (!isNoticeUrl(a.url)) moneyFail(`an award to ${name} has a link that is not https on Contracts Finder or Find a Tender`);
+      return {
+        buyer: moneyText(a.buyer, MONEY_LIMITS.buyer, `the buyer of an award to ${name}`),
+        date,
+        title: moneyText(a.title, MONEY_LIMITS.title, `the title of an award to ${name}`),
+        url: str(a.url),
+        value: amount(a.value, `an award to ${name} value`),
+      };
     });
+    const id = ids.get(name);
+    if (!id) continue;
+    // The newest awards, up to the limit.
+    companies[id] = checked.sort((x, y) => y.date.localeCompare(x.date) || y.value - x.value).slice(0, MONEY_LIMITS.awards);
   }
   return {
     attribution: OGL,
@@ -391,6 +434,26 @@ export function slimMoney(raw) {
   };
 }
 
+/**
+ * Stops a build from main that would read money.json from anywhere but main.
+ * Fixture builds (tests) read no data repo, so they are not stopped.
+ */
+export function assertMoneyRef(ref, githubRef = process.env.GITHUB_REF, fixture = false) {
+  if (fixture || githubRef !== 'refs/heads/main') return;
+  if (ref !== 'main') throw new Error(`money.json is read from ${ref}; a build from main must read it from main. Set MONEY_REF to 'main' before release.`);
+}
+
+/** Company name to Tally id, for names Tally holds once. */
+export function moneyIds(raw) {
+  const ids = companyIds(raw.companies);
+  const seen = new Map();
+  raw.companies.forEach((c, i) => {
+    const name = str(c.name);
+    seen.set(name, seen.has(name) ? null : ids[i]);
+  });
+  return new Map([...seen].filter(([, id]) => id));
+}
+
 async function fetchJson(url) {
   const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
   if (!response.ok) throw new Error(`${url}: HTTP ${response.status}`);
@@ -399,6 +462,8 @@ async function fetchJson(url) {
 
 async function main() {
   const fixture = process.env.TALLY_DATA_SOURCE === 'fixture';
+  // Production never builds from a data branch; checked before anything is fetched.
+  assertMoneyRef(MONEY_REF, process.env.GITHUB_REF, fixture);
   const read = (name) => JSON.parse(readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8'));
   const names = ['tally-data.json', 'taxonomy.json', 'clusters.json', 'events.json', 'opportunities.json'];
   const [raw, taxonomy, rawClusters, rawEvents, rawOpportunities] = fixture
@@ -424,7 +489,7 @@ async function main() {
   writeFileSync(new URL('clusters.json', dir), JSON.stringify(clusters));
   writeFileSync(new URL('events.json', dir), JSON.stringify(events));
   writeFileSync(new URL('opportunities.json', dir), JSON.stringify(opportunities));
-  const money = slimMoney(fixture ? read('money.json') : await fetchJson(MONEY_URL));
+  const money = slimMoney(fixture ? read('money.json') : await fetchJson(MONEY_URL), moneyIds(raw));
   writeFileSync(new URL('money.json', dir), JSON.stringify(money));
   console.log(`Wrote money.json (${money.years.join(', ')}; ${Object.keys(money.companies).length} Tally companies with awards).`);
   console.log(`Wrote opportunities.json (${opportunities.opportunities.length} open funding calls and opportunities).`);
