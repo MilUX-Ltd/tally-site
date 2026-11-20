@@ -119,7 +119,7 @@ const shortlistButton = (page: Page) => page.getByRole('banner').getByRole('butt
 const filtersButton = (page: Page) => page.getByRole('button', { name: /^Filters/ });
 const filtersPanel = (page: Page) => page.getByRole('dialog', { name: 'Filters' });
 const layersPanel = (page: Page) => page.getByRole('dialog', { name: 'Layers' });
-const view = (page: Page, name: 'Map' | 'List') => page.getByRole('group', { name: 'View' }).getByRole('button', { name, exact: true });
+const view = (page: Page, name: 'Map' | 'List' | 'Matrix') => page.getByRole('group', { name: 'View' }).getByRole('button', { name, exact: true });
 const style = (page: Page, name: '3D' | 'Flat') => page.getByRole('group', { name: 'Map style' }).getByRole('button', { name, exact: true });
 const matrix = (page: Page) => page.getByRole('table', { name: /compare capabilities/i });
 const matrixRows = async (page: Page) => (await matrix(page).locator('tbody th[scope="row"]').allInnerTexts()).map((t) => t.trim()).sort();
@@ -295,9 +295,9 @@ test('4. Old links: every link that worked before opens showing the same compani
   await open('area=-2.7,51.4,-2.4,51.6');
   await expect.poll(sorted).toEqual(BRISTOL);
 
-  // A matrix page opens on the List view, at that page of the matrix.
+  // A matrix page opens on the Matrix view, at that page of the matrix.
   await open('mpage=2');
-  await expect(view(page, 'List')).toHaveAttribute('aria-pressed', 'true');
+  await expect(view(page, 'Matrix')).toHaveAttribute('aria-pressed', 'true');
   const second = await matrixRows(page);
   expect(second.length).toBe(fixture.companies.length - 25);
 
@@ -471,9 +471,11 @@ test('7. List view: the same results full width with no map, the matrix, oversea
   await expect(page.locator('.map-wrap')).toHaveAttribute('inert', '');
   await expect(page.getByRole('group', { name: 'Map style' })).toHaveCount(0);
 
-  // The matrix compares the results.
+  // The matrix compares the results, in the Matrix view.
+  await view(page, 'Matrix').click();
   await expect(page.getByRole('heading', { name: 'Compare capabilities' })).toBeVisible();
   await expect.poll(() => matrixRows(page)).toEqual(CYBER);
+  await view(page, 'List').click();
 
   // Overseas companies by country, closed by default.
   const overseas = page.getByRole('region', { name: 'Overseas companies' });
@@ -485,7 +487,9 @@ test('7. List view: the same results full width with no map, the matrix, oversea
   // With the shortlist open, the matrix compares the shortlist.
   await results(page).getByRole('button', { name: 'Add Example Secure Comms to shortlist' }).click();
   await shortlistButton(page).click();
+  await view(page, 'Matrix').click();
   await expect.poll(() => matrixRows(page)).toEqual(['Example Secure Comms']);
+  await view(page, 'List').click();
   await shortlistButton(page).click();
 
   // The view opens from its link, pages, and goes back to the map.

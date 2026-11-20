@@ -3,7 +3,7 @@
 // Committed failing before the build. Not edited after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AXE_TAGS, listView, openShortlist, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, listView, matrixView, openShortlist, useOfflineMap, waitForMap } from '../support/offline-map';
 
 const CYBER = '/companies/example-cyber-defence/';
 
@@ -108,10 +108,12 @@ test('company names link to their pages', async ({ page }) => {
     'href',
     '/companies/example-avionics/',
   );
+  await matrixView(page);
   await expect(page.locator('.matrix tbody').getByRole('link', { name: 'Example Avionics', exact: true })).toHaveAttribute(
     'href',
     '/companies/example-avionics/',
   );
+  await listView(page);
   await page.locator('.overseas summary').click();
   await expect(page.locator('.overseas').getByRole('link', { name: 'Example Nordic Defence', exact: true })).toHaveAttribute(
     'href',

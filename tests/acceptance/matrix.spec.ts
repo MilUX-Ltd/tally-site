@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AXE_TAGS, closeFilters, listView, mapView, openFilters, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, closeFilters, mapView, matrixView, openFilters, useOfflineMap, waitForMap } from '../support/offline-map';
 
 const fixture = JSON.parse(readFileSync(new URL('../fixtures/tally-data.json', import.meta.url), 'utf8')) as {
   companies: Array<{ name: string; lat: number | null; lon: number | null }>;
@@ -26,7 +26,7 @@ test.beforeEach(async ({ page }) => {
 test('ticking a matrix column filters companies and redraws the map', async ({ page }) => {
   await page.goto('/');
   await waitForMap(page);
-  await listView(page);
+  await matrixView(page);
   await expect(matrix(page)).toBeVisible();
   await matrix(page).getByRole('checkbox', { name: 'Filter by Cyber', exact: true }).check();
   await expect(page.locator('#result-count')).toContainText('5 companies');
@@ -45,7 +45,7 @@ test('ticking a matrix column filters companies and redraws the map', async ({ p
   await expect(page.getByRole('checkbox', { name: 'Cyber', exact: true })).toBeChecked();
   await closeFilters(page);
 
-  await page.getByLabel('Capabilities shown').selectOption({ label: 'Cyber, data and software' });
+  await page.getByRole('radiogroup', { name: 'Capabilities shown' }).getByRole('radio', { name: 'Cyber, data and software', exact: true }).check();
   await expect.poll(() => params(page.url()).get('mgroup')).toBe('cyber-data-software');
   await expect(matrix(page).getByRole('checkbox', { name: 'Filter by Space', exact: true })).toHaveCount(0);
   await expectNoAxeViolations(page);
@@ -56,7 +56,7 @@ test('searching the area in view narrows the matrix', async ({ page }) => {
   await waitForMap(page);
   await page.getByRole('button', { name: 'Search this area' }).click();
   await expect.poll(() => params(page.url()).get('area')).not.toBeNull();
-  await listView(page);
+  await matrixView(page);
   const [w, s, e, n] = (params(page.url()).get('area') as string).split(',').map(Number);
   const expected = fixture.companies
     .filter((c) => c.lat != null && c.lon != null && c.lon >= w && c.lon <= e && c.lat >= s && c.lat <= n)
@@ -83,7 +83,7 @@ test('drawing a rectangle narrows the matrix', async ({ page }) => {
   await page.mouse.move(box.x + (corners[0].x + corners[1].x) / 2, box.y + (corners[0].y + corners[1].y) / 2, { steps: 5 });
   await page.mouse.move(box.x + corners[1].x, box.y + corners[1].y, { steps: 5 });
   await page.mouse.up();
-  await listView(page);
+  await matrixView(page);
   await expect.poll(() => rowNames(page)).toEqual(['Example Aerial Systems', 'Example Composites', 'Example Flight Test']);
   expect(params(page.url()).get('area')).not.toBeNull();
 });
@@ -91,7 +91,7 @@ test('drawing a rectangle narrows the matrix', async ({ page }) => {
 test('the matrix works by keyboard alone', async ({ page }) => {
   await page.goto('/');
   await waitForMap(page);
-  await listView(page);
+  await matrixView(page);
   const first = matrix(page).getByRole('checkbox').first();
   await first.focus();
   await page.keyboard.press('Space');

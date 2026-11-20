@@ -2,7 +2,7 @@
 // Committed failing before the build. Not edited after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AXE_TAGS, closeFilters, listView, openFilters, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, closeFilters, listView, matrixView, openFilters, useOfflineMap, waitForMap } from '../support/offline-map';
 
 async function expectNoAxeViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
@@ -45,8 +45,9 @@ test('overlap toggle narrows the map, matrix and list', async ({ page }) => {
   await expect.poll(() => hexCount(page)).toBe(2);
   await expect(page.getByRole('heading', { name: /places where all chosen capabilities overlap/i })).toBeVisible();
   await closeFilters(page);
-  await listView(page);
+  await matrixView(page);
   await expect.poll(() => rowNames(page)).toEqual(OVERLAP);
+  await listView(page);
   const results = page.getByRole('list', { name: 'Results' });
   await expect(results.locator('h3')).toHaveCount(4);
   await expect(results).not.toContainText('Example Signals Intelligence');
@@ -59,7 +60,7 @@ test('overlap toggle narrows the map, matrix and list', async ({ page }) => {
 });
 
 test('an overlap view opens from its URL and works by keyboard', async ({ page }) => {
-  await page.goto('/?cap=cyber,data&capmatch=all&view=list');
+  await page.goto('/?cap=cyber,data&capmatch=all&view=matrix');
   await waitForMap(page);
   await openFilters(page);
   const all = page.getByRole('radio', { name: 'all of them in the same area' });

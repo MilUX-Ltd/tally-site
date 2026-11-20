@@ -3,7 +3,7 @@
 // Committed failing before the build. Not edited after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { AXE_TAGS, listView, openFilters, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, matrixView, openFilters, useOfflineMap, waitForMap } from '../support/offline-map';
 
 async function expectNoAxeViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
@@ -61,7 +61,7 @@ test('plain-English search sets the filters', async ({ page }) => {
 
   // Cyber (or a sub-capability) and Cyber Essentials Plus, in the UK fixture.
   await expect(page.locator('#result-count')).toContainText('2 companies');
-  await listView(page);
+  await matrixView(page);
   await expect.poll(() => rowNames(page)).toEqual(['Example Cyber Defence', 'Example Signals Intelligence']);
   await openFilters(page);
   await expect(page.getByRole('checkbox', { name: 'Cyber Essentials Plus' })).toBeChecked();
@@ -86,7 +86,7 @@ test('falls back to keyword search and says so', async ({ page }) => {
   await expect(searchStatus(page)).toContainText(/could not turn that into filters/i);
   await expect.poll(() => params(page.url()).get('q')).toBe('counter drone');
   await expect(page.locator('#result-count')).toContainText('1 company');
-  await listView(page);
+  await matrixView(page);
   await expect.poll(() => rowNames(page)).toEqual(['Example Counter Drone']);
   await expectNoAxeViolations(page);
 
@@ -95,7 +95,7 @@ test('falls back to keyword search and says so', async ({ page }) => {
   await page.goto('/?q=counter%20drone');
   await waitForMap(page);
   await expect(searchBox(page)).toHaveValue('counter drone');
-  await listView(page);
+  await matrixView(page);
   await expect.poll(() => rowNames(page)).toEqual(['Example Counter Drone']);
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(scrollWidth).toBeLessThanOrEqual(375);
@@ -116,7 +116,7 @@ test('a failing search route still gives a keyword search', async ({ page }) => 
   await searchBox(page).fill('photonics');
   await searchBox(page).press('Enter');
   await expect(searchStatus(page)).toContainText(/could not turn that into filters/i);
-  await listView(page);
+  await matrixView(page);
   await expect.poll(() => rowNames(page)).toEqual(['Example Photonics']);
   await expectNoAxeViolations(page);
 });
