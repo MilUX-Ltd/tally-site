@@ -1,7 +1,7 @@
 // The results panel: the count, the companies a page at a time (nearest first
 // with distances when a place is set), and paging. Beside the map it is the
 // card on the left (a bottom sheet on a phone); in the List view it is the
-// whole width and also holds the matrix and the overseas companies. With the
+// whole width and also holds the overseas companies. With the
 // map, it is the accessible route to everything the map shows. The same panel
 // shows a chosen map area and the shortlist.
 import type { ComponentChildren } from 'preact';
@@ -33,11 +33,11 @@ interface Props {
   loading: boolean;
   /** Shown in place of the rows when there are none. */
   empty: ComponentChildren;
-  /** The links at the top right: Start again, Clear the area, Back to results. */
+  /** The links at the top right: Compare capabilities, Start again, Clear the area, Back to results. */
   actions: ComponentChildren;
   /** Under the heading: the shortlist's share tools. */
   tools?: ComponentChildren;
-  /** After the rows, in the List view: the matrix and the overseas companies. */
+  /** After the rows, in the List view: the overseas companies. */
   children?: ComponentChildren;
   /** Goes up by one when the heading should take focus (a map pick, the shortlist opening). */
   focus: number;

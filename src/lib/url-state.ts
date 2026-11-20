@@ -61,11 +61,11 @@ export interface ViewState {
   q: string;
   /** Whether the map is drawn flat; false means 3D columns, the default. */
   flat: boolean;
-  /** Map and results panel, or the results full width with the matrix. */
+  /** Map and results panel, the results full width, or the capability matrix full width. */
   view: View;
 }
 
-export type View = 'map' | 'list';
+export type View = 'map' | 'list' | 'matrix';
 
 export type CapMatch = 'any' | 'all';
 
@@ -165,7 +165,8 @@ export function fromQuery(query: string): ViewState {
   if (cluster && CLUSTER.test(cluster)) state.cluster = cluster;
   state.q = keywordText(p.get('q'));
   if (p.get('flat') === '1') state.flat = true;
-  if (p.get('view') === 'list') state.view = 'list';
+  const view = p.get('view');
+  if (view === 'list' || view === 'matrix') state.view = view;
   return state;
 }
 
@@ -199,18 +200,18 @@ export function toQuery(state: ViewState): string {
   if (state.cluster) add('cluster', state.cluster);
   if (state.q) add('q', state.q);
   if (state.flat) add('flat', '1');
-  if (state.view === 'list') add('view', 'list');
+  if (state.view !== 'map') add('view', state.view);
   return parts.join('&');
 }
 
 /**
- * The state a link opens with. The matrix lives in the List view, so a link
- * from before there was one, naming a matrix page or group, opens there.
+ * The state a link opens with. The matrix is a view of its own, so a link
+ * from before views were named, with a matrix page or group, opens there.
  */
 export function fromLink(query: string): ViewState {
   const state = fromQuery(query);
   const named = new URLSearchParams(query.startsWith('?') ? query.slice(1) : query).has('view');
-  return !named && (state.matrix.page > 1 || state.matrix.group) ? { ...state, view: 'list' } : state;
+  return !named && (state.matrix.page > 1 || state.matrix.group) ? { ...state, view: 'matrix' } : state;
 }
 
 /** Rounds positions the way the URL does, so state and URL agree. */

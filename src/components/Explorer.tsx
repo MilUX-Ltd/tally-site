@@ -215,16 +215,18 @@ export default function Explorer() {
 
 
 
-  // What the page looks like: the landing page, results beside the map, or
-  // the List view. Anything that narrows the companies, a page of them, or
+  // What the page looks like: the landing page, results beside the map, the
+  // List view or the Matrix view. Anything that narrows the companies, a page of them, or
   // the shortlist being open, makes it results.
   // Paging through every company is still looking at results, on any page.
   // A link that only switches on a layer, moves the map or names a month showed
   // every company before the redesign, and still opens on the results.
   const [browsing, setBrowsing] = useState(() => Boolean(state.month || state.clusters || state.sites || state.onTop || state.map));
   const active = narrows(state) || browsing;
-  const mode: 'landing' | 'results' | 'list' = state.view === 'list' ? 'list' : active || showList ? 'results' : 'landing';
+  const mode: 'landing' | 'results' | 'list' | 'matrix' = state.view !== 'map' ? state.view : active || showList ? 'results' : 'landing';
   const listed = mode !== 'landing';
+  // The List and Matrix views take the whole width; the map is out of reach.
+  const full = mode === 'list' || mode === 'matrix';
 
   // The status line: the page's one live region. A message is said once and
   // stands until the results next change; after the first change, the count
@@ -357,8 +359,8 @@ export default function Explorer() {
     return () => window.removeEventListener('keydown', stop);
   }, [drawing]);
   useEffect(() => {
-    if (mode === 'list') setDrawing(false);
-  }, [mode]);
+    if (full) setDrawing(false);
+  }, [full]);
 
   // The companies in the panel, in the order shown: the shortlist as added,
   // otherwise nearest first when a place is set, and A to Z when not.
@@ -463,10 +465,46 @@ export default function Explorer() {
     else if (!site && isNearRadius(miles)) update({ within: miles, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } });
   };
   const setView = (view: ViewState['view']) => {
-    // Having looked at the list, the map comes back with the results beside it.
-    if (view === 'list') setBrowsing(true);
+    // Having looked at the list or the matrix, the map comes back with the results beside it.
+    if (view !== 'map') setBrowsing(true);
+    // The new view's heading takes focus.
+    if (view !== state.view) setFocusPanel((k) => k + 1);
     update(view === 'map' ? { view, matrix: defaultState().matrix } : { view });
   };
+  const compare = (
+    <button type="button" class="link" onClick={() => setView('matrix')}>
+      Compare capabilities<span aria-hidden="true"> →</span>
+    </button>
+  );
+  // The links at the top right of the results panel and the matrix.
+  const panelActions = (
+    <>
+      {mode !== 'matrix' && compare}
+      {showList ? (
+        <button
+          type="button"
+          class="link"
+          onClick={() => {
+            setShowList(false);
+            setFocusPanel((k) => k + 1);
+          }}
+        >
+          Back to results
+        </button>
+      ) : (
+        <>
+          {areaCompanies && (
+            <button type="button" class="link" onClick={() => update({ cell: null, sel: [], area: null, page: 1 })}>
+              Clear the area
+            </button>
+          )}
+          <button type="button" class="link" onClick={startAgain}>
+            Start again
+          </button>
+        </>
+      )}
+    </>
+  );
 
   const panelKind = showList ? 'shortlist' : areaCompanies ? 'area' : 'results';
   const sub = !data
@@ -520,6 +558,7 @@ export default function Explorer() {
       </p>
     </>
   );
+  const shortlistTools = showList && data ? <Shortlist companies={shortlisted} taxonomy={data.taxonomy} shareUrl={shareUrl} overlap={overlapOn} onSay={say} /> : undefined;
   const facts: Array<[string, string]> = [
     ['Companies', data ? data.companies.length.toLocaleString('en-GB') : '–'],
     ['Capabilities', data ? String(data.taxonomy.capabilities.length) : '–'],
@@ -551,7 +590,7 @@ export default function Explorer() {
   );
   // The landing page keeps to the four main controls; the map tools join them
   // once there are results, the map has been moved or a layer is on.
-  const showTools = (mode !== 'list' && (mode === 'results' || Boolean(state.map) || state.clusters || state.sites));
+  const showTools = !full && (mode === 'results' || Boolean(state.map) || state.clusters || state.sites);
   const mapStyle = (
     <div class="seg" role="group" aria-label="Map style">
       <button type="button" class="btn" aria-pressed={!state.flat} onClick={() => update({ flat: false })}>
@@ -564,7 +603,7 @@ export default function Explorer() {
   );
 
   return (
-    <div class={`find ${mode === 'landing' ? 'landing' : mode === 'list' ? 'as-list' : 'with-results'}${layersOpen ? ' layers-open' : ''}`}>
+    <div class={`find ${mode === 'landing' ? 'landing' : mode === 'matrix' ? 'as-list as-matrix' : mode === 'list' ? 'as-list' : 'with-results'}${layersOpen ? ' layers-open' : ''}`}>
       <p id="result-count" class="vh">
         {countSentence}
       </p>
@@ -639,65 +678,58 @@ export default function Explorer() {
         ) : (
           <>
             {!showList && <Chips chips={chips} onClear={clearAll} />}
-            <ResultsPanel
-              kind={panelKind}
-              hits={hits}
-              page={state.page}
-              onPage={(page) => {
-                setBrowsing(true);
-                update({ page });
-              }}
-              labels={labels}
-              shortlisted={(id) => state.list.includes(id)}
-              onShortlist={setShortlist}
-              sub={sub}
-              loading={!data && !failed}
-              empty={empty}
-              focus={focusPanel}
-              actions={
-                showList ? (
-                  <button
-                    type="button"
-                    class="link"
-                    onClick={() => {
-                      setShowList(false);
-                      setFocusPanel((k) => k + 1);
-                    }}
-                  >
-                    Back to results
-                  </button>
-                ) : (
-                  <>
-                    {areaCompanies && (
-                      <button type="button" class="link" onClick={() => update({ cell: null, sel: [], area: null, page: 1 })}>
-                        Clear the area
-                      </button>
-                    )}
-                    <button type="button" class="link" onClick={startAgain}>
-                      Start again
-                    </button>
-                  </>
-                )
-              }
-              tools={showList && data ? <Shortlist companies={shortlisted} taxonomy={data.taxonomy} shareUrl={shareUrl} overlap={overlapOn} onSay={say} /> : undefined}
-            >
-              {mode === 'list' && data && (
-                <>
-                  <Matrix
-                    taxonomy={data.taxonomy}
-                    companies={showList ? shortlisted : narrowed}
-                    selectedCaps={state.filters.cap}
-                    group={state.matrix.group}
-                    page={state.matrix.page}
-                    scope={panelKind}
-                    onToggleCap={(slug, on) => toggle('cap', slug, on)}
-                    onGroup={(group) => update({ matrix: { group, page: state.matrix.page } })}
-                    onPage={(page) => update({ matrix: { ...state.matrix, page } })}
-                  />
-                  <OverseasList companies={facetFiltered} overlap={overlapOn} actions={shortlistButton} />
-                </>
-              )}
-            </ResultsPanel>
+            {mode === 'matrix' ? (
+              data ? (
+                <Matrix
+                  taxonomy={data.taxonomy}
+                  companies={showList ? shortlisted : narrowed}
+                  selectedCaps={state.filters.cap}
+                  group={state.matrix.group}
+                  page={state.matrix.page}
+                  scope={panelKind}
+                  shortlisted={(id) => state.list.includes(id)}
+                  onShortlist={setShortlist}
+                  onToggleCap={(slug, on) => toggle('cap', slug, on)}
+                  onGroup={(group) => update({ matrix: { group, page: state.matrix.page } })}
+                  onPage={(page) => update({ matrix: { ...state.matrix, page } })}
+                  actions={panelActions}
+                  tools={shortlistTools}
+                  empty={empty}
+                  focus={focusPanel}
+                />
+              ) : (
+                <section class="matrix" aria-labelledby="matrix-heading">
+                  <header class="panel-head">
+                    <div>
+                      <h2 id="matrix-heading">Compare capabilities</h2>
+                      <p>{failed ? '' : 'Loading companies.'}</p>
+                    </div>
+                  </header>
+                  {failed && <div class="empty">{empty}</div>}
+                </section>
+              )
+            ) : (
+              <ResultsPanel
+                kind={panelKind}
+                hits={hits}
+                page={state.page}
+                onPage={(page) => {
+                  setBrowsing(true);
+                  update({ page });
+                }}
+                labels={labels}
+                shortlisted={(id) => state.list.includes(id)}
+                onShortlist={setShortlist}
+                sub={sub}
+                loading={!data && !failed}
+                empty={empty}
+                focus={focusPanel}
+                actions={panelActions}
+                tools={shortlistTools}
+              >
+                {mode === 'list' && data && <OverseasList companies={facetFiltered} overlap={overlapOn} actions={shortlistButton} />}
+              </ResultsPanel>
+            )}
           </>
         )}
       </div>
@@ -713,8 +745,11 @@ export default function Explorer() {
           <button type="button" class="btn" aria-pressed={state.view === 'list'} onClick={() => setView('list')}>
             List
           </button>
+          <button type="button" class="btn" aria-pressed={state.view === 'matrix'} onClick={() => setView('matrix')}>
+            Matrix
+          </button>
         </div>
-        {mode !== 'list' && !phone && mapStyle}
+        {!full && !phone && mapStyle}
         <button type="button" class={layersOpen ? 'btn is-selected' : 'btn'} aria-haspopup="dialog" aria-expanded={layersOpen} onClick={() => setLayersOpen(!layersOpen)}>
           Layers
         </button>
@@ -753,7 +788,7 @@ export default function Explorer() {
         focus={focus}
         drawing={drawing}
         onDrawing={setDrawing}
-        hidden={mode === 'list'}
+        hidden={full}
         api={mapApi}
       />
       <div class="fade" aria-hidden="true" />
@@ -823,7 +858,7 @@ export default function Explorer() {
             update({ site: id, near: id ? null : state.near, cell: null, sel: [], area: null, page: 1, matrix: { ...state.matrix, page: 1 } });
           }}
         >
-          {phone && mode !== 'list' && (
+          {phone && !full && (
             <div class="layer layer-map">
               {mapStyle}
               {showTools && mapTools}
