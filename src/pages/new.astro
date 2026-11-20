@@ -1,44 +1,223 @@
 ---
-// Companies added to Tally most recently, grouped by week, newest first, with
-// a link to the RSS feed of the same list (/new/feed.xml). Added dates come
-// from the data repo's history (scripts/build-history.mjs). No script runs on
-// this page.
+// New companies: how the directory has grown (the hexagon columns of the Find
+// map, one per month, from public/data/history.json), how many companies were
+// added each week, then the additions themselves by week on a date rail,
+// newest first, with a link to the RSS feed of the same list (/new/feed.xml).
+// Added dates come from the data repo's history (scripts/build-history.mjs).
+// Everything is built into the page; one bundled module adds the month
+// slider, honours ?month=YYYY-MM and opens a week linked by its address.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
 import '../styles/new.css';
-import { dayText, FEED_PATH, recentAdditions, WEEKS } from '../lib/new-companies';
+import { growthChart, groupMax, monthReadout, rampStep } from '../lib/growth-chart';
+import { monthLabel, type History } from '../lib/history';
+import { dayText, FEED_PATH, recentAdditions, weeklyCounts, WEEKS } from '../lib/new-companies';
 import { addedDates, siteData } from '../lib/site-data';
 
+const nf = new Intl.NumberFormat('en-GB');
 const data = siteData();
 const weeks = recentAdditions(data.companies, addedDates(), data.taxonomy);
 const count = weeks.reduce((n, w) => n + w.entries.length, 0);
----
-<Base title="New companies: Tally" description="Companies added to Tally, the open directory of UK defence capability, newest first." feed>
-  <header class="site-header">
-    <p><a href="/">Back to the Tally map</a> · <a href="/events">Upcoming cluster events</a></p>
-    <h1>New companies</h1>
-    <p>Companies added to Tally in the {WEEKS} weeks to the latest addition, newest first. We add companies every week from public sources. Follow new additions with the <a href={FEED_PATH}>RSS feed of new companies</a>.</p>
-  </header>
+const strip = weeklyCounts(weeks);
+const busiest = Math.max(1, ...strip.map((w) => w.count));
+const latest = weeks[0]?.entries[0]?.added;
+const companies = (n: number) => `${nf.format(n)} ${n === 1 ? 'company' : 'companies'}`;
+/** Cards shown before the rest of a long week folds away. */
+const FIRST = 24;
 
-  {count === 0 ? (
-    <p>No new companies are listed at the moment.</p>
-  ) : (
-    weeks.map((w) => (
-      <section class="new-week" aria-labelledby={`w-${w.week}`}>
-        <h2 id={`w-${w.week}`}>{w.label}</h2>
-        <ul>
-          {w.entries.map((e) => (
-            <li class="new-company">
-              <h3><a href={e.path}>{e.name}</a></h3>
-              <p class="meta">{[e.region, e.capabilities.join(', ')].filter(Boolean).join(' · ')}</p>
-              <p class="meta">Added {dayText(e.added)}</p>
-            </li>
-          ))}
-        </ul>
+const history = JSON.parse(readFileSync(join(process.cwd(), 'public', 'data', 'history.json'), 'utf8')) as History;
+const months = history.months;
+const chart = growthChart(months);
+const last = months.length - 1;
+const current = months[last];
+const readout = months.length ? monthReadout(months, last) : null;
+const max = groupMax(history);
+const many = months.length > 9;
+const utc = (iso: string, options: Intl.DateTimeFormatOptions) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', ...options });
+---
+<Base title="New on Tally: companies added to the directory" description="Companies added to Tally, the open directory of UK defence capability, newest first, and how the directory has grown." feed wide>
+  <div class="newp">
+    <header class="page-hero">
+      <p class="mono kicker">New companies · Added every week · Public sources</p>
+      <h1>New on Tally<span class="stop">.</span></h1>
+      <div class="hero-row">
+        <div>
+          <p class="lede">Companies added in the last {WEEKS} weeks, newest first. We add companies every week from public sources.</p>
+          <p class="hero-feed"><a class="link" href={FEED_PATH}>Follow the RSS feed of new companies</a></p>
+        </div>
+        <dl class="facts">
+          <div><dd>{nf.format(data.companies.length)}</dd><dt class="mono">Companies</dt></div>
+          <div><dd>{nf.format(count)}</dd><dt class="mono">Added in {WEEKS} weeks</dt></div>
+          {latest && <div><dd>{utc(latest.slice(0, 10), { day: 'numeric', month: 'short', year: 'numeric' })}</dd><dt class="mono">Latest addition</dt></div>}
+        </dl>
+      </div>
+    </header>
+
+    {readout && (
+      <section class="growth" id="growth" aria-labelledby="growth-heading" data-history={JSON.stringify({ groups: history.groups.map((g) => g.slug), months })}>
+        <div class="growth-stage">
+          <div class="growth-head">
+            <h2 id="growth-heading">Growth over time</h2>
+            <p class="growth-total">
+              <output for="growth-month" id="growth-total"><span class="mono" id="growth-label">{readout.label}: </span><b id="growth-count">{readout.total}</b> companies<span class="growth-carried" id="growth-carried">{readout.note}</span></output>
+            </p>
+          </div>
+          <svg class="growth-chart" viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label={chart.summary} focusable="false">
+            <line class="ground" x1="0" x2={chart.width} y1={chart.ground} y2={chart.ground} />
+            {chart.columns.map((c, i) => (
+              <g class:list={['column', { 'is-current': i === last }]} data-month={c.month}>
+                <polygon class="shadow" points={c.shadow} />
+                <polygon class="left" points={c.left} fill={c.fills.left} />
+                <polygon class="front" points={c.front} fill={c.fills.front} />
+                <polygon class="right" points={c.right} fill={c.fills.right} />
+                <polygon class="top" points={c.top} fill={c.fills.top} />
+              </g>
+            ))}
+          </svg>
+          <ol class:list={['growth-axis', { many }]} aria-hidden="true">
+            {chart.columns.map((c, i) => (
+              <li class:list={{ 'is-current': i === last }}>
+                <b>{nf.format(c.total)}</b>
+                <span class="mono">{c.short} {c.year}</span>
+              </li>
+            ))}
+          </ol>
+          <div class="growth-controls" id="growth-controls" hidden>
+            <label class="mono" for="growth-month">Month</label>
+            <input id="growth-month" type="range" min="0" max={last} step="1" value={last} aria-valuetext={`${readout.label}: ${readout.total} companies`} />
+            <button type="button" class="btn growth-play" id="growth-play" aria-pressed="false">Play</button>
+          </div>
+        </div>
+        <div class="growth-side">
+          <div class="card">
+            <table class="growth-groups">
+              <caption class="vh" id="growth-caption">Companies by capability group in {readout.label}</caption>
+              <thead>
+                <tr>
+                  <th scope="col" class="mono">Capability group</th>
+                  <th scope="col" class="mono num">Companies</th>
+                  <td class="bar-cell"></td>
+                </tr>
+              </thead>
+              <tbody>
+                {history.groups.map((g) => {
+                  const n = current.groups[g.slug] ?? 0;
+                  return (
+                    <tr data-group={g.slug} data-step={rampStep(n, 0, max) + 1}>
+                      <th scope="row">{g.label}</th>
+                      <td class="num">{nf.format(n)}</td>
+                      <td class="bar-cell">
+                        <svg class="bar" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true" focusable="false"><rect x="0" y="0" height="10" width={(100 * n) / max} /></svg>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="growth-notes">
+          <p>
+            How the directory has grown, month by month, from its public history. The history starts in {monthLabel(months[0].month)}, so earlier growth is not shown. A company can sit in more than one capability group. Group counts use today's capability list, so tags that have since changed are not counted.
+          </p>
+          <details class="growth-data">
+            <summary><span class="link">Show the figures as a table</span></summary>
+            <div class="table-scroll" tabindex="0" role="group" aria-label="Figures by month, scrollable">
+              <table>
+                <caption class="vh">Companies in Tally by month and capability group</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Month</th>
+                    <th scope="col">All companies</th>
+                    {history.groups.map((g) => <th scope="col">{g.label}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {months.map((m) => (
+                    <tr>
+                      <th scope="row">{monthLabel(m.month)}{m.carried && ' (no update)'}</th>
+                      <td>{nf.format(m.total)}</td>
+                      {history.groups.map((g) => <td>{nf.format(m.groups[g.slug] ?? 0)}</td>)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </div>
       </section>
-    ))
-  )}
+    )}
+
+    {count === 0 ? (
+      <p class="new-empty">No new companies are listed at the moment.</p>
+    ) : (
+      <>
+        <section class="pulse" aria-labelledby="pulse-heading">
+          <div class="pulse-head">
+            <h2 id="pulse-heading">Added each week</h2>
+            <p class="mono">The {WEEKS} weeks to {dayText(latest ?? '')}</p>
+          </div>
+          <ol class="week-strip" role="list" aria-label="Companies added each week">
+            {strip.map((w) => {
+              const inner = (
+                <>
+                  <b>{nf.format(w.count)}</b>
+                  <span class="vh"> {w.count === 1 ? 'company' : 'companies'} added in the week of {w.long}</span>
+                  <svg class="bar" viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                    <rect x="0" width="10" y={100 - (w.count ? Math.max(4, (100 * w.count) / busiest) : 0)} height={w.count ? Math.max(4, (100 * w.count) / busiest) : 0} />
+                  </svg>
+                  <span class="mono" aria-hidden="true">{w.short}</span>
+                </>
+              );
+              return (
+                <li data-step={w.count ? rampStep(w.count, 0, busiest) + 1 : 0}>
+                  {w.count ? <a href={`#w-${w.week}`}>{inner}</a> : <span class="cell">{inner}</span>}
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+
+        <div class="weeks">
+          {weeks.map((w, i) => (
+            <section class="new-week" aria-labelledby={`w-${w.week}`}>
+              <p class="rail" aria-hidden="true"><span class="rail-date"><b>{utc(w.week, { day: 'numeric' })}</b> <span class="mono">{utc(w.week, { month: 'short', year: 'numeric' })}</span></span></p>
+              <details class="week-body" open={i === 0}>
+                <summary><h2 id={`w-${w.week}`}>{w.label}</h2><span class="mono week-count">{companies(w.entries.length)}</span></summary>
+                {[w.entries.slice(0, FIRST), w.entries.slice(FIRST)].map((list, part) => {
+                  if (!list.length) return null;
+                  const cards = (
+                    <ul class="new-grid">
+                      {list.map((e) => (
+                        <li class="new-company">
+                          <p class="mono where">{e.region}</p>
+                          <h3><a href={e.path}>{e.name}</a></h3>
+                          {e.capabilities.length > 0 && <ul class="tags">{e.capabilities.map((c) => <li class="tag">{c}</li>)}</ul>}
+                          <p class="mono added">Added {dayText(e.added)}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                  return part === 0 ? cards : (
+                    <details class="week-more">
+                      <summary><span class="btn">Show the other {companies(list.length)}</span></summary>
+                      {cards}
+                    </details>
+                  );
+                })}
+              </details>
+            </section>
+          ))}
+        </div>
+      </>
+    )}
+  </div>
 
   <Fragment slot="credits">
     <p>Company data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from public sources, under CC BY 4.0. The date added is when a company first appeared in the directory.</p>
   </Fragment>
 </Base>
+<script>
+  import '../scripts/new';
+</script>

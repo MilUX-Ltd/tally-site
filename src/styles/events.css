@@ -2,9 +2,6 @@
    cluster cards, the calendar and the full list. Tokens and shared components
    come from base.css. No inline styles: the CSP blocks them. */
 
-/* Also used by /opportunities until its own redesign. */
-.events-count { font-weight: 600; }
-
 .events-page { max-width: 1480px; margin: 0 auto; }
 .events-page [id] { scroll-margin-top: 20px; }
 
@@ -168,7 +165,7 @@
 /* The calendar beside the full list */
 .events-layout { display: grid; gap: 40px; }
 .events-calendar h3 { margin: 0 0 6px; font-weight: 800; font-size: 22px; letter-spacing: -0.02em; }
-.events-calendar .events-count { margin: 0 0 14px; font-size: 14px; }
+.events-calendar .events-count { margin: 0 0 14px; font-size: 14px; font-weight: 600; }
 .calendar-download { margin: 0 0 22px; }
 .calendar-download .btn { white-space: normal; height: auto; min-height: 38px; padding: 8px 14px; line-height: 1.25; text-align: center; }
 .months { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 24px 28px; align-items: start; }

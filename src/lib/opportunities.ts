@@ -58,3 +58,52 @@ export function filterOpportunities(list: Opportunity[], filter: OpportunityFilt
 export function countText(shown: number, total: number): string {
   return `Showing ${shown} of ${total} funding calls and opportunities.`;
 }
+
+// The deadline board. Day counts are worked out in the browser from each
+// closing date, because the site is static and a count made at build time
+// goes stale. Dates are calendar days.
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** The bar on the board fills over this many days before a deadline. */
+export const HORIZON_DAYS = 90;
+/** A call closing within this many days counts as closing soon. */
+export const SOON_DAYS = 30;
+
+/** Today's calendar date where the reader is, as YYYY-MM-DD. */
+export function localToday(now = new Date()): string {
+  const two = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())}`;
+}
+
+/** Whole days from `today` to `deadline` (both YYYY-MM-DD); negative once it has passed, null if either is not a date. */
+export function daysUntil(deadline: string, today: string): number | null {
+  const a = Date.parse(`${deadline}T00:00:00Z`);
+  const b = Date.parse(`${today}T00:00:00Z`);
+  if (Number.isNaN(a) || Number.isNaN(b)) return null;
+  return Math.round((a - b) / DAY_MS);
+}
+
+/** How near a deadline is, as a step on the data ramp: 1 (far off) to 4 (this week). */
+export function urgency(days: number): 1 | 2 | 3 | 4 {
+  if (days <= 7) return 4;
+  if (days <= SOON_DAYS) return 3;
+  if (days <= 60) return 2;
+  return 1;
+}
+
+/** How much of the bar is filled, 2 to 100: fuller as the deadline nears, full on the day. */
+export function barFill(days: number): number {
+  const part = 1 - Math.min(Math.max(days, 0), HORIZON_DAYS) / HORIZON_DAYS;
+  return Math.max(2, Math.round(part * 100));
+}
+
+/** "1 day left", "10 days left". */
+export const daysLeftUnit = (days: number) => (days === 1 ? 'day left' : 'days left');
+
+const date = (iso: string, options: Intl.DateTimeFormatOptions) => new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', ...options });
+/** "12 March 2099" */
+export const closingDate = (iso: string) => date(iso, { day: 'numeric', month: 'long', year: 'numeric' });
+/** The day of the month, "12". */
+export const closingDay = (iso: string) => date(iso, { day: 'numeric' });
+/** "Mar 2099" */
+export const closingMonth = (iso: string) => date(iso, { month: 'short', year: 'numeric' });

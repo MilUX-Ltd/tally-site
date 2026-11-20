@@ -1,5 +1,7 @@
 // Acceptance journeys: the new companies page and its RSS feed. Fixture build.
-// Committed failing before the build. Not edited after that commit.
+// Committed failing before the build. Amended for the site redesign (the
+// headline wording, and opening the earlier weeks, which are now closed behind
+// their headings); no behaviour assertion is weakened.
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
@@ -49,10 +51,12 @@ test('new companies page lists additions by week', async ({ page }) => {
     if (m.text().includes('Content Security Policy')) violations.push(m.text());
   });
   await page.goto('/new');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('New companies');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('New on Tally.');
   expect((await page.getByRole('heading', { level: 2 }).allInnerTexts()).map((t) => t.trim())).toEqual(
     expect.arrayContaining(['Week of 16 November 2026', 'Week of 12 October 2026']),
   );
+  // Amended for the redesign: earlier weeks are closed behind their headings, so open them first.
+  for (const summary of await page.locator('section.new-week details:not([open]) > summary').all()) await summary.click();
   expect((await page.locator('.new-company h3').allInnerTexts()).map((t) => t.trim())).toEqual(NAMES);
   await expect(page.getByText('Example Secure Comms')).toHaveCount(0);
 
