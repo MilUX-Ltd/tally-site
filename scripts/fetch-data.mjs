@@ -438,7 +438,7 @@ export function slimMoney(raw, ids) {
  * Stops a build from main that would read money.json from anywhere but main.
  * Fixture builds (tests) read no data repo, so they are not stopped.
  */
-export function assertMoneyRef(ref, githubRef = process.env.GITHUB_REF, fixture = false) {
+export function assertMoneyRef(ref, githubRef, fixture = false) {
   if (fixture || githubRef !== 'refs/heads/main') return;
   if (ref !== 'main') throw new Error(`money.json is read from ${ref}; a build from main must read it from main. Set MONEY_REF to 'main' before release.`);
 }
