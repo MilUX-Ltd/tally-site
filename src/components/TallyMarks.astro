@@ -1,0 +1,33 @@
+---
+// The About page's graphic: one tally mark for every company in the
+// directory, in fives, drawn at build time from the count. One pattern and a
+// few rectangles, whatever the count.
+interface Props {
+  count: number;
+  /** Groups of five in a row. */
+  perRow?: number;
+}
+const { count, perRow = 22 } = Astro.props;
+const CELL_W = 30;
+const CELL_H = 34;
+const fives = Math.floor(count / 5);
+const rest = count % 5;
+const fullRows = Math.floor(fives / perRow);
+const lastRow = fives % perRow;
+const rows = fullRows + (lastRow > 0 || rest > 0 ? 1 : 0);
+const width = perRow * CELL_W;
+const height = Math.max(rows, 1) * CELL_H;
+const lastY = fullRows * CELL_H;
+const label = `${count.toLocaleString('en-GB')} tally marks in groups of five: one for each company in Tally`;
+---
+<svg class="tally-marks" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label}>
+  <defs>
+    <pattern id="tally-five" width={CELL_W} height={CELL_H} patternUnits="userSpaceOnUse">
+      <path class="tally-strokes" d="M5 6v22M10 6v22M15 6v22M20 6v22" />
+      <path class="tally-strike" d="M2 24L23 10" />
+    </pattern>
+  </defs>
+  {fullRows > 0 && <rect width={width} height={fullRows * CELL_H} fill="url(#tally-five)" />}
+  {lastRow > 0 && <rect y={lastY} width={lastRow * CELL_W} height={CELL_H} fill="url(#tally-five)" />}
+  {rest > 0 && <path class="tally-strokes" d={Array.from({ length: rest }, (_, i) => `M${lastRow * CELL_W + 5 + i * 5} ${lastY + 6}v22`).join('')} />}
+</svg>

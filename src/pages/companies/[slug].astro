@@ -4,24 +4,27 @@
 // only script is a small helper that keeps the visitor's shortlist.
 import type { GetStaticPaths } from 'astro';
 import Base from '../../layouts/Base.astro';
+import Locator from '../../components/Locator.astro';
 import Markdown from '../../components/Markdown.astro';
 import '../../styles/company.css';
 import {
   canonicalUrl,
-  capabilityGroups,
+  capabilityTagGroups,
+  checkLine,
   companyCertifications,
   companyLocation,
+  companyLocator,
   companyPath,
   labelsFor,
   longDate,
   metaDescription,
+  nearestSites,
   pageTitle,
   sizeLabel,
-  UK_MAP,
 } from '../../lib/company-page';
 import { correctionMailto } from '../../lib/contact';
 import { isLocated } from '../../lib/filters';
-import { certificationChecks, companyTexts, siteData } from '../../lib/site-data';
+import { certificationChecks, companyTexts, defenceSites, siteData } from '../../lib/site-data';
 import type { Company } from '../../lib/types';
 
 export const getStaticPaths = (() => siteData().companies.map((company) => ({ params: { slug: company.id }, props: { company } }))) satisfies GetStaticPaths;
@@ -32,147 +35,161 @@ interface Props {
 const { company } = Astro.props;
 const { taxonomy } = siteData();
 const text = companyTexts()[company.id] ?? { what: '', products: '', verified: null };
-const groups = capabilityGroups(company, taxonomy);
+const groups = capabilityTagGroups(company, taxonomy);
 const where = companyLocation(company);
+const locator = companyLocator(company);
+const sites = nearestSites(company, defenceSites(), 3);
+const overseas = Boolean(company.country) || company.region === 'Overseas';
 const size = sizeLabel(company, taxonomy);
 const frameworks = labelsFor(company, taxonomy.frameworks);
 const memberships = labelsFor(company, taxonomy.memberships);
 // Each certification with where it came from: stated by the company, or checked against a register.
 const certifications = companyCertifications(company, taxonomy, certificationChecks()[company.id]);
-const verified = text.verified
-  ? new Date(`${text.verified}T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' })
-  : null;
+const check = checkLine(text.verified);
 const onMap = isLocated(company) ? `/?sel=${company.id}&map=9/${company.lat.toFixed(5)}/${company.lon.toFixed(5)}` : null;
 const correction = correctionMailto(company.name, canonicalUrl(companyPath(company.id)));
+// The headline ends in the signal full stop unless the name already ends in punctuation.
+const stop = !/[.!?)]$/.test(company.name.trim());
 ---
 <Base title={pageTitle(company)} description={metaDescription(company)}>
-  <header class="site-header company-header">
-    <p><a href="/" data-explorer-link>Back to the explorer</a></p>
-    <h1>{company.name}</h1>
-    {company.summary && <p class="lede">{company.summary}</p>}
-    <p class="company-page-actions">
-      <a class="button-link" href={`/?list=${company.id}`} data-shortlist={company.id}>Add<span class="vh"> {company.name}</span> to shortlist</a>
-      {onMap && <a href={onMap}>Show on the Tally map</a>}
-    </p>
-  </header>
-
-  <div class="company-layout">
+  <div class="company-top">
     <div class="company-main">
+      <header class="page-hero company-hero">
+        <p class="company-back"><a href="/" data-explorer-link>Back to search</a></p>
+        <p class="mono kicker">Company profile</p>
+        <h1 class:list={{ 'has-stop': stop }}>{company.name}</h1>
+        <p class="mono company-location">{where.text}</p>
+        {company.summary && <p class="lede">{company.summary}</p>}
+        <p class="company-actions">
+          <a class="btn btn-primary btn-lg" href={`/?list=${company.id}`} data-shortlist={company.id}><span>Add<span class="vh"> {company.name}</span> to shortlist</span></a>
+          {company.website && <a class="btn btn-lg" href={company.website} rel="noopener nofollow"><span>Website<span class="vh"> of {company.name}</span></span></a>}
+          {company.linkedin && <a class="link" href={company.linkedin} rel="noopener nofollow">LinkedIn<span class="vh"> page of {company.name}</span></a>}
+        </p>
+        <p class="company-check">{check.before}{check.iso && <time datetime={check.iso}>{check.date}</time>}{check.after}</p>
+      </header>
+
       {text.what && (
-        <section aria-labelledby="what-heading">
+        <section class="company-text" aria-labelledby="what-heading">
           <h2 id="what-heading">What they do</h2>
           <Markdown text={text.what} />
         </section>
       )}
       {text.products && (
-        <section aria-labelledby="products-heading">
+        <section class="company-text" aria-labelledby="products-heading">
           <h2 id="products-heading">Products and solutions</h2>
           <Markdown text={text.products} />
         </section>
       )}
-      <section aria-labelledby="capabilities-heading">
+      <section class="company-capabilities" aria-labelledby="capabilities-heading">
         <h2 id="capabilities-heading">Capabilities</h2>
         {groups.length === 0 ? (
-          <p>No capabilities recorded yet.</p>
+          <p>None recorded</p>
         ) : (
-          groups.map((g) => (
-            <div class="capability-group">
-              <h3>{g.label}</h3>
-              <ul>{g.capabilities.map((c) => <li>{c}</li>)}</ul>
-            </div>
-          ))
+          <div class="card">
+            {groups.map((g) => (
+              <div class="capability-group card-row">
+                <h3>{g.label}</h3>
+                {g.tags.length > 0 && <ul class="tags">{g.tags.map((t) => <li class="tag">{t}</li>)}</ul>}
+              </div>
+            ))}
+          </div>
         )}
       </section>
     </div>
 
-    <aside class="company-facts" aria-labelledby="facts-heading">
-      <h2 id="facts-heading">At a glance</h2>
-      <dl>
-        <dt>Size</dt>
-        <dd>{size || 'Not known'}</dd>
-        <dt>Region</dt>
-        <dd>{company.region || 'Not known'}</dd>
-        <dt>Location</dt>
-        <dd>
-          {where.text}
-          {where.note && <span class="note"> {where.note}</span>}
-        </dd>
-        {company.founded && (
+    <section class="company-where card" aria-labelledby="where-heading">
+      <div class="card-head">
+        <h2 id="where-heading">Where they are</h2>
+      </div>
+      {locator.kind === 'point' && (
+        <Locator locator={locator} place={where.text} sites={sites}>
+          <div class="where-point">
+            <p class="where-place">{where.text}</p>
+            <p class="mono where-coords">{locator.north} {locator.east}</p>
+            <p class="where-approx">Approximate location</p>
+          </div>
+        </Locator>
+      )}
+      {locator.kind === 'region' && <Locator locator={locator} place={where.text} sites={[]} />}
+      <div class="where-text">
+        {overseas && company.country && <p class="where-country"><span class="mono">Outside the UK</span>{company.country}</p>}
+        {locator.kind !== 'point' && <p class="where-place">{where.text}</p>}
+        {where.note && <p class="where-note">{where.note}</p>}
+        {sites.length > 0 && (
           <>
-            <dt>Founded</dt>
-            <dd>{company.founded}</dd>
+            <h3>Nearest defence sites</h3>
+            <ol class="where-sites">
+              {sites.map((s) => <li><span>{s.name}</span> <span class="mono">{s.miles} {s.miles === 1 ? 'mile' : 'miles'}</span></li>)}
+            </ol>
           </>
         )}
-        <dt>Frameworks</dt>
-        <dd>{frameworks.length ? frameworks.join(', ') : 'None recorded'}</dd>
-        <dt id="certifications-heading">Accreditations</dt>
-        <dd>
-          {certifications.length ? (
-            <ul class="certifications" aria-labelledby="certifications-heading">
-              {certifications.map((c) => (
-                <li>
-                  <span class="certification-name">{c.label}</span>{' '}
-                  <span class="certification-source">
-                    {c.check ? (
-                      <>
-                        Checked against{' '}
-                        {c.check.link ? (
-                          <a href={c.check.link} rel="noopener nofollow">{c.check.register}</a>
-                        ) : (
-                          c.check.register
-                        )}{' '}
-                        on <time datetime={c.check.checked}>{longDate(c.check.checked)}</time>
-                      </>
-                    ) : (
-                      c.source
-                    )}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            'None recorded in Tally'
-          )}
-        </dd>
-        <dt>Memberships</dt>
-        <dd>{memberships.length ? memberships.join(', ') : 'None recorded'}</dd>
-      </dl>
-      {where.point && (
-        <figure class="company-map">
-          <svg viewBox={`0 0 ${UK_MAP.width} ${UK_MAP.height}`} role="img" aria-labelledby="map-title">
-            <title id="map-title">Map of the UK with a marker at {where.text}</title>
-            <image href="/maps/uk.svg" width={UK_MAP.width} height={UK_MAP.height} />
-            <circle cx={where.point.x} cy={where.point.y} r="7" class="marker" />
-          </svg>
-          <figcaption>Approximate location. Outline: Office for National Statistics, Open Government Licence v3.0.</figcaption>
-        </figure>
-      )}
-      {(company.website || company.linkedin) && (
-        <ul class="company-links">
-          {company.website && (
-            <li>
-              <a href={company.website} rel="noopener nofollow">Website<span class="vh"> of {company.name}</span></a>
-            </li>
-          )}
-          {company.linkedin && (
-            <li>
-              <a href={company.linkedin} rel="noopener nofollow">LinkedIn<span class="vh"> page of {company.name}</span></a>
-            </li>
-          )}
-        </ul>
-      )}
-      <p class="verified">
-        {verified ? (
-          <>
-            Sources verified <time datetime={text.verified}>{verified}</time>.
-          </>
-        ) : (
-          'From public sources.'
-        )}
-      </p>
-      <p><a href={correction}>Correct this listing</a></p>
-    </aside>
+        {onMap && <p class="where-link"><a class="link" href={onMap}>Show on the Tally map</a></p>}
+      </div>
+    </section>
   </div>
+
+  <div class="company-record card">
+    <section aria-labelledby="accreditations-heading">
+      <h2 id="accreditations-heading">Accreditations</h2>
+      {certifications.length ? (
+        <ul class="certifications" role="list" aria-labelledby="accreditations-heading">
+          {certifications.map((c) => (
+            <li class:list={{ checked: Boolean(c.check) }}>
+              <span class="certification-name">{c.label}</span>{' '}
+              <span class="certification-source">
+                {c.check ? (
+                  <>
+                    Checked against{' '}
+                    {c.check.link ? (
+                      <a href={c.check.link} rel="noopener nofollow">{c.check.register}</a>
+                    ) : (
+                      c.check.register
+                    )}{' '}
+                    on <time datetime={c.check.checked}>{longDate(c.check.checked)}</time>
+                  </>
+                ) : (
+                  c.source
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="none">None recorded</p>
+      )}
+    </section>
+    <section aria-labelledby="frameworks-heading">
+      <h2 id="frameworks-heading">Frameworks</h2>
+      {frameworks.length ? <ul class="tags">{frameworks.map((f) => <li class="tag">{f}</li>)}</ul> : <p class="none">None recorded</p>}
+    </section>
+    <section aria-labelledby="memberships-heading">
+      <h2 id="memberships-heading">Memberships</h2>
+      {memberships.length ? <ul class="tags">{memberships.map((m) => <li class="tag">{m}</li>)}</ul> : <p class="none">None recorded</p>}
+    </section>
+    <section aria-labelledby="size-heading">
+      <h2 id="size-heading">Founded and size</h2>
+      {company.founded || size ? (
+        <dl class="facts">
+          {company.founded && (
+            <div>
+              <dd>{company.founded}</dd>
+              <dt class="mono">Founded</dt>
+            </div>
+          )}
+          {size && (
+            <div>
+              <dd>{size}</dd>
+              <dt class="mono">Size</dt>
+            </div>
+          )}
+        </dl>
+      ) : (
+        <p class="none">None recorded</p>
+      )}
+    </section>
+  </div>
+
+  <p class="company-correct"><a class="btn" href={correction}>Correct this listing</a></p>
 
   <Fragment slot="credits">
     <p>Company data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from public sources, under CC BY 4.0. Map outline: Office for National Statistics, Open Government Licence v3.0; contains OS data © Crown copyright and database right 2025.</p>

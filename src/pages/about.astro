@@ -1,38 +1,152 @@
 ---
-// About Tally: what it is, where the data comes from, licences, how it was
-// built, and how to get listed or correct a listing. Static, no script.
+// About Tally: what it is, how it works, where the data comes from, how the
+// search uses AI, data sources and licences, how to get listed or correct a
+// listing, and how it was built. Static, no script.
 import Base from '../layouts/Base.astro';
+import TallyMarks from '../components/TallyMarks.astro';
+import { longDate } from '../lib/company-page';
 import { CONTACT_EMAIL, getListedMailto } from '../lib/contact';
-import '../styles/company.css';
+import { clusterCount, defenceSites, siteData } from '../lib/site-data';
+import '../styles/editorial.css';
+
+const data = siteData();
+const number = (n: number) => n.toLocaleString('en-GB');
+const companies = data.companies.length;
+const sites = defenceSites().length;
+const updated = longDate(data.generated.slice(0, 10));
+const OGL = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/';
 ---
-<Base title="About Tally: an open directory of UK defence capability" description="What Tally is, where its data comes from, its licences, and how to get your company listed or a listing corrected.">
-  <header class="site-header">
-    <p><a href="/">Back to the explorer</a></p>
-    <h1>About Tally</h1>
+<Base title="About Tally: an open directory of UK defence capability" description="What Tally is, how it works, where its data comes from, how the search uses AI, its licences, and how to get your company listed or a listing corrected.">
+  <header class="page-hero about-hero">
+    <div class="about-hero-text">
+      <h1>
+        <span class="mono kicker">About Tally</span>
+        <span class="display">An open count of UK defence capability<span class="stop">.</span></span>
+      </h1>
+      <p class="lede">Tally is an open map and directory of UK defence capability. It helps people who buy for defence find companies that can do what they need, see where they are, and share a shortlist. It is free to use, with no sign-up and no cookies.</p>
+      <dl class="facts">
+        <div><dd>{number(companies)}</dd><dt class="mono">Companies</dt></div>
+        <div><dd>{number(data.taxonomy.capabilities.length)}</dd><dt class="mono">Capabilities</dt></div>
+        <div><dd>{number(clusterCount())}</dd><dt class="mono">Regional clusters</dt></div>
+        <div><dd>{number(sites)}</dd><dt class="mono">Defence sites</dt></div>
+        {updated && <div><dd>{updated}</dd><dt class="mono">Last updated</dt></div>}
+      </dl>
+    </div>
+    <figure class="about-marks">
+      <TallyMarks count={companies} />
+      <figcaption class="mono">{number(companies)} marks, one for each company in Tally</figcaption>
+    </figure>
   </header>
-  <div class="about">
-    <p>Tally is an open map and directory of UK defence capability. It helps people who buy for defence find companies that can do what they need, see where they are, and share a shortlist. It is free to use, with no sign-up and no cookies.</p>
 
-    <h2>Where the information comes from</h2>
-    <p>Everything in Tally comes from public sources only: company websites, Companies House, LinkedIn company pages, published framework and accreditation lists, and the public pages of the UK's regional defence and security clusters. We record what a company publishes about itself and nothing about individual people. Each company page shows when its public sources were last verified. The directory is refreshed regularly.</p>
-    <p>Company locations are shown as published: a postcode, a town, or only a region. A company whose UK location is not published, or which is based overseas, is listed but not placed on the map.</p>
+  <section class="about-section" aria-labelledby="how-heading">
+    <h2 id="how-heading">How Tally works</h2>
+    <ol class="steps steps-cards">
+      <li class="card">
+        <span class="mono step-number">01</span>
+        <h3>Search</h3>
+        <p>Say what you need and where. Tally finds the companies that match, on the map and in a list, and you can narrow them by capability, size, region, accreditation, framework or membership.</p>
+      </li>
+      <li class="card">
+        <span class="mono step-number">02</span>
+        <h3>Shortlist</h3>
+        <p>Open a company to see what it does, where it is and what it holds, then add the ones you want to your shortlist.</p>
+      </li>
+      <li class="card">
+        <span class="mono step-number">03</span>
+        <h3>Share</h3>
+        <p>The shortlist is held in the link, so there is nothing to save and no account. Copy the link to share it, or download the list as a spreadsheet.</p>
+      </li>
+    </ol>
+  </section>
 
-    <h2>Get listed</h2>
-    <p>If your company works in UK defence and is not in Tally, <a href={getListedMailto()}>get listed</a> by emailing us at {CONTACT_EMAIL} with your company name, website and what you do. We list public information only, so please point us to a public page that shows it. There is no form and nothing to sign up to.</p>
+  <section class="about-section about-split" aria-labelledby="sources-heading">
+    <h2 id="sources-heading">Where the information comes from</h2>
+    <div class="about-body">
+      <p class="about-lead">Everything in Tally comes from public sources only.</p>
+      <ul class="tags about-sources">
+        <li class="tag">Company websites</li>
+        <li class="tag">Companies House</li>
+        <li class="tag">LinkedIn company pages</li>
+        <li class="tag">Published framework lists</li>
+        <li class="tag">Published accreditation lists</li>
+        <li class="tag">Public pages of the regional clusters</li>
+      </ul>
+      <p>We record what a company publishes about itself and nothing about individual people. Each company page shows when its public sources were last checked. The directory is refreshed regularly.</p>
+      <p>Company locations are shown as published: a postcode, a town, or only a region. A company whose UK location is not published, or which is based overseas, is listed but not placed on the map.</p>
+    </div>
+  </section>
 
-    <h2>Correct a listing</h2>
-    <p>Every company page has a "Correct this listing" link. It opens an email to us with the company's name in the subject. Tell us what is wrong and where we can see the right details in public, and we will correct it.</p>
+  <section class="about-section about-split" aria-labelledby="ai-heading">
+    <h2 id="ai-heading">How the search uses AI</h2>
+    <div class="about-body">
+      <p class="about-lead">An AI model (Claude, from Anthropic) turns the words you type into filters. Tally does not keep what you type.</p>
+      <ol class="flow" aria-label="What happens when you search">
+        <li><span class="mono">You</span>The words you type</li>
+        <li><span class="mono">AI model</span>Chooses filters from Tally's own lists</li>
+        <li><span class="mono">Tally</span>Checks the filters, then finds the companies</li>
+      </ol>
+      <p>When you search in your own words, those words are sent to the model, which Anthropic runs, so that it can choose from Tally's own lists of capabilities, regions, sizes, accreditations, frameworks, memberships and defence sites. Its answer is checked against those lists before it is used. Nothing the model writes is shown to you or stored, and the companies you see always come from Tally's data, not from the model.</p>
+      <p>If the model cannot be used, Tally looks for your words in company names, summaries and tags instead, and says so.</p>
+    </div>
+  </section>
 
-    <h2>Licences and credits</h2>
-    <ul>
-      <li>Company data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, under CC BY 4.0. You may reuse it with credit.</li>
-      <li>This website's code: <a href="https://github.com/MilUX-Ltd/tally-site">tally-site</a>, under CC BY-NC 4.0.</li>
-      <li>Map tiles: <a href="https://openfreemap.org">OpenFreeMap</a> and <a href="https://www.openmaptiles.org/">OpenMapTiles</a>, with map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</li>
-      <li>Cluster areas and the UK outline on company pages: Office for National Statistics, Open Government Licence v3.0; contains OS data © Crown copyright and database right 2025.</li>
-      <li>Defence site locations: Wikipedia articles, CC BY-SA 4.0.</li>
-    </ul>
+  <section class="about-section" id="licences" aria-labelledby="licences-heading">
+    <h2 id="licences-heading">Data sources and licences</h2>
+    <dl class="licences card">
+      <div class="card-row">
+        <dt class="mono">Company data</dt>
+        <dd><a href="https://github.com/MilUX-Ltd/tally">The Tally directory</a>, under CC BY 4.0. You may reuse it with credit.</dd>
+      </div>
+      <div class="card-row">
+        <dt class="mono">This website's code</dt>
+        <dd><a href="https://github.com/MilUX-Ltd/tally-site">tally-site</a>, under CC BY-NC 4.0.</dd>
+      </div>
+      <div class="card-row">
+        <dt class="mono">Places</dt>
+        <dd>
+          <p>When you search near a place: a full postcode, the first part of one (such as BS16), or a town or city. What you type is sent to <a href="https://postcodes.io" rel="noopener noreferrer">postcodes.io</a> to find the place, and nothing else is sent.</p>
+          <p>Places from Ordnance Survey and Office for National Statistics open data, Royal Mail and Crown copyright and database right, licensed <a href={OGL} rel="noopener noreferrer">Open Government Licence v3.0</a>.</p>
+        </dd>
+      </div>
+      <div class="card-row">
+        <dt class="mono">Defence sites</dt>
+        <dd>{sites} widely published sites, each checked against its source. Locations from Wikipedia contributors, licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="noopener noreferrer">CC BY-SA 4.0</a>.</dd>
+      </div>
+      <div class="card-row">
+        <dt class="mono">Cluster areas</dt>
+        <dd>Cluster areas: Office for National Statistics boundaries, licensed under the <a href={OGL} rel="noopener noreferrer">Open Government Licence v3.0</a>. Contains OS data © Crown copyright and database right 2025. Areas are approximate.</dd>
+      </div>
+      <div class="card-row">
+        <dt class="mono">Company page maps</dt>
+        <dd>The UK outline and regions on company pages: Office for National Statistics, <a href={OGL} rel="noopener noreferrer">Open Government Licence v3.0</a>; contains OS data © Crown copyright and database right 2025.</dd>
+      </div>
+      <div class="card-row">
+        <dt class="mono">Map</dt>
+        <dd>Map tiles: <a href="https://openfreemap.org">OpenFreeMap</a> and <a href="https://www.openmaptiles.org/">OpenMapTiles</a>, with map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.</dd>
+      </div>
+      <div class="card-row">
+        <dt class="mono">Typefaces</dt>
+        <dd>Manrope and Roboto Mono, under the <a href="/fonts/OFL.txt">SIL Open Font Licence 1.1</a>.</dd>
+      </div>
+    </dl>
+  </section>
 
-    <h2>How it was built</h2>
-    <p>Tally was built by <a href="https://milux.co.uk">MilUX</a>. It was built with AI, using our agentic engineering method: decisions recorded first, acceptance tests written before code, and every change through automated checks and human review. If you would like to know more, please <a href="https://milux.co.uk/contact/">get in touch</a>.</p>
+  <div class="callout">
+    <section aria-labelledby="listed-heading">
+      <h2 id="listed-heading">Get listed</h2>
+      <p>If your company works in UK defence and is not in Tally, email us at {CONTACT_EMAIL} with your company name, website and what you do. We list public information only, so please point us to a public page that shows it. There is no form and nothing to sign up to.</p>
+      <p><a class="btn btn-lg" href={getListedMailto()}>Get listed</a></p>
+    </section>
+    <section aria-labelledby="correct-heading">
+      <h2 id="correct-heading">Correct a listing</h2>
+      <p>Every company page has a "Correct this listing" link. It opens an email to us with the company's name in the subject. Tell us what is wrong and where we can see the right details in public, and we will correct it.</p>
+    </section>
   </div>
+
+  <section class="about-section about-split" aria-labelledby="built-heading">
+    <h2 id="built-heading">How it was built</h2>
+    <div class="about-body">
+      <p>Tally was built by <a href="https://milux.co.uk">MilUX</a>. It was built with AI, using our agentic engineering method: decisions recorded first, acceptance tests written before code, and every change through automated checks and human review. If you would like to know more, please <a href="https://milux.co.uk/contact/">get in touch</a>.</p>
+    </div>
+  </section>
 </Base>

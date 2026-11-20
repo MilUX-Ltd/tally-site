@@ -33,7 +33,7 @@ test('every certification on a company page carries its label', async ({ page })
   // A company with no certifications: nothing listed, and nothing said against it.
   await page.goto(NONE);
   await expect(certifications(page)).toHaveCount(0);
-  await expect(page.locator('main')).toContainText('None recorded in Tally');
+  await expect(page.locator('main')).toContainText('None recorded');
 });
 
 test('a checked certification shows its register and date', async ({ page }) => {
