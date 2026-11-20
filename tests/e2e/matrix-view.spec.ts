@@ -207,23 +207,32 @@ test('with the shortlist open, the matrix compares the shortlist', async ({ page
   await expect(section(page)).not.toContainText('on your shortlist');
 });
 
-test('the first column and the header row stay in place while the table scrolls', async ({ page }) => {
+test('the first column and the header rows stay in place while the table scrolls', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/?view=matrix');
   await waitForMap(page);
   const scroller = page.getByRole('region', { name: /compare capabilities table/i });
   const company = matrix(page).locator('tbody th[scope="row"]').first();
   const head = matrix(page).locator('thead th[scope="col"]').nth(3);
+  // The heading and the group choices scroll away first; then the header rows hold at the top.
+  const top = await scroller.evaluate((el) => {
+    el.scrollTo(0, (el.querySelector('table') as HTMLElement).offsetTop + 40);
+    return el.scrollTop;
+  });
   const before = { company: (await company.boundingBox()) as { x: number }, head: (await head.boundingBox()) as { y: number } };
   const moved = await scroller.evaluate((el) => {
-    el.scrollTo(240, 300);
+    el.scrollBy(240, 200);
     return { left: el.scrollLeft, top: el.scrollTop };
   });
   expect(moved.left).toBeGreaterThan(100);
-  expect(moved.top).toBeGreaterThan(100);
+  expect(moved.top).toBeGreaterThan(top + 100);
   const after = { company: (await company.boundingBox()) as { x: number }, head: (await head.boundingBox()) as { y: number } };
   expect(Math.abs(after.company.x - before.company.x)).toBeLessThan(2);
   expect(Math.abs(after.head.y - before.head.y)).toBeLessThan(2);
+  // The header rows sit at the top of the scrolling card, over the rows.
+  const box = (await scroller.boundingBox()) as { y: number };
+  const group = (await matrix(page).locator('thead th[scope="colgroup"]').first().boundingBox()) as { y: number };
+  expect(Math.abs(group.y - box.y)).toBeLessThan(3);
 });
 
 test('keyboard: the switch moves focus to the heading, and the table is reached and scrolled without a mouse', async ({ page }) => {
