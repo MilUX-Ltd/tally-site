@@ -255,6 +255,8 @@ test('3. Results state: the compact search bar, a chip for every filter, Clear a
 });
 
 test('4. Old links: every link that worked before opens showing the same companies', async ({ page }) => {
+  // Many page loads in one test.
+  test.slow();
   const open = async (query: string) => {
     await page.goto(`/?${query}`);
     await waitForMap(page);
@@ -366,6 +368,8 @@ test('5. Filters: the groups open in a side panel that ends Show n companies, wi
 });
 
 test('6. Map: 3D columns by default, Flat held in the URL, finer hexagons and pins on zooming, Map area chip, Layers and map tools', async ({ page }) => {
+  // Many page loads in one test.
+  test.slow();
   await page.goto('/');
   await waitForMap(page);
   // 3D by default: extruded columns in the data ramp, scaled to the busiest area in view.
@@ -528,6 +532,8 @@ test('8. Shortlist: the top bar counts, the button opens the shortlist in the pa
 });
 
 test('9. Phone: hero and search in the flow, then the map on top, results as a bottom sheet and the controls in reach', async ({ page }) => {
+  // Many page loads in one test.
+  test.slow();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await waitForMap(page);
@@ -578,6 +584,8 @@ test('9. Phone: hero and search in the flow, then the map on top, results as a b
 });
 
 test('10. Floors: axe passes in every state, the map is never the only route, the CSP is unchanged and nothing animates under reduced motion', async ({ page }) => {
+  // Many page loads in one test.
+  test.slow();
   // axe at WCAG 2.2 AA: landing, results, list, filters and shortlist, at desktop and phone width.
   for (const size of [{ width: 1280, height: 720 }, { width: 390, height: 844 }]) {
     await page.setViewportSize(size);
@@ -615,6 +623,7 @@ test('10. Floors: axe passes in every state, the map is never the only route, th
   await filtersPanel(page).getByRole('checkbox', { name: 'Cyber', exact: true }).focus();
   await page.keyboard.press('Space');
   await page.keyboard.press('Escape');
+  await expect(filtersPanel(page)).toHaveCount(0);
   await page.getByRole('button', { name: 'Layers', exact: true }).focus();
   await page.keyboard.press('Enter');
   await layersPanel(page).getByLabel('Companies near a site').focus();
