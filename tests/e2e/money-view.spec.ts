@@ -140,3 +140,21 @@ test('7. floors: axe passes, 320px fits, the content security policy is unchange
   const money = await request.get('/data/money.json');
   expect(money.status()).toBe(200);
 });
+
+test('8. the share to small and medium-sized firms', async ({ page }) => {
+  // Added for D-96j1u. 2025 in the fixture: South East £4m SME and £8m large;
+  // London £1m SME, £3m large and £1m not known; Scotland's £800k has no size.
+  await page.goto('/?view=money&myear=2025');
+  await expect(panel(page).getByText(/Small and medium-sized firms won 31% \(£5m\) of UK regional contract money where the supplier’s size is known\./)).toBeVisible();
+  await expect(panel(page).getByText(/Size is not known for £1\.8m\./)).toBeVisible();
+  await expect(regionTable(page).getByRole('columnheader', { name: 'Share to SMEs' })).toBeVisible();
+  await expect(regionTable(page).getByRole('row', { name: /^South East/ })).toContainText('33%');
+  await expect(regionTable(page).getByRole('row', { name: /^London/ })).toContainText('25%');
+  await expect(regionTable(page).getByRole('row', { name: /^Scotland/ })).toContainText('not known');
+  await expect(panel(page)).toContainText(/size is as the supplier declared it/i);
+  await expect(panel(page)).toContainText(/SME means a small or medium-sized firm/i);
+  // A year with no sizes says nothing about SMEs.
+  await page.goto('/?view=money&myear=2024');
+  await expect(panel(page)).toContainText('£1m');
+  await expect(panel(page)).not.toContainText('Small and medium-sized firms won');
+});

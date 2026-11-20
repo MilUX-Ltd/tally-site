@@ -111,6 +111,10 @@
   "2025": {
    "London": {
     "count": 3,
+    "large_count": 1,
+    "large_value": 3000000,
+    "sme_count": 1,
+    "sme_value": 1000000,
     "tally_count": 1,
     "tally_value": 2000000,
     "top": [
@@ -145,6 +149,10 @@
    },
    "South East": {
     "count": 2,
+    "large_count": 1,
+    "large_value": 8000000,
+    "sme_count": 1,
+    "sme_value": 4000000,
     "tally_count": 1,
     "tally_value": 4000000,
     "top": [

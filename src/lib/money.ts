@@ -21,6 +21,11 @@ export interface Bucket {
 export interface RegionBucket extends Bucket {
   tally_count: number;
   tally_value: number;
+  /** Money and awards by the size the supplier declared (D-96j1u); absent when the data gives no sizes. */
+  sme_value?: number;
+  sme_count?: number;
+  large_value?: number;
+  large_count?: number;
 }
 
 export interface MoneyData {
@@ -173,4 +178,36 @@ export function sharePercent(part: number, whole: number): string {
   if (whole <= 0 || part <= 0) return '0%';
   const p = (part / whole) * 100;
   return p < 1 ? 'under 1%' : `${Math.round(p)}%`;
+}
+
+export interface SmeTotals {
+  sme: number;
+  large: number;
+  /** Money whose supplier size is not known. */
+  unknown: number;
+}
+
+/**
+ * Money to small and medium-sized firms, to large firms, and of unknown size,
+ * over the UK regions for a year. Null when no region carries sizes.
+ */
+export function smeTotals(money: Pick<MoneyData, 'regions'>, year: number): SmeTotals | null {
+  const regions = Object.values(money.regions[String(year)] ?? {});
+  if (!regions.some((r) => r.sme_value !== undefined)) return null;
+  let sme = 0;
+  let large = 0;
+  let all = 0;
+  for (const r of regions) {
+    sme += r.sme_value ?? 0;
+    large += r.large_value ?? 0;
+    all += r.value;
+  }
+  return { sme, large, unknown: Math.max(0, all - sme - large) };
+}
+
+/** A region's share to SMEs: "not known" when it has money but no known sizes. */
+export function regionSmeShare(r: RegionBucket): string {
+  const known = (r.sme_value ?? 0) + (r.large_value ?? 0);
+  if (known <= 0) return r.value > 0 ? 'not known' : '0%';
+  return sharePercent(r.sme_value ?? 0, known);
 }

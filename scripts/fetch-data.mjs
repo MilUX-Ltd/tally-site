@@ -286,7 +286,8 @@ export const MONEY_REGIONS = [
 const MONEY_KEYS = ['attribution', 'companies', 'excluded', 'generated', 'overseas', 'period', 'regions', 'sources', 'unplaced', 'years'];
 const AWARD_KEYS = ['buyer', 'date', 'title', 'url', 'value'];
 const BUCKET_KEYS = ['count', 'top', 'value'];
-const REGION_KEYS = ['count', 'tally_count', 'tally_value', 'top', 'value'];
+const SIZE_KEYS = ['large_count', 'large_value', 'sme_count', 'sme_value'];
+const REGION_KEYS = ['count', 'large_count', 'large_value', 'sme_count', 'sme_value', 'tally_count', 'tally_value', 'top', 'value'];
 const TOP_KEYS = ['count', 'name', 'tally', 'value'];
 const OGL = 'Contains public sector information licensed under the Open Government Licence v3.0.';
 const YEAR_KEY = /^20\d{2}$/;
@@ -337,6 +338,20 @@ function moneyTop(list, where) {
   }
 }
 
+/**
+ * Supplier sizes for a region (D-96j1u): all four fields or none, and never
+ * more than the region's total (a pound of rounding allowed).
+ */
+function moneySizes(b, where) {
+  const held = SIZE_KEYS.filter((k) => k in b);
+  if (!held.length) return {};
+  if (held.length < SIZE_KEYS.length) moneyFail(`${where} gives only part of the supplier size figures`);
+  const out = {};
+  for (const k of SIZE_KEYS) out[k] = k.endsWith('_count') ? whole(b[k], `${where} ${k}`) : amount(b[k], `${where} ${k}`);
+  if (out.sme_value + out.large_value > b.value + 1 || out.sme_count + out.large_count > b.count) moneyFail(`${where} has supplier size figures above its total`);
+  return out;
+}
+
 function moneyByYear(v, where, years, each) {
   if (!isObject(v)) moneyFail(`${where} is not an object`);
   const out = {};
@@ -376,6 +391,7 @@ export function slimMoney(raw, ids) {
         value: amount(b.value, `${where}.${region} value`),
         tally_count: whole(b.tally_count, `${where}.${region} tally_count`),
         tally_value: amount(b.tally_value, `${where}.${region} tally_value`),
+        ...moneySizes(b, `${where}.${region}`),
       };
     }
     return out;
