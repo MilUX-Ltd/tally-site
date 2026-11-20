@@ -1,0 +1,93 @@
+---
+// Design prototype: the full-width map home page. Not linked from the site
+// and not indexed; for trying the direction before it replaces the home page.
+import '../styles/lab.css';
+---
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Tally: design prototype</title>
+  </head>
+  <body>
+    <div id="map" aria-hidden="true"></div>
+    <div class="fade" aria-hidden="true"></div>
+
+    <header class="bar">
+      <a class="brand" href="/lab/"><img src="/brand/tally-mark.svg" alt="" width="28" height="26" /><b>TALLY</b></a>
+      <nav aria-label="Tally">
+        <a href="/lab/" aria-current="page">Find</a>
+        <a href="/events/">Clusters and events</a>
+        <a href="/opportunities/">Funding</a>
+        <a href="/new/">New companies</a>
+        <a href="/about/">About</a>
+      </nav>
+      <span class="sp"></span>
+      <button class="short" id="short" type="button">Shortlist <i id="short-n">0</i></button>
+    </header>
+
+    <main>
+      <section class="hero" id="hero">
+        <p class="mono kicker">Open directory · public sources · free to use</p>
+        <h1>Find UK defence capability<em>.</em></h1>
+        <p class="lede">Companies, clusters and defence sites on one map. Search by capability and place, shortlist the companies you want and share the list.</p>
+        <form class="cmd" id="cmd">
+          <label><span class="mono">What do you need?</span><input id="q" name="q" autocomplete="off" placeholder="For example, counter-drone, secure comms, test ranges" /></label>
+          <div class="two">
+            <label><span class="mono">Near</span><input id="near" name="near" autocomplete="off" placeholder="Postcode or town" /></label>
+            <label><span class="mono">Within</span>
+              <select id="within" name="within"><option value="10">10 miles</option><option value="25">25 miles</option><option value="50" selected>50 miles</option><option value="100">100 miles</option></select>
+            </label>
+          </div>
+          <button type="submit">Search</button>
+        </form>
+        <p class="try mono">Try <button type="button" data-try="counter-drone" data-near="Salisbury">Counter-drone near Salisbury</button><button type="button" data-try="space" data-near="">Space</button><button type="button" data-try="cyber" data-near="Cheltenham">Cyber near Cheltenham</button></p>
+        <dl class="facts">
+          <div><dd id="f-companies">–</dd><dt class="mono">Companies</dt></div>
+          <div><dd id="f-caps">–</dd><dt class="mono">Capabilities</dt></div>
+          <div><dd id="f-sites">–</dd><dt class="mono">Defence sites</dt></div>
+          <div><dd id="f-date">–</dd><dt class="mono">Last updated</dt></div>
+        </dl>
+      </section>
+
+      <form class="qbar" id="qbar">
+        <label><span class="mono">What</span><input id="q2" autocomplete="off" placeholder="Capability or keyword" /></label>
+        <label><span class="mono">Near</span><input id="near2" autocomplete="off" placeholder="Postcode or town" /></label>
+        <label><span class="mono">Within</span>
+          <select id="within2"><option value="10">10 miles</option><option value="25">25 miles</option><option value="50">50 miles</option><option value="100">100 miles</option></select>
+        </label>
+        <button type="submit">Search</button>
+      </form>
+
+      <aside class="panel" id="panel" aria-label="Results">
+        <header>
+          <div><h2 id="count">Companies</h2><p id="sub"></p></div>
+          <button type="button" class="link" id="reset">Start again</button>
+        </header>
+        <div class="tools" id="share" hidden>
+          <button type="button" class="ghost" id="copy">Copy link</button>
+          <button type="button" class="ghost" id="csv">Download CSV</button>
+        </div>
+        <ol class="rows" id="rows"></ol>
+        <footer><span id="pg"></span><span><button type="button" class="link" id="prev">← Previous</button><button type="button" class="link" id="next">Next →</button></span></footer>
+      </aside>
+    </main>
+
+    <div class="ctl tr">
+      <div class="seg" role="group" aria-label="View"><button type="button" id="v-map" aria-pressed="true">Map</button><button type="button" id="v-list" aria-pressed="false">List</button></div>
+      <div class="seg" role="group" aria-label="Map style"><button type="button" id="d-3" aria-pressed="true">3D</button><button type="button" id="d-2" aria-pressed="false">Flat</button></div>
+      <button type="button" class="pill" id="sites" aria-pressed="false">Defence sites</button>
+    </div>
+    <div class="ctl br">
+      <div class="legend"><span class="mono">Companies in each area</span>
+        <div class="ramp"><div class="r1">Fewest</div><div class="r2"></div><div class="r3"></div><div class="r4">Most</div></div>
+      </div>
+    </div>
+    <p class="status" id="status" role="status"></p>
+  </body>
+</html>
+<script>
+  import '../scripts/lab';
+</script>
