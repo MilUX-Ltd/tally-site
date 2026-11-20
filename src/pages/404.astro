@@ -1,7 +1,16 @@
 ---
+// The page for an address that does not exist. Static, no script.
 import Base from '../layouts/Base.astro';
+import '../styles/editorial.css';
 ---
 <Base title="Page not found: Tally" description="This page does not exist." canonical={false}>
-  <h1>Page not found</h1>
-  <p><a href="/">Go to Tally</a></p>
+  <div class="page-hero not-found">
+    <p class="mono kicker">Error</p>
+    <h1>
+      <span class="not-found-code">404<span class="stop">.</span></span>
+      <span class="not-found-title">Page not found</span>
+    </h1>
+    <p class="lede">If you typed the address, check it is correct. If you followed a link to a company, it may have been renamed.</p>
+    <p><a class="btn btn-primary btn-lg" href="/">Search for a company</a></p>
+  </div>
 </Base>

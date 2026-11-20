@@ -71,7 +71,7 @@ test('a company page shows what Tally holds', async ({ page }) => {
   await expect(linkedin).toHaveAttribute('rel', /noopener/);
   await expect(linkedin).toHaveAttribute('rel', /nofollow/);
 
-  await expect(page.getByRole('link', { name: /back to the explorer/i })).toHaveAttribute('href', '/');
+  await expect(page.getByRole('link', { name: /back to search/i })).toHaveAttribute('href', '/');
   await expect(page.getByRole('link', { name: /add .*to shortlist/i })).toBeVisible();
 });
 

@@ -1,5 +1,5 @@
 // Company pages: when the visitor came from the explorer, "Add to shortlist"
-// and "Back to the explorer" return to the view they left, shortlist kept.
+// and "Back to search" return to the view they left, shortlist kept.
 // Without this script (or a referrer) the links still work: the explorer with
 // this company alone, and the plain explorer. Only link addresses are written.
 import { shortlistHref } from '../lib/company-page';

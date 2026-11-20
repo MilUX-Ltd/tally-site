@@ -1,29 +1,117 @@
-/* Company pages. Not yet redesigned; colours come from the tokens in base.css. */
-.company-header .lede { font-size: 1.15rem; }
-.company-page-actions { display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; align-items: center; }
-.company-layout { display: grid; gap: 2rem; grid-template-columns: minmax(0, 1fr); margin-top: 1.5rem; }
-@media (min-width: 52rem) {
-  .company-layout { grid-template-columns: minmax(0, 1fr) 18rem; align-items: start; }
+/* Company pages: the name as the headline, a mono location line, the two
+   actions and the check line; then what they do, capabilities as tags by
+   group, where the company is (the locator) and the record. */
+
+.company-top { display: grid; grid-template-columns: minmax(0, 1fr); gap: 40px; }
+.company-main { min-width: 0; overflow-wrap: anywhere; }
+@media (min-width: 62rem) {
+  .company-top { grid-template-columns: minmax(0, 1fr) 26.5rem; gap: 64px; align-items: start; }
 }
-.company-main, .company-facts { overflow-wrap: anywhere; }
-.company-main h2 { margin: 1.5rem 0 0.5rem; }
-.company-main section:first-child h2 { margin-top: 0; }
-.capability-group h3 { font-size: 1.05rem; margin: 1rem 0 0.25rem; }
-.capability-group ul { margin: 0; padding-left: 1.25rem; }
-.company-facts { padding: 1rem; border: 2px solid var(--beige); background: #fff; }
-.company-facts h2 { margin: 0 0 0.5rem; font-size: 1.2rem; }
-.company-facts dl { margin: 0; }
-.company-facts dt { font-weight: 600; margin-top: 0.5rem; }
-.company-facts dd { margin: 0; }
-.company-facts .note { display: block; color: var(--blue-grey); }
+
+/* Hero */
+.company-hero { margin: 0 0 8px; max-width: none; }
+.company-back { margin: 0 0 22px; font-size: 13.5px; font-weight: 700; }
+.company-back a { display: inline-flex; align-items: center; gap: 8px; min-height: 24px; color: var(--ink); text-decoration: none; }
+.company-back a::before { content: ''; width: 7px; height: 7px; border-left: 2px solid var(--signal); border-bottom: 2px solid var(--signal); transform: rotate(45deg); }
+.company-back a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+.company-hero h1 { font-size: clamp(34px, 4.5vw, 64px); line-height: 0.98; margin: 14px 0 16px; }
+.company-hero h1.has-stop::after { content: '.'; content: '.' / ''; color: var(--signal); }
+.company-location { display: flex; align-items: baseline; gap: 10px; margin: 0 0 20px; color: var(--ink-2); font-size: 12px; }
+.company-location::before { content: ''; flex: none; width: 8px; height: 8px; background: var(--signal); }
+.company-hero .lede { max-width: 36em; margin-bottom: 26px; }
+.company-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 12px; margin: 0; }
+.company-actions .btn-lg { height: 52px; font-size: 16px; }
+.company-actions .btn-primary { box-shadow: var(--shadow-card); }
+.company-actions .link { margin-left: 10px; font-size: 14px; line-height: 24px; }
+.company-check { margin: 18px 0 0; font-size: 13.5px; color: var(--ink-3); }
+.company-check time { color: var(--ink); font-weight: 700; }
+@media (max-width: 760px) {
+  .company-actions .btn-lg { flex: 1 1 9rem; padding: 0 14px; }
+  .company-actions .link { margin-left: 0; }
+}
+
+/* What they do, products */
+.company-main h2 { margin: 44px 0 14px; }
+.company-text { max-width: 44rem; }
+.company-text p, .company-text li { font-size: 17px; line-height: 1.55; }
+.company-text p { margin: 0 0 14px; }
+.company-text ul { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.company-text li { position: relative; padding: 10px 0 10px 22px; border-bottom: 1px solid var(--line); }
+.company-text li::before { content: ''; position: absolute; left: 2px; top: 20px; width: 8px; height: 2px; background: var(--signal); }
+.company-text strong { color: var(--ink); }
+
+/* Capabilities: one row for each group, tags beside the group's name. */
+.capability-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; align-items: baseline; }
+.capability-group h3 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.3; color: var(--ink); }
+.capability-group .tag, .company-record .tag { font-size: 13.5px; padding: 3px 9px; color: var(--ink); }
+@media (min-width: 40rem) {
+  .capability-group { grid-template-columns: 13.5rem minmax(0, 1fr); gap: 16px; }
+}
+
+/* Where they are */
+.company-where { overflow: hidden; }
+.locator { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); background: var(--paper); border-bottom: 1.5px solid var(--ink); }
+.locator-region { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+.locator-region .locator-uk { max-width: 15rem; }
+.locator svg { display: block; width: 100%; height: auto; }
+.locator-side { display: flex; flex-direction: column; border-left: 1.5px solid var(--ink); background: var(--white); }
+.locator-local { background: var(--paper); border-bottom: 1.5px solid var(--ink); }
+.locator-scale text { font-family: var(--font-mono); font-weight: 500; font-size: 8px; letter-spacing: 0.04em; fill: var(--ink-3); }
+.locator-cross { fill: none; stroke: var(--ink); stroke-width: 1px; stroke-dasharray: 2 3; vector-effect: non-scaling-stroke; opacity: 0.55; }
+.locator-window { fill: none; stroke: var(--ink); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+.locator-dot { fill: var(--signal); stroke: var(--ink); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+.locator-ring { fill: rgb(226 97 28 / 10%); stroke: var(--signal); stroke-width: 2px; vector-effect: non-scaling-stroke; }
+.locator-site { fill: var(--ink); }
+.locator-here { fill: var(--signal); stroke: var(--ink); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+.locator-key { display: flex; flex-direction: column; gap: 7px; margin: 0; padding: 12px 14px 13px; color: var(--ink-2); font-size: 10.5px; }
+.locator-key span { display: flex; align-items: center; gap: 8px; }
+.locator-key span::before { content: ''; flex: none; width: 9px; height: 9px; }
+.key-here::before { background: var(--signal); border: 1.5px solid var(--ink); }
+.key-ring::before { border: 2px solid var(--signal); border-radius: 50%; }
+.key-site::before { background: var(--ink); }
+.where-text { padding: 16px 18px 18px; }
+.where-text p { margin: 0; }
+.where-country { display: flex; flex-direction: column; gap: 4px; margin: 0 0 12px !important; padding-bottom: 14px; border-bottom: 1px solid var(--line); font-weight: 800; font-size: 40px; line-height: 1; letter-spacing: -0.035em; color: var(--ink); overflow-wrap: anywhere; }
+.where-country .mono { color: var(--clay); }
+.where-place { font-weight: 700; font-size: 18px; letter-spacing: -0.01em; line-height: 1.25; color: var(--ink); overflow-wrap: anywhere; }
+.where-point { flex: 1; padding: 14px 14px 12px; border-bottom: 1px solid var(--line); }
+.where-point p { margin: 0; }
+.where-point .where-place { font-size: 17px; }
+.where-coords { margin-top: 8px !important; color: var(--clay); }
+.where-approx { margin-top: 2px !important; font-size: 13px; color: var(--ink-3); }
+.where-text:empty { display: none; }
+.where-note { margin-top: 8px !important; font-size: 14.5px; }
+.where-text h3 { margin: 0; font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.where-sites { list-style: none; margin: 6px 0 0; padding: 0; }
+.where-sites li { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 5px 0; font-size: 14.5px; font-weight: 600; color: var(--ink); }
+.where-sites .mono { flex: none; color: var(--clay); }
+.where-link { margin-top: 16px !important; }
+.where-link .link { display: inline-block; font-size: 14px; line-height: 24px; }
+
+/* The record: accreditations, frameworks, memberships, founded and size. */
+.company-record { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 56px; }
+.company-record > section { padding: 18px 18px 20px; border-bottom: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
+.company-record > section:last-child { border-bottom: 0; }
+.company-record h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.1em; line-height: 1.5; text-transform: uppercase; color: var(--clay); }
+.company-record h2::before { content: ''; flex: none; width: 18px; height: 2px; background: var(--signal); }
+.company-record .none { margin: 0; color: var(--ink-3); }
+.company-record .facts { margin: 0; gap: 22px; }
+@media (min-width: 40rem) {
+  .company-record { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .company-record > section:nth-child(odd) { border-right: 1px solid var(--line); }
+  .company-record > section:nth-last-child(-n + 2) { border-bottom: 0; }
+}
+@media (min-width: 62rem) {
+  .company-record { grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)); }
+  .company-record > section { border-bottom: 0; border-right: 1px solid var(--line); }
+  .company-record > section:last-child { border-right: 0; }
+}
 .certifications { list-style: none; margin: 0; padding: 0; }
-.certifications li { margin: 0.25rem 0; }
-.certification-name { font-weight: 600; }
-.certification-source { display: block; font-size: 0.9rem; color: var(--blue-grey); }
-.company-map { margin: 1rem 0; }
-.company-map svg { display: block; width: 100%; max-width: 12rem; height: auto; }
-.company-map .marker { fill: var(--orange); stroke: var(--green); stroke-width: 2; }
-.company-map figcaption { font-size: 0.9rem; color: var(--blue-grey); }
-.company-links { list-style: none; padding: 0; margin: 1rem 0; display: flex; gap: 1rem; flex-wrap: wrap; }
-.company-links a, .company-facts p a, .company-page-actions a { display: inline-block; min-height: 24px; }
-.about h2 { margin-top: 2rem; }
+.certifications li { position: relative; padding: 0 0 12px 20px; }
+.certifications li:last-child { padding-bottom: 0; }
+.certifications li::before { content: ''; position: absolute; left: 0; top: 6px; width: 9px; height: 9px; border: 1.5px solid var(--ink); background: var(--white); }
+.certifications li.checked::before { background: var(--ink); }
+.certification-name { display: block; font-weight: 700; font-size: 15.5px; color: var(--ink); }
+.certification-source { display: block; font-size: 13.5px; color: var(--ink-3); }
+.certification-source a { color: var(--ink); }
+.company-correct { margin: 28px 0 0; }

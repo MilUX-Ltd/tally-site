@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CertificationCheck } from './company-page';
+import type { Site } from './sites';
 import type { TallyData } from './types';
 
 export interface CompanyText {
@@ -37,4 +38,17 @@ export function addedDates(): Record<string, string> {
 export function certificationChecks(): Record<string, CertificationCheck[]> {
   checks ??= JSON.parse(readFileSync(join(process.cwd(), '.tally', 'certification-checks.json'), 'utf8')) as Record<string, CertificationCheck[]>;
   return checks;
+}
+
+let sites: Site[] | null = null;
+
+/** The committed defence sites (public/sites/defence-sites.json). */
+export function defenceSites(): Site[] {
+  sites ??= (JSON.parse(readFileSync(join(process.cwd(), 'public', 'sites', 'defence-sites.json'), 'utf8')) as { sites: Site[] }).sites;
+  return sites;
+}
+
+/** How many clusters the directory holds (public/data/clusters.json). */
+export function clusterCount(): number {
+  return (JSON.parse(readFileSync(join(process.cwd(), 'public', 'data', 'clusters.json'), 'utf8')) as { clusters: unknown[] }).clusters.length;
 }
