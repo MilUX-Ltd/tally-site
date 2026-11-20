@@ -26,4 +26,8 @@ export default tseslint.config(
       globals: { AbortSignal: 'readonly', console: 'readonly', fetch: 'readonly', process: 'readonly', URL: 'readonly' },
     },
   },
+  {
+    files: ['public/scripts/**/*.js'],
+    languageOptions: { sourceType: 'script', globals: { document: 'readonly', window: 'readonly' } },
+  },
 );
