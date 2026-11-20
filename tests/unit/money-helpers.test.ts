@@ -103,6 +103,16 @@ describe('the build’s check of money.json', () => {
     bucket.regions['2025'].London.note = 'x';
     expect(() => slimMoney(bucket, ids)).toThrow(/outside the contract/);
   });
+  it('carries supplier sizes and refuses bad ones (D-96j1u)', () => {
+    expect(money.regions['2025']['South East']).toMatchObject({ sme_value: 4_000_000, sme_count: 1, large_value: 8_000_000, large_count: 1 });
+    expect(money.regions['2025'].Scotland).not.toHaveProperty('sme_value');
+    const partial = copy();
+    delete partial.regions['2025']['South East'].large_count;
+    expect(() => slimMoney(partial, ids)).toThrow(/size/);
+    const over = copy();
+    over.regions['2025'].London.large_value = 4_500_000;
+    expect(() => slimMoney(over, ids)).toThrow(/size/);
+  });
   it('refuses unknown regions, bad links and missing attribution', () => {
     const region = copy();
     region.regions['2025'].Narnia = region.regions['2025'].London;
