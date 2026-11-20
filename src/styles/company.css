@@ -115,3 +115,12 @@
 .certification-source { display: block; font-size: 13.5px; color: var(--ink-3); }
 .certification-source a { color: var(--ink); }
 .company-correct { margin: 28px 0 0; }
+
+/* Defence contracts won, from public award notices. */
+.company-contracts { max-width: 44rem; }
+.company-contracts .contracts-intro, .company-contracts .contracts-source { margin: 0 0 12px; font-size: 14px; color: var(--ink-3); }
+.company-contracts .contracts { margin: 0 0 12px; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.company-contracts .contracts li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.company-contracts .contract-meta { grid-column: 1 / -1; font-size: 12px; color: var(--clay); overflow-wrap: anywhere; }
+.company-contracts .contracts a { font-weight: 700; overflow-wrap: anywhere; }
+.company-contracts .contract-value { font-weight: 800; font-variant-numeric: tabular-nums; }

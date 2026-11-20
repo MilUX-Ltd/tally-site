@@ -3,6 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { CertificationCheck } from './company-page';
+import type { MoneyData } from './money';
 import type { Site } from './sites';
 import type { TallyData } from './types';
 
@@ -51,4 +52,12 @@ export function defenceSites(): Site[] {
 /** How many clusters the directory holds (public/data/clusters.json). */
 export function clusterCount(): number {
   return (JSON.parse(readFileSync(join(process.cwd(), 'public', 'data', 'clusters.json'), 'utf8')) as { clusters: unknown[] }).clusters.length;
+}
+
+let money: MoneyData | null = null;
+
+/** Defence contract money (public/data/money.json, from scripts/fetch-data.mjs). */
+export function moneyData(): MoneyData {
+  money ??= JSON.parse(readFileSync(join(process.cwd(), 'public', 'data', 'money.json'), 'utf8')) as MoneyData;
+  return money;
 }
