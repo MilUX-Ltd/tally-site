@@ -75,13 +75,16 @@ export default function NearPanel({ place, radius, busy, message, onFind, onRadi
           </button>
         </p>
       )}
-      <p class="sites-attribution">
-        Places from Ordnance Survey and Office for National Statistics open data, Royal Mail and Crown copyright and database right, licensed{' '}
-        <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" rel="noopener noreferrer">
-          Open Government Licence v3.0
-        </a>
-        .
-      </p>
+      <details class="about-data">
+        <summary>About this data</summary>
+        <p class="sites-attribution">
+          Places from Ordnance Survey and Office for National Statistics open data, Royal Mail and Crown copyright and database right, licensed{' '}
+          <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/" rel="noopener noreferrer">
+            Open Government Licence v3.0
+          </a>
+          .
+        </p>
+      </details>
     </fieldset>
   );
 }
