@@ -1,0 +1,199 @@
+{
+ "attribution": "Contains public sector information licensed under the Open Government Licence v3.0.",
+ "companies": {
+  "Example Cyber Defence": [
+   {
+    "buyer": "Ministry of Defence",
+    "date": "2024-05-05",
+    "title": "Example network assurance support",
+    "url": "https://www.contractsfinder.service.gov.uk/Notice/example-1",
+    "value": 1000000
+   },
+   {
+    "buyer": "Defence Digital",
+    "date": "2025-03-10",
+    "title": "Example penetration testing service",
+    "url": "https://www.contractsfinder.service.gov.uk/Notice/example-2",
+    "value": 2000000
+   }
+  ],
+  "Example EW Systems": [
+   {
+    "buyer": "Defence Equipment and Support",
+    "date": "2025-06-01",
+    "title": "Example ELINT receiver upgrade",
+    "url": "https://www.find-tender.service.gov.uk/Notice/example-3",
+    "value": 4000000
+   }
+  ],
+  "Example Naval Engineering": [
+   {
+    "buyer": "Submarine Delivery Agency",
+    "date": "2025-09-12",
+    "title": "Example hull survey",
+    "url": "https://www.contractsfinder.service.gov.uk/Notice/example-4",
+    "value": 800000
+   }
+  ],
+  "Example Nordic Defence": [
+   {
+    "buyer": "Ministry of Defence",
+    "date": "2025-02-02",
+    "title": "Example maritime cyber trial",
+    "url": "https://www.find-tender.service.gov.uk/Notice/example-5",
+    "value": 600000
+   }
+  ],
+  "Example Signals Intelligence": [
+   {
+    "buyer": "Defence Science and Technology Laboratory",
+    "date": "2026-04-01",
+    "title": "Example signals research",
+    "url": "https://www.contractsfinder.service.gov.uk/Notice/example-6",
+    "value": 300000
+   }
+  ]
+ },
+ "excluded": {
+  "frameworks": 4,
+  "non_gbp": 1
+ },
+ "generated": "2026-11-20",
+ "overseas": {
+  "2025": {
+   "Norway": {
+    "count": 1,
+    "top": [
+     {
+      "count": 1,
+      "name": "Example Nordic Defence",
+      "tally": "Example Nordic Defence",
+      "value": 600000
+     }
+    ],
+    "value": 600000
+   },
+   "United States": {
+    "count": 2,
+    "top": [
+     {
+      "count": 2,
+      "name": "US Defense Corp Inc",
+      "tally": null,
+      "value": 20000000
+     }
+    ],
+    "value": 20000000
+   }
+  }
+ },
+ "period": {
+  "from": "2024-01-01",
+  "to": "2026-11-15"
+ },
+ "regions": {
+  "2024": {
+   "London": {
+    "count": 1,
+    "tally_count": 1,
+    "tally_value": 1000000,
+    "top": [
+     {
+      "count": 1,
+      "name": "Example Cyber Defence",
+      "tally": "Example Cyber Defence",
+      "value": 1000000
+     }
+    ],
+    "value": 1000000
+   }
+  },
+  "2025": {
+   "London": {
+    "count": 3,
+    "tally_count": 1,
+    "tally_value": 2000000,
+    "top": [
+     {
+      "count": 2,
+      "name": "Big Systems PLC",
+      "tally": null,
+      "value": 3000000
+     },
+     {
+      "count": 1,
+      "name": "Example Cyber Defence",
+      "tally": "Example Cyber Defence",
+      "value": 2000000
+     }
+    ],
+    "value": 5000000
+   },
+   "Scotland": {
+    "count": 1,
+    "tally_count": 1,
+    "tally_value": 800000,
+    "top": [
+     {
+      "count": 1,
+      "name": "Example Naval Engineering",
+      "tally": "Example Naval Engineering",
+      "value": 800000
+     }
+    ],
+    "value": 800000
+   },
+   "South East": {
+    "count": 2,
+    "tally_count": 1,
+    "tally_value": 4000000,
+    "top": [
+     {
+      "count": 1,
+      "name": "Prime Aerospace Ltd",
+      "tally": null,
+      "value": 8000000
+     },
+     {
+      "count": 1,
+      "name": "Example EW Systems",
+      "tally": "Example EW Systems",
+      "value": 4000000
+     }
+    ],
+    "value": 12000000
+   }
+  },
+  "2026": {
+   "South West": {
+    "count": 1,
+    "tally_count": 1,
+    "tally_value": 300000,
+    "top": [
+     {
+      "count": 1,
+      "name": "Example Signals Intelligence",
+      "tally": "Example Signals Intelligence",
+      "value": 300000
+     }
+    ],
+    "value": 300000
+   }
+  }
+ },
+ "sources": [
+  "Contracts Finder",
+  "Find a Tender"
+ ],
+ "unplaced": {
+  "2025": {
+   "count": 1,
+   "value": 100000
+  }
+ },
+ "years": [
+  2024,
+  2025,
+  2026
+ ]
+}
