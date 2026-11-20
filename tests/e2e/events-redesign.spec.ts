@@ -197,6 +197,8 @@ test('overlap and colour notes are a short footnote', async ({ page }) => {
 });
 
 test('floors: axe at 1440 and 390, no sideways scroll at 320, headings in order', async ({ page }) => {
+  // Three accessibility scans of a long page.
+  test.setTimeout(120_000);
   for (const [width, height] of [
     [1440, 900],
     [390, 844],

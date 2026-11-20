@@ -4,7 +4,11 @@ All notable changes to the Tally site. Versions follow semantic versioning.
 
 ## [Unreleased]
 
+### Changed
+- Clusters and events (`/events`) redesigned (Tally redesign, slice C): the headline "Regional defence clusters." with a fact strip; a flat map of every cluster area drawn as SVG at build time from the committed ONS outlines, filled on the data ramp by upcoming events, with a pin counting each cluster's events, every cluster named beside the map (each name leads to its card), a legend and the same information as a table; a "Next up" timeline by day with large date numerals; a card for each cluster with its area, status, members recorded, upcoming events, next event, links and a link that opens Find on that cluster (`/?cluster=<id>`); then the calendar and the full list as before. Members-only events remain signposts wherever they appear. The page still runs no script.
+
 ### Added
+- `/events.ics`: the upcoming cluster events as a calendar file, written at build. Events are all-day entries with the published time in the description; members-only events carry only the signpost line, the cluster and its public website.
 - Redesign foundation: the Tally design language in `base.css` (paper, ink and signal tokens, the data ramp, type, focus ring, buttons, fields, cards, tags, kicker, fact strip and page hero), Manrope and Roboto Mono self-hosted as WOFF2 (SIL OFL 1.1), and a shared top bar (`SiteHeader.astro`) and footer on every page through the base layout. The navigation is the same everywhere: Find, Clusters and events, Funding, New companies, About; on a phone it is a menu that works without JavaScript. Existing pages keep their layout on the new base.
 - New companies (`/new`): companies added in the 12 weeks up to the latest addition, grouped by week, newest first, each with a link to its company page, its region, top capabilities and the date added, and an RSS 2.0 feed of the same list at `/new/feed.xml`, advertised in the page head. The added date is when a company first appeared on the data repo's `main`, read from its git history at build time. Linked from the explorer header and the footer, and listed in the sitemap.
 - Walking skeleton: holding page, 404 page, security headers baseline, public-terms guard, CI with lint, type check, unit tests and the accessibility floor, preview and production deploy jobs.
