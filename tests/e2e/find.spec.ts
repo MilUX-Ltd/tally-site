@@ -6,6 +6,7 @@ import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { getResolution, latLngToCell } from 'h3-js';
+import { MATRIX_PAGE_SIZE } from '../../src/lib/matrix';
 import { AXE_TAGS, clickMapAt, useOfflineMap, waitForMap } from '../support/offline-map';
 
 const fixture = JSON.parse(readFileSync(new URL('../fixtures/tally-data.json', import.meta.url), 'utf8')) as {
@@ -249,7 +250,10 @@ test('3. Results state: the compact search bar, a chip for every filter, Clear a
   // Twenty to a page.
   await page.goto('/?page=2');
   await waitForMap(page);
-  await expect(results(page).getByRole('listitem')).toHaveCount(fixture.companies.length - 20);
+  await expect(results(page).getByRole('listitem')).toHaveCount(20);
+  await page.goto('/?page=3');
+  await waitForMap(page);
+  await expect(results(page).getByRole('listitem')).toHaveCount(fixture.companies.length - 40);
   await page.getByRole('navigation', { name: 'Results pages' }).getByRole('button', { name: /previous/i }).click();
   await expect(results(page).getByRole('listitem')).toHaveCount(20);
 });
@@ -299,7 +303,7 @@ test('4. Old links: every link that worked before opens showing the same compani
   await open('mpage=2');
   await expect(view(page, 'Matrix')).toHaveAttribute('aria-pressed', 'true');
   const second = await matrixRows(page);
-  expect(second.length).toBe(fixture.companies.length - 25);
+  expect(second.length).toBe(fixture.companies.length - MATRIX_PAGE_SIZE);
 
   // Growth over time has moved; a month link still opens every company and points to it.
   const heading = page.getByRole('region', { name: 'Results' }).getByRole('heading', { level: 2 });
@@ -498,7 +502,10 @@ test('7. List view: the same results full width with no map, the matrix, oversea
   await expect(results(page).getByRole('listitem')).toHaveCount(20);
   await page.getByRole('navigation', { name: 'Results pages' }).getByRole('button', { name: /next/i }).click();
   await expect.poll(() => params(page.url()).get('page')).toBe('2');
-  await expect(results(page).getByRole('listitem')).toHaveCount(fixture.companies.length - 20);
+  await expect(results(page).getByRole('listitem')).toHaveCount(20);
+  await page.getByRole('navigation', { name: 'Results pages' }).getByRole('button', { name: /next/i }).click();
+  await expect.poll(() => params(page.url()).get('page')).toBe('3');
+  await expect(results(page).getByRole('listitem')).toHaveCount(fixture.companies.length - 40);
   await view(page, 'Map').click();
   await expect.poll(() => params(page.url()).get('view')).toBeNull();
   await expect(page.locator('.map-wrap')).not.toHaveAttribute('inert', '');

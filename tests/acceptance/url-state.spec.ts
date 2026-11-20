@@ -82,7 +82,7 @@ test('selected companies and the results page are restored from the URL', async 
   await expect(page.getByText('Page 2 of')).toHaveCount(0);
   await page.goto('/?page=2');
   await waitForMap(page);
-  await expect(page.getByText('Page 2 of 2')).toBeVisible();
+  await expect(page.getByText('Page 2 of 3')).toBeVisible();
   await page.getByRole('button', { name: /previous/i }).click();
   await expect.poll(() => params(page.url()).get('page')).toBeNull();
   const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();

@@ -20,8 +20,8 @@ test('shows the heatmap with attribution and legend', async ({ page }) => {
   await expect(page.locator('#tally-map')).toBeVisible();
   await expect(page.getByText('OpenStreetMap').first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Companies per hexagon' })).toBeVisible();
-  await expect(page.locator('#result-count')).toContainText('32 companies');
-  await expect(page.locator('#result-count')).toContainText('30 are on the map');
+  await expect(page.locator('#result-count')).toContainText('57 companies');
+  await expect(page.locator('#result-count')).toContainText('55 are on the map');
   await expectNoAxeViolations(page);
 });
 

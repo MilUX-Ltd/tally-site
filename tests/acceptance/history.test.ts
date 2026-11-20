@@ -48,7 +48,7 @@ describe('growth over time', () => {
   it('the fixture history has the documented shape and stays small', () => {
     const h = fromFixture();
     expect(h.months.map((m: { month: string }) => m.month)).toEqual(['2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11']);
-    expect(h.months.map((m: { total: number }) => m.total)).toEqual([20, 26, 26, 26, 30, 32]);
+    expect(h.months.map((m: { total: number }) => m.total)).toEqual([45, 51, 51, 51, 55, 57]);
     expect(h.months[0].groups).toMatchObject({ domains: 11, 'cyber-data-software': 4, space: 0 });
     expect(h.months[5].groups).toMatchObject({ domains: 14, 'cyber-data-software': 9, space: 1 });
     for (const g of h.groups) expect(typeof g.label).toBe('string');

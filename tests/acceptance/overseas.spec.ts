@@ -54,8 +54,8 @@ test.beforeEach(async ({ page }) => {
 test('overseas companies are listed by country and follow the filters', async ({ page }) => {
   await page.goto('/');
   await waitForMap(page);
-  await expect(page.locator('#result-count')).toContainText('35 companies');
-  await expect(page.locator('#result-count')).toContainText('30 are on the map');
+  await expect(page.locator('#result-count')).toContainText('60 companies');
+  await expect(page.locator('#result-count')).toContainText('55 are on the map');
   await listView(page);
   await section(page).locator('summary').click();
   await expect(section(page)).toBeVisible();

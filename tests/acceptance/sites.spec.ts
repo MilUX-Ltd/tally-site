@@ -106,5 +106,5 @@ test('picking a site and radius filters the companies', async ({ page }) => {
   await openLayers(page);
   await page.getByLabel('Companies near a site').selectOption({ label: 'No site chosen' });
   await expect.poll(() => params(page.url()).get('site')).toBeNull();
-  await expect(page.locator('#result-count')).toContainText('32 companies');
+  await expect(page.locator('#result-count')).toContainText('57 companies');
 });

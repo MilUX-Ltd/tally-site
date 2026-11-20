@@ -160,7 +160,7 @@ test.describe('New companies', () => {
     await expect(hero.locator('.lede')).toContainText('Companies added in the last 12 weeks, newest first.');
     await expect(hero.getByRole('link', { name: /rss feed/i })).toHaveAttribute('href', '/new/feed.xml');
     const facts = hero.locator('dl.facts');
-    await expect(facts.locator('div', { hasText: 'Companies' }).first().locator('dd')).toHaveText('32');
+    await expect(facts.locator('div', { hasText: 'Companies' }).first().locator('dd')).toHaveText('57');
     await expect(facts.locator('div', { hasText: 'Added in 12 weeks' }).locator('dd')).toHaveText('6');
     await expect(page.locator('header.topbar .topbar-nav a[aria-current="page"]')).toHaveText('New companies');
   });
@@ -170,8 +170,8 @@ test.describe('New companies', () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     await page.goto('/new');
-    await expect(growth(page)).toContainText('November 2026: 32 companies');
-    const chart = growth(page).getByRole('img', { name: /Companies in Tally by month, from 20 in June 2026 to 32 in November 2026/ });
+    await expect(growth(page)).toContainText('November 2026: 57 companies');
+    const chart = growth(page).getByRole('img', { name: /Companies in Tally by month, from 45 in June 2026 to 57 in November 2026/ });
     await expect(chart).toBeVisible();
     await expect(chart.locator('.column')).toHaveCount(6);
     const fills = await chart.locator('.column .top').evaluateAll((els) => els.map((el) => el.getAttribute('fill')?.toLowerCase()));
@@ -185,7 +185,7 @@ test.describe('New companies', () => {
     const table = growth(page).getByRole('table', { name: 'Companies in Tally by month and capability group' });
     await expect(table.getByRole('row')).toHaveCount(7);
     const june = table.getByRole('row', { name: /^June 2026/ });
-    await expect(june.getByRole('cell').first()).toHaveText('20');
+    await expect(june.getByRole('cell').first()).toHaveText('45');
     await expect(june.getByRole('cell').nth(1)).toHaveText('11');
     await expect(table.getByRole('row', { name: /^September 2026/ })).toContainText('no update');
     await expect(growth(page).getByRole('slider')).toHaveCount(0);
@@ -194,14 +194,14 @@ test.describe('New companies', () => {
 
   test('a month opens from its address and the chart marks it', async ({ page }) => {
     await page.goto('/new?month=2026-06');
-    await expect(growth(page)).toContainText('June 2026: 20 companies');
+    await expect(growth(page)).toContainText('June 2026: 45 companies');
     await expect(growth(page).locator('.column.is-current')).toHaveCount(1);
     await expect(growth(page).locator('.column').first()).toHaveClass(/is-current/);
     await expect(growth(page).getByRole('row', { name: /^Space/ }).getByRole('cell').first()).toHaveText('0');
     await growth(page).getByRole('slider', { name: 'Month' }).focus();
     await page.keyboard.press('End');
     await expect(growth(page).locator('.column').last()).toHaveClass(/is-current/);
-    await expect(growth(page)).toContainText('November 2026: 32 companies');
+    await expect(growth(page)).toContainText('November 2026: 57 companies');
   });
 
   test('nothing replays under reduced motion', async ({ page }) => {

@@ -4,6 +4,7 @@
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { MATRIX_PAGE_SIZE } from '../../src/lib/matrix';
 import { AXE_TAGS, useOfflineMap, waitForMap } from '../support/offline-map';
 
 const fixture = JSON.parse(readFileSync(new URL('../fixtures/tally-data.json', import.meta.url), 'utf8')) as {
@@ -68,14 +69,14 @@ test('from the landing page, Matrix compares every company, a page at a time', a
   await page.goto('/');
   await waitForMap(page);
   await view(page, 'Matrix').click();
-  await expect(matrix(page).locator('tbody tr')).toHaveCount(25);
+  await expect(matrix(page).locator('tbody tr')).toHaveCount(MATRIX_PAGE_SIZE);
   await expect(section(page)).toContainText(`${TOTAL} companies`);
   const pager = page.getByRole('navigation', { name: 'Matrix rows' });
-  await expect(pager).toContainText(`Rows 1 to 25 of ${TOTAL}`);
+  await expect(pager).toContainText(`Rows 1 to ${MATRIX_PAGE_SIZE} of ${TOTAL}`);
   await pager.getByRole('button', { name: /next/i }).click();
   await expect.poll(() => params(page.url()).get('mpage')).toBe('2');
-  await expect(matrix(page).locator('tbody tr')).toHaveCount(TOTAL - 25);
-  await expect(pager).toContainText(`Rows 26 to ${TOTAL} of ${TOTAL}`);
+  await expect(matrix(page).locator('tbody tr')).toHaveCount(TOTAL - MATRIX_PAGE_SIZE);
+  await expect(pager).toContainText(`Rows ${MATRIX_PAGE_SIZE + 1} to ${TOTAL} of ${TOTAL}`);
   // Having looked, the map comes back with the results beside it.
   await view(page, 'Map').click();
   await expect(page.getByRole('region', { name: 'Results' })).toBeVisible();
@@ -104,7 +105,7 @@ test('old links naming a matrix page or group open the Matrix view', async ({ pa
   await page.goto('/?mpage=2');
   await waitForMap(page);
   await expect(view(page, 'Matrix')).toHaveAttribute('aria-pressed', 'true');
-  await expect(matrix(page).locator('tbody tr')).toHaveCount(TOTAL - 25);
+  await expect(matrix(page).locator('tbody tr')).toHaveCount(TOTAL - MATRIX_PAGE_SIZE);
   await expect.poll(() => params(page.url()).get('view')).toBe('matrix');
   expect(params(page.url()).get('mpage')).toBe('2');
 
@@ -160,7 +161,7 @@ test('the matrix keeps its behaviour: groups, ticking a column, shortlisting a r
   await expect(matrix(page).locator('caption')).toHaveCount(1);
   await expect(matrix(page).locator('thead th[scope="colgroup"]').first()).toBeVisible();
   await expect(matrix(page).locator('thead th[scope="col"]').first()).toBeVisible();
-  expect(await matrix(page).locator('tbody th[scope="row"]').count()).toBe(25);
+  expect(await matrix(page).locator('tbody th[scope="row"]').count()).toBe(MATRIX_PAGE_SIZE);
 
   // Capability groups: one choice at a time, held in the address.
   await expect(groups(page).getByRole('radio', { name: 'All groups', exact: true })).toBeChecked();
@@ -192,7 +193,7 @@ test('with the shortlist open, the matrix compares the shortlist', async ({ page
   await page.goto('/?view=matrix&list=example-secure-comms,example-subsea');
   await waitForMap(page);
   // A link that names the view opens on the results, not the shortlist.
-  await expect(matrix(page).locator('tbody tr')).toHaveCount(25);
+  await expect(matrix(page).locator('tbody tr')).toHaveCount(MATRIX_PAGE_SIZE);
   await shortlistButton(page).click();
   await expect.poll(() => rowNames(page)).toEqual(['Example Secure Comms', 'Example Subsea']);
   await expect(section(page)).toContainText('2 companies on your shortlist');
@@ -203,7 +204,7 @@ test('with the shortlist open, the matrix compares the shortlist', async ({ page
   await section(page).getByRole('button', { name: 'Remove Example Subsea from shortlist', exact: true }).click();
   await expect.poll(() => rowNames(page)).toEqual(['Example Secure Comms']);
   await section(page).getByRole('button', { name: 'Back to results', exact: true }).click();
-  await expect(matrix(page).locator('tbody tr')).toHaveCount(25);
+  await expect(matrix(page).locator('tbody tr')).toHaveCount(MATRIX_PAGE_SIZE);
   await expect(section(page)).not.toContainText('on your shortlist');
 });
 
@@ -284,7 +285,7 @@ test('phone: axe passes, nothing scrolls sideways at 390 or 320, and Map, List a
     // The table scrolls inside its card; the page does not.
     await page.goto('/?view=matrix');
     await waitForMap(page);
-    await expect(matrix(page).locator('tbody tr')).toHaveCount(25);
+    await expect(matrix(page).locator('tbody tr')).toHaveCount(MATRIX_PAGE_SIZE);
     const scroller = page.getByRole('region', { name: /compare capabilities table/i });
     const wide = await scroller.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth }));
     expect(wide.scroll).toBeGreaterThan(wide.client);

@@ -106,7 +106,7 @@ test('falls back to keyword search and says so', async ({ page }) => {
   await clear.focus();
   await page.keyboard.press('Enter');
   await expect.poll(() => params(page.url()).get('q')).toBeNull();
-  await expect(page.locator('#result-count')).toContainText('32 companies');
+  await expect(page.locator('#result-count')).toContainText('57 companies');
 });
 
 test('a failing search route still gives a keyword search', async ({ page }) => {

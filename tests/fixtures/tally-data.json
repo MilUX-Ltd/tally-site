@@ -1,7 +1,29 @@
 {
  "generated": "2026-11-19",
- "count": 32,
+ "count": 57,
  "companies": [
+  {
+   "name": "Example Advisory Group",
+   "website": "https://example.com/example-advisory-group",
+   "linkedin": "",
+   "hq": "Newcastle, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "consultancy",
+    "size-small"
+   ],
+   "summary": "Example Advisory Group is a synthetic company used only in tests.",
+   "body": "# Example Advisory Group\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9783,
+   "lon": -1.6178,
+   "location_source": "town",
+   "country": ""
+  },
   {
    "name": "Example Aerial Systems",
    "website": "https://example.com/example-aerial-systems",
@@ -106,6 +128,50 @@
    "country": ""
   },
   {
+   "name": "Example Cheviot Logistics",
+   "website": "https://example.com/example-cheviot-logistics",
+   "linkedin": "",
+   "hq": "Newcastle, United Kingdom",
+   "region": "North East",
+   "size": "medium",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "logistics",
+    "size-medium"
+   ],
+   "summary": "Example Cheviot Logistics is a synthetic company used only in tests.",
+   "body": "# Example Cheviot Logistics\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9783,
+   "lon": -1.6178,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Coastline Support Services",
+   "website": "https://example.com/example-coastline-support-services",
+   "linkedin": "",
+   "hq": "Hartlepool, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "through-life-support",
+    "size-small"
+   ],
+   "summary": "Example Coastline Support Services is a synthetic company used only in tests.",
+   "body": "# Example Coastline Support Services\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.6863,
+   "lon": -1.2129,
+   "location_source": "town",
+   "country": ""
+  },
+  {
    "name": "Example Composites",
    "website": "https://example.com/example-composites",
    "linkedin": "",
@@ -198,6 +264,28 @@
    ]
   },
   {
+   "name": "Example Darlington Haulage",
+   "website": "https://example.com/example-darlington-haulage",
+   "linkedin": "",
+   "hq": "Darlington, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "logistics",
+    "size-small"
+   ],
+   "summary": "Example Darlington Haulage is a synthetic company used only in tests.",
+   "body": "# Example Darlington Haulage\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.5236,
+   "lon": -1.5595,
+   "location_source": "town",
+   "country": ""
+  },
+  {
    "name": "Example Data Labs",
    "website": "https://example.com/example-data-labs",
    "linkedin": "",
@@ -221,6 +309,50 @@
    "postcode": "",
    "lat": 51.5072,
    "lon": -0.1276,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Depot Services",
+   "website": "https://example.com/example-depot-services",
+   "linkedin": "",
+   "hq": "Darlington, United Kingdom",
+   "region": "North East",
+   "size": "micro",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "through-life-support",
+    "size-micro"
+   ],
+   "summary": "Example Depot Services is a synthetic company used only in tests.",
+   "body": "# Example Depot Services\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.5236,
+   "lon": -1.5595,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Durham Consultancy",
+   "website": "https://example.com/example-durham-consultancy",
+   "linkedin": "",
+   "hq": "Durham, United Kingdom",
+   "region": "North East",
+   "size": "micro",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "consultancy",
+    "size-micro"
+   ],
+   "summary": "Example Durham Consultancy is a synthetic company used only in tests.",
+   "body": "# Example Durham Consultancy\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.7761,
+   "lon": -1.5733,
    "location_source": "town",
    "country": ""
   },
@@ -277,6 +409,28 @@
    "country": ""
   },
   {
+   "name": "Example Fleet Support",
+   "website": "https://example.com/example-fleet-support",
+   "linkedin": "",
+   "hq": "Sunderland, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "through-life-support",
+    "size-small"
+   ],
+   "summary": "Example Fleet Support is a synthetic company used only in tests.",
+   "body": "# Example Fleet Support\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9069,
+   "lon": -1.3838,
+   "location_source": "town",
+   "country": ""
+  },
+  {
    "name": "Example Flight Test",
    "website": "https://example.com/example-flight-test",
    "linkedin": "",
@@ -297,6 +451,50 @@
    "postcode": "",
    "lat": 51.5001,
    "lon": -2.548,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Freight Partners",
+   "website": "https://example.com/example-freight-partners",
+   "linkedin": "",
+   "hq": "Middlesbrough, United Kingdom",
+   "region": "North East",
+   "size": "medium",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "logistics",
+    "size-medium"
+   ],
+   "summary": "Example Freight Partners is a synthetic company used only in tests.",
+   "body": "# Example Freight Partners\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.5742,
+   "lon": -1.235,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Gateshead Support",
+   "website": "https://example.com/example-gateshead-support",
+   "linkedin": "",
+   "hq": "Gateshead, United Kingdom",
+   "region": "North East",
+   "size": "medium",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "through-life-support",
+    "size-medium"
+   ],
+   "summary": "Example Gateshead Support is a synthetic company used only in tests.",
+   "body": "# Example Gateshead Support\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9527,
+   "lon": -1.6034,
    "location_source": "town",
    "country": ""
   },
@@ -328,6 +526,28 @@
    "country": ""
   },
   {
+   "name": "Example Hartlepool Fabricators",
+   "website": "https://example.com/example-hartlepool-fabricators",
+   "linkedin": "",
+   "hq": "Hartlepool, United Kingdom",
+   "region": "North East",
+   "size": "medium",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "metal-fabrication",
+    "size-medium"
+   ],
+   "summary": "Example Hartlepool Fabricators is a synthetic company used only in tests.",
+   "body": "# Example Hartlepool Fabricators\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.6863,
+   "lon": -1.2129,
+   "location_source": "town",
+   "country": ""
+  },
+  {
    "name": "Example Human Factors",
    "website": "https://example.com/example-human-factors",
    "linkedin": "",
@@ -349,6 +569,28 @@
    "postcode": "",
    "lat": 50.8198,
    "lon": -1.088,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Ironworks North",
+   "website": "https://example.com/example-ironworks-north",
+   "linkedin": "",
+   "hq": "Middlesbrough, United Kingdom",
+   "region": "North East",
+   "size": "medium",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "metal-fabrication",
+    "size-medium"
+   ],
+   "summary": "Example Ironworks North is a synthetic company used only in tests.",
+   "body": "# Example Ironworks North\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.5742,
+   "lon": -1.235,
    "location_source": "town",
    "country": ""
   },
@@ -452,6 +694,28 @@
    "country": ""
   },
   {
+   "name": "Example Moorland Consulting",
+   "website": "https://example.com/example-moorland-consulting",
+   "linkedin": "",
+   "hq": "Durham, United Kingdom",
+   "region": "North East",
+   "size": "micro",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "consultancy",
+    "size-micro"
+   ],
+   "summary": "Example Moorland Consulting is a synthetic company used only in tests.",
+   "body": "# Example Moorland Consulting\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.7761,
+   "lon": -1.5733,
+   "location_source": "town",
+   "country": ""
+  },
+  {
    "name": "Example Munitions",
    "website": "https://example.com/example-munitions",
    "linkedin": "",
@@ -525,6 +789,50 @@
    "country": "Norway"
   },
   {
+   "name": "Example Northumbria Advisory",
+   "website": "https://example.com/example-northumbria-advisory",
+   "linkedin": "",
+   "hq": "Newcastle, United Kingdom",
+   "region": "North East",
+   "size": "micro",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "consultancy",
+    "size-micro"
+   ],
+   "summary": "Example Northumbria Advisory is a synthetic company used only in tests.",
+   "body": "# Example Northumbria Advisory\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9783,
+   "lon": -1.6178,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Pennine Fabrication",
+   "website": "https://example.com/example-pennine-fabrication",
+   "linkedin": "",
+   "hq": "Darlington, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "metal-fabrication",
+    "size-small"
+   ],
+   "summary": "Example Pennine Fabrication is a synthetic company used only in tests.",
+   "body": "# Example Pennine Fabrication\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.5236,
+   "lon": -1.5595,
+   "location_source": "town",
+   "country": ""
+  },
+  {
    "name": "Example Photonics",
    "website": "https://example.com/example-photonics",
    "linkedin": "",
@@ -575,6 +883,28 @@
    "country": ""
   },
   {
+   "name": "Example Quayside Logistics",
+   "website": "https://example.com/example-quayside-logistics",
+   "linkedin": "",
+   "hq": "Newcastle, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "logistics",
+    "size-small"
+   ],
+   "summary": "Example Quayside Logistics is a synthetic company used only in tests.",
+   "body": "# Example Quayside Logistics\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9783,
+   "lon": -1.6178,
+   "location_source": "town",
+   "country": ""
+  },
+  {
    "name": "Example Range Services",
    "website": "https://example.com/example-range-services",
    "linkedin": "",
@@ -596,6 +926,28 @@
    "postcode": "",
    "lat": 51.0688,
    "lon": -1.7945,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Riverside Metals",
+   "website": "https://example.com/example-riverside-metals",
+   "linkedin": "",
+   "hq": "Sunderland, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "metal-fabrication",
+    "size-small"
+   ],
+   "summary": "Example Riverside Metals is a synthetic company used only in tests.",
+   "body": "# Example Riverside Metals\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9069,
+   "lon": -1.3838,
    "location_source": "town",
    "country": ""
   },
@@ -658,6 +1010,28 @@
      "link": "javascript:alert(1)"
     }
    ]
+  },
+  {
+   "name": "Example Sheet Metal",
+   "website": "https://example.com/example-sheet-metal",
+   "linkedin": "",
+   "hq": "Gateshead, United Kingdom",
+   "region": "North East",
+   "size": "micro",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "metal-fabrication",
+    "size-micro"
+   ],
+   "summary": "Example Sheet Metal is a synthetic company used only in tests.",
+   "body": "# Example Sheet Metal\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9527,
+   "lon": -1.6034,
+   "location_source": "town",
+   "country": ""
   },
   {
    "name": "Example Signals Intelligence",
@@ -744,6 +1118,50 @@
    "country": ""
   },
   {
+   "name": "Example Spares Supply",
+   "website": "https://example.com/example-spares-supply",
+   "linkedin": "",
+   "hq": "Sunderland, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "through-life-support",
+    "size-small"
+   ],
+   "summary": "Example Spares Supply is a synthetic company used only in tests.",
+   "body": "# Example Spares Supply\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9069,
+   "lon": -1.3838,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Stores and Supply",
+   "website": "https://example.com/example-stores-and-supply",
+   "linkedin": "",
+   "hq": "Gateshead, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "logistics",
+    "size-small"
+   ],
+   "summary": "Example Stores and Supply is a synthetic company used only in tests.",
+   "body": "# Example Stores and Supply\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9527,
+   "lon": -1.6034,
+   "location_source": "town",
+   "country": ""
+  },
+  {
    "name": "Example Subsea",
    "website": "https://example.com/example-subsea",
    "linkedin": "",
@@ -769,6 +1187,50 @@
    "country": ""
   },
   {
+   "name": "Example Tees Metalwork",
+   "website": "https://example.com/example-tees-metalwork",
+   "linkedin": "",
+   "hq": "Middlesbrough, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "metal-fabrication",
+    "size-small"
+   ],
+   "summary": "Example Tees Metalwork is a synthetic company used only in tests.",
+   "body": "# Example Tees Metalwork\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.5742,
+   "lon": -1.235,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Through Life Partners",
+   "website": "https://example.com/example-through-life-partners",
+   "linkedin": "",
+   "hq": "Durham, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "through-life-support",
+    "size-small"
+   ],
+   "summary": "Example Through Life Partners is a synthetic company used only in tests.",
+   "body": "# Example Through Life Partners\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.7761,
+   "lon": -1.5733,
+   "location_source": "town",
+   "country": ""
+  },
+  {
    "name": "Example Training Simulation",
    "website": "https://example.com/example-training-simulation",
    "linkedin": "",
@@ -790,6 +1252,28 @@
    "postcode": "",
    "lat": 54.5973,
    "lon": -5.9301,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Tyne Fabrication",
+   "website": "https://example.com/example-tyne-fabrication",
+   "linkedin": "",
+   "hq": "Newcastle, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "metal-fabrication",
+    "size-small"
+   ],
+   "summary": "Example Tyne Fabrication is a synthetic company used only in tests.",
+   "body": "# Example Tyne Fabrication\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9783,
+   "lon": -1.6178,
    "location_source": "town",
    "country": ""
   },
@@ -833,6 +1317,72 @@
    "postcode": "",
    "lat": 52.4862,
    "lon": -1.8904,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Warehouse Services",
+   "website": "https://example.com/example-warehouse-services",
+   "linkedin": "",
+   "hq": "Gateshead, United Kingdom",
+   "region": "North East",
+   "size": "micro",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "logistics",
+    "size-micro"
+   ],
+   "summary": "Example Warehouse Services is a synthetic company used only in tests.",
+   "body": "# Example Warehouse Services\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9527,
+   "lon": -1.6034,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Wear Logistics",
+   "website": "https://example.com/example-wear-logistics",
+   "linkedin": "",
+   "hq": "Sunderland, United Kingdom",
+   "region": "North East",
+   "size": "medium",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "logistics",
+    "size-medium"
+   ],
+   "summary": "Example Wear Logistics is a synthetic company used only in tests.",
+   "body": "# Example Wear Logistics\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.9069,
+   "lon": -1.3838,
+   "location_source": "town",
+   "country": ""
+  },
+  {
+   "name": "Example Welding Works",
+   "website": "https://example.com/example-welding-works",
+   "linkedin": "",
+   "hq": "Hartlepool, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2020",
+   "tags": [
+    "defence",
+    "metal-fabrication",
+    "size-small"
+   ],
+   "summary": "Example Welding Works is a synthetic company used only in tests.",
+   "body": "# Example Welding Works\n\nSynthetic test company. This body text is long and must not reach the browser.\n",
+   "postcode": "",
+   "lat": 54.6863,
+   "lon": -1.2129,
    "location_source": "town",
    "country": ""
   }
