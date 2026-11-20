@@ -1,16 +1,17 @@
 ---
 // The footer on every page: the page's own credit lines (the slot), then the
-// same links everywhere, including Get listed.
+// same links everywhere, including Get listed, and the built-by line.
 import { getListedMailto } from '../lib/contact';
+import { NAV } from '../lib/nav';
 ---
 <footer class="site-footer">
-  <slot />
-  <p class="footer-links">
-    <a href="/about">About Tally</a>
-    <a href="/events">Upcoming cluster events</a>
-    <a href="/new">New companies</a>
-    <a href="/ask-tally">Ask Tally from your AI assistant</a>
-    <a href={getListedMailto()}>Get listed</a>
-  </p>
-  <p>Built by <a href="https://milux.co.uk">MilUX</a>. This was built with AI. If you would like to know more, please <a href="https://milux.co.uk/contact/">get in touch</a>.</p>
+  {Astro.slots.has('default') && <div class="footer-credits"><slot /></div>}
+  <nav aria-label="Footer">
+    <ul class="footer-links">
+      {NAV.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+      <li><a href="/ask-tally">Use Tally in your AI assistant</a></li>
+      <li><a href={getListedMailto()}>Get listed</a></li>
+    </ul>
+  </nav>
+  <p class="footer-built">Built by <a href="https://milux.co.uk">MilUX</a> using AI-assisted engineering. <a href="/about">How Tally is built.</a></p>
 </footer>

@@ -1,4 +1,4 @@
-/* Explorer layout. Brand colours only (see base.css). */
+/* Explorer layout. Not yet redesigned; colours come from the tokens in base.css. */
 .explorer { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 60rem) {
   .explorer { grid-template-columns: 18rem minmax(0, 1fr); align-items: start; }
@@ -8,7 +8,7 @@
 button {
   font: inherit;
   cursor: pointer;
-  border-radius: 4px;
+ 
   border: 2px solid var(--green);
   background: var(--green);
   color: #fff;
@@ -18,7 +18,7 @@ button {
 button.secondary { background: #fff; color: var(--green); }
 button:disabled { cursor: not-allowed; border-color: var(--blue-grey); color: var(--blue-grey); background: var(--neutral); }
 button:focus-visible, summary:focus-visible, input:focus-visible, [tabindex]:focus-visible {
-  outline: 3px solid var(--orange);
+  outline: 3px solid var(--signal);
   outline-offset: 2px;
 }
 .filters-toggle { width: 100%; text-align: left; }
@@ -57,7 +57,7 @@ button:focus-visible, summary:focus-visible, input:focus-visible, [tabindex]:foc
 .maplibregl-ctrl-attrib.maplibregl-compact, .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib { background: rgba(255, 255, 255, 0.9); }
 .matrix { margin-top: 2rem; }
 .matrix-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
-.matrix-controls select { font: inherit; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--green); border-radius: 4px; background: #fff; color: var(--green); max-width: 100%; }
+.matrix-controls select { font: inherit; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--green); background: #fff; color: var(--green); max-width: 100%; }
 .matrix-scroll { position: relative; overflow: auto; max-width: 100%; max-height: 80vh; border: 1px solid var(--beige); background: #fff; }
 .matrix table { border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
 .matrix th, .matrix td { border-bottom: 1px solid var(--beige); border-right: 1px solid var(--beige); padding: 0.25rem; }
@@ -79,8 +79,8 @@ button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .shortlist-items { list-style: none; padding: 0; margin: 0 0 0.75rem; }
 .shortlist-items li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; align-items: center; padding: 0.25rem 0; border-bottom: 1px solid var(--beige); }
 .shortlist-share { display: grid; gap: 0.25rem; }
-.shortlist-share input { font: inherit; width: 100%; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--blue-grey); border-radius: 4px; color: var(--green); background: var(--neutral); }
-.shortlist-share input:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+.shortlist-share input { font: inherit; width: 100%; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--blue-grey); color: var(--green); background: var(--neutral); }
+.shortlist-share input:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
 .shortlist-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 .cap-match { border: 2px solid var(--gold); background: #fff; margin: 0 0 0.75rem; padding: 0.5rem 1rem; }
 .cap-match legend { font-weight: 600; padding: 0 0.25rem; }
@@ -103,7 +103,7 @@ button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .sites-panel legend { font-weight: 600; padding: 0 0.25rem; }
 .sites-pickers { display: flex; flex-wrap: wrap; gap: 0 1rem; }
 .sites-pickers p { display: grid; gap: 0.25rem; margin: 0.5rem 0; flex: 1 1 14rem; min-width: 0; }
-.sites-pickers select { font: inherit; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--green); border-radius: 4px; background: #fff; color: var(--green); width: 100%; max-width: 100%; }
+.sites-pickers select { font: inherit; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--green); background: #fff; color: var(--green); width: 100%; max-width: 100%; }
 .sites-panel .site-source, .sites-panel .sites-attribution { margin: 0.25rem 0; font-size: 0.95rem; color: var(--blue-grey); }
 .sites-panel a { color: var(--green); }
 .near-panel .near-find { flex: 2 1 16rem; }
@@ -113,12 +113,12 @@ button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .search-form label { display: block; font-weight: 600; font-size: 1.1rem; }
 .search-hint { margin: 0.25rem 0 0.5rem; color: var(--blue-grey); }
 .search-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.search-row input { flex: 1 1 14rem; min-width: 0; min-height: 44px; font: inherit; padding: 0.25rem 0.5rem; border: 2px solid var(--green); border-radius: 4px; background: #fff; color: inherit; }
+.search-row input { flex: 1 1 14rem; min-width: 0; min-height: 44px; font: inherit; padding: 0.25rem 0.5rem; border: 2px solid var(--green); background: #fff; color: inherit; }
 .search-status { margin: 0.5rem 0 0; overflow-wrap: anywhere; }
 .clusters-panel { border: 2px solid var(--blue-grey); background: #fff; margin: 0.75rem 0; padding: 0.5rem 1rem; min-width: 0; }
 .clusters-panel legend { font-weight: 600; padding: 0 0.25rem; }
 .clusters-picker { display: grid; gap: 0.25rem; margin: 0.5rem 0; max-width: 24rem; }
-.clusters-picker select { font: inherit; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--green); border-radius: 4px; background: #fff; color: var(--green); width: 100%; max-width: 100%; }
+.clusters-picker select { font: inherit; min-height: 44px; padding: 0.25rem 0.5rem; border: 2px solid var(--green); background: #fff; color: var(--green); width: 100%; max-width: 100%; }
 .cluster-detail p { margin: 0.25rem 0; overflow-wrap: anywhere; }
 .cluster-links { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
 .cluster-events-heading { font-size: 1rem; margin: 0.5rem 0 0.25rem; }

@@ -64,10 +64,9 @@ const used = [...new Set(items.map((o) => o.cluster))].sort((a, b) => clusterNam
     </>
   )}
 
-  <footer class="site-footer">
+  <Fragment slot="credits">
     <p>Opportunity data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from the clusters' public websites and pages. Deadlines and details can change; check with the funder before you apply.</p>
-    <p>Built by <a href="https://milux.co.uk">MilUX</a>. This was built with AI. If you would like to know more, please <a href="https://milux.co.uk/contact/">get in touch</a>.</p>
-  </footer>
+  </Fragment>
 </Base>
 <script>
   import '../scripts/opportunities';

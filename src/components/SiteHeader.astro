@@ -1,0 +1,26 @@
+---
+// The top bar on every page: the tally mark and wordmark, the navigation
+// with the current page marked, and a slot at the right for page actions
+// (the shortlist button on Find). On a phone the navigation is a menu made
+// from details and summary, so it opens without JavaScript.
+import { currentNav, NAV, type NavId } from '../lib/nav';
+interface Props {
+  /** The navigation item to mark as current. Worked out from the address when left out; null marks none. */
+  current?: NavId | null;
+}
+const current = Astro.props.current === undefined ? currentNav(Astro.url.pathname) : Astro.props.current;
+---
+<header class="topbar">
+  <a class="brand" href="/"><img src="/brand/tally-mark.svg" alt="" width="28" height="26" /><b>TALLY</b></a>
+  <nav class="topbar-nav" aria-label="Tally">
+    {NAV.map((item) => <a href={item.href} aria-current={item.id === current ? 'page' : undefined}>{item.label}</a>)}
+  </nav>
+  <span class="topbar-space"></span>
+  <div class="topbar-actions"><slot /></div>
+  <details class="topbar-menu">
+    <summary>Menu</summary>
+    <nav aria-label="Tally menu">
+      {NAV.map((item) => <a href={item.href} aria-current={item.id === current ? 'page' : undefined}>{item.label}</a>)}
+    </nav>
+  </details>
+</header>

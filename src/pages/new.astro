@@ -4,7 +4,6 @@
 // from the data repo's history (scripts/build-history.mjs). No script runs on
 // this page.
 import Base from '../layouts/Base.astro';
-import SiteFooter from '../components/SiteFooter.astro';
 import '../styles/new.css';
 import { dayText, FEED_PATH, recentAdditions, WEEKS } from '../lib/new-companies';
 import { addedDates, siteData } from '../lib/site-data';
@@ -39,7 +38,7 @@ const count = weeks.reduce((n, w) => n + w.entries.length, 0);
     ))
   )}
 
-  <SiteFooter>
+  <Fragment slot="credits">
     <p>Company data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from public sources, under CC BY 4.0. The date added is when a company first appeared in the directory.</p>
-  </SiteFooter>
+  </Fragment>
 </Base>
