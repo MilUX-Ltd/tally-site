@@ -2,7 +2,7 @@
 // Committed failing before the build. Not edited after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AXE_TAGS, clickMapAt, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, clickMapAt, openLayers, useOfflineMap, waitForMap } from '../support/offline-map';
 
 async function expectNoAxeViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
@@ -29,8 +29,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('the cluster map button draws every area labelled and fades the companies', async ({ page }) => {
-  await page.goto('/');
+  // The map tools show once the page is past the landing state; a link with a map position is.
+  await page.goto('/?map=5/54.5/-3');
   await waitForMap(page);
+  await openLayers(page);
   const button = page.getByRole('button', { name: 'Cluster map' });
   const checkbox = page.getByRole('group', { name: 'Clusters' }).getByRole('checkbox', { name: 'Show cluster areas on the map' });
   await expect(button).toHaveAttribute('aria-pressed', 'false');
@@ -62,6 +64,7 @@ test('the cluster map button draws every area labelled and fades the companies',
 test('companies can be brought back on top', async ({ page }) => {
   await page.goto('/?clusters=1');
   await waitForMap(page);
+  await openLayers(page);
   const onTop = page.getByRole('checkbox', { name: 'Show companies on top' });
   await expect(onTop).not.toBeChecked();
   // Fade amended from 0.25 to 0.1 for legibility, after review.
@@ -74,6 +77,7 @@ test('companies can be brought back on top', async ({ page }) => {
 
   await page.goto('/?clusters=1&ontop=1');
   await waitForMap(page);
+  await openLayers(page);
   await expect(page.getByRole('checkbox', { name: 'Show companies on top' })).toBeChecked();
   await expect.poll(() => hexOpacity(page)).toBe(0.72);
 });
@@ -81,6 +85,7 @@ test('companies can be brought back on top', async ({ page }) => {
 test('the legend lists every cluster with members and events', async ({ page }) => {
   await page.goto('/?clusters=1');
   await waitForMap(page);
+  await openLayers(page);
   const list = legend(page);
   await expect(list.getByRole('button')).toHaveCount(16);
   const sc = list.getByRole('button', { name: /^South Central/ });
@@ -99,7 +104,7 @@ test('the legend lists every cluster with members and events', async ({ page }) 
   await page.keyboard.press('Enter');
   await expect.poll(() => params(page.url()).get('cluster')).toBe('SCRDSC');
   await expect(sc).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#result-count')).toContainText('3 companies match');
+  await expect(page.locator('#result-count')).toContainText('3 companies');
   await expect(page.getByLabel('Companies in a cluster')).toHaveValue('SCRDSC');
 
   await page.keyboard.press('Enter');
@@ -114,18 +119,21 @@ test('selecting an area on the map chooses its cluster', async ({ page }) => {
   // A point in mid Wales.
   await clickMapAt(page, -3.5, 52.0);
   await expect.poll(() => params(page.url()).get('cluster')).toBe('WalesDSC');
+  await openLayers(page);
   await expect(legend(page).getByRole('button', { name: /^Wales/ })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('the cluster map is accessible at desktop and phone width', async ({ page }) => {
   await page.goto('/?clusters=1&cluster=SCRDSC');
   await waitForMap(page);
+  await openLayers(page);
   await expect(legend(page)).toBeVisible();
   await expectNoAxeViolations(page);
 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/?clusters=1&cluster=SCRDSC');
   await waitForMap(page);
+  await openLayers(page);
   await expect(legend(page)).toBeVisible();
   await noSideScroll(page);
   await expectNoAxeViolations(page);

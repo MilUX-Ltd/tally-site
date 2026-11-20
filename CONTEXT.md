@@ -37,7 +37,7 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | `mpage` | Page of matrix rows | whole number from 1 | 1 |
    | `page` | Page of the results list | whole number from 1 | 1 |
    | `list` | Shortlisted companies, in the order added | company ids | none |
-   | `month` | Month shown by the growth slider on New companies (`/new?month=`); dropped if the history does not hold it | `YYYY-MM` | the latest month |
+   | `month` | Month shown by the growth slider on New companies (`/new?month=`); dropped if the history does not hold it. An older link to Find carrying a month still opens Find, with a notice that links to it there | `YYYY-MM` | the latest month |
    | `capmatch` | How two or more `cap` values combine: `all` shows only overlap places (see Overlap); ignored and left out with fewer than two capabilities | `all` | any of them |
    | `site` | Chosen defence site; companies are narrowed to those within the radius | site id from the dataset | none |
    | `radius` | Radius around the chosen site, in miles | `10`, `25` or `50` | `25` |
@@ -49,6 +49,8 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | `ontop` | Keep company hexagons and pins at full strength over the cluster map | `1` | faded |
    | `cluster` | Chosen cluster; its area is drawn, and companies narrow to its recorded members when Tally records them (`mbr-` tag), otherwise they are not narrowed | cluster id from `clusters.json`, for example `SCRDSC` | none |
    | `q` | Keyword search, set when plain-English search falls back: companies whose name, summary or tag labels contain every word (common words ignored; a word matches the start of a word) | text, up to 300 characters | none |
+   | `flat` | Draw the map flat, as hexagons seen from above; left out for 3D columns | `1` | 3D |
+   | `view` | The List view: the results full width with the matrix and the overseas companies, and no map. A link with `mpage` above 1 or an `mgroup`, and no `view`, opens here | `list` | the map with the results beside it |
 
    Filters combine (a chosen cluster, and a chosen site or place, narrow the companies too). Only one location filter is set at a time: choosing a place clears the site and choosing a site clears the place: a company must match every facet that has values. Only one of `cell`, `sel` and `area` is set at a time; the area list shows the companies that match the filters within it.
 2. **Data contract.** The build (`scripts/fetch-data.mjs`) reads `tally-data.json` and `taxonomy.json` from `MilUX-Ltd/tally` and writes a slimmed `public/data/tally.json` (not committed). Fields the site depends on:

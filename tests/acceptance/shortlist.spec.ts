@@ -2,7 +2,7 @@
 // Committed failing before the build. Not edited after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AXE_TAGS, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, listView, openShortlist, useOfflineMap, waitForMap } from '../support/offline-map';
 
 const params = (url: string) => new URL(url).searchParams;
 const shortlist = (page: Page) => page.getByRole('region', { name: 'Shortlist' });
@@ -19,9 +19,11 @@ test.beforeEach(async ({ page }) => {
 test('a shortlist is built, held in the URL and restored', async ({ page, context }) => {
   await page.goto('/');
   await waitForMap(page);
+  await listView(page);
   await page.getByRole('button', { name: 'Add Example Avionics to shortlist' }).click();
   await page.getByRole('button', { name: 'Add Example Composites to shortlist' }).click();
   await expect.poll(() => params(page.url()).get('list')).toBe('example-avionics,example-composites');
+  await openShortlist(page);
   await expect(shortlist(page)).toContainText('Example Avionics');
   await expect(shortlist(page)).toContainText('Example Composites');
   await expect(page.getByRole('button', { name: 'Remove Example Avionics from shortlist' }).first()).toBeVisible();
@@ -31,6 +33,7 @@ test('a shortlist is built, held in the URL and restored', async ({ page, contex
   await useOfflineMap(fresh);
   await fresh.goto(page.url());
   await waitForMap(fresh);
+  await openShortlist(fresh);
   await expect(shortlist(fresh)).toContainText('Example Avionics');
   await expect(shortlist(fresh)).toContainText('Example Composites');
   await shortlist(fresh).getByRole('button', { name: 'Remove Example Avionics from shortlist' }).click();
@@ -41,7 +44,7 @@ test('a shortlist is built, held in the URL and restored', async ({ page, contex
 test('the shortlist downloads as CSV', async ({ page }) => {
   await page.goto('/?list=example-subsea,example-cyber-defence');
   await waitForMap(page);
-  const [download] = await Promise.all([page.waitForEvent('download'), shortlist(page).getByRole('button', { name: /download csv/i }).click()]);
+  const [download] = await Promise.all([page.waitForEvent('download'), shortlist(page).getByRole('button', { name: /download as a spreadsheet \(csv\)/i }).click()]);
   expect(download.suggestedFilename()).toBe('tally-shortlist.csv');
   const path = await download.path();
   const { readFileSync } = await import('node:fs');
@@ -57,6 +60,7 @@ test('the shortlist link can be copied', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/?list=example-subsea&cap=maritime');
   await waitForMap(page);
+  await openShortlist(page);
   const link = shortlist(page).getByRole('textbox', { name: /link to this shortlist/i });
   const value = await link.inputValue();
   expect(params(value).get('list')).toBe('example-subsea');
@@ -69,19 +73,21 @@ test('the shortlist link can be copied', async ({ page, context }) => {
 test('book a call and the AI line are present', async ({ page }) => {
   await page.goto('/?list=example-subsea');
   await waitForMap(page);
-  const book = page.getByRole('link', { name: 'Book a call' }).first();
+  const book = page.getByRole('link', { name: 'Talk to MilUX about this shortlist' }).first();
   await expect(book).toBeVisible();
   await expect(book).toHaveAttribute('href', 'https://milux.co.uk/contact/');
-  await expect(page.getByText('This was built with AI. If you would like to know more, please get in touch.').first()).toBeVisible();
+  await expect(page.getByText('using AI-assisted engineering').first()).toBeVisible();
 });
 
 test('the shortlist works by keyboard alone', async ({ page }) => {
   await page.goto('/');
   await waitForMap(page);
+  await listView(page);
   await page.getByRole('button', { name: 'Add Example Avionics to shortlist' }).focus();
   await page.keyboard.press('Enter');
   await expect.poll(() => params(page.url()).get('list')).toBe('example-avionics');
-  await shortlist(page).getByRole('button', { name: /download csv/i }).focus();
+  await openShortlist(page);
+  await shortlist(page).getByRole('button', { name: /download as a spreadsheet \(csv\)/i }).focus();
   const [download] = await Promise.all([page.waitForEvent('download'), page.keyboard.press('Enter')]);
   expect(download.suggestedFilename()).toBe('tally-shortlist.csv');
   await shortlist(page).getByRole('button', { name: 'Remove Example Avionics from shortlist' }).focus();

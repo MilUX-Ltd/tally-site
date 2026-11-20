@@ -3,7 +3,7 @@
 // after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { AXE_TAGS, clickMapAt, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, clickMapAt, openFilters, useOfflineMap, waitForMap } from '../support/offline-map';
 
 async function expectNoAxeViolations(page: import('@playwright/test').Page) {
   const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
@@ -21,17 +21,18 @@ test('shows the heatmap with attribution and legend', async ({ page }) => {
   await expect(page.getByText('OpenStreetMap').first()).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Companies per hexagon' })).toBeVisible();
   await expect(page.locator('#result-count')).toContainText('32 companies');
-  await expect(page.locator('#result-count')).toContainText('30 on the map');
+  await expect(page.locator('#result-count')).toContainText('30 are on the map');
   await expectNoAxeViolations(page);
 });
 
 test('a filter redraws the map and the list', async ({ page }) => {
   await page.goto('/');
   await waitForMap(page);
+  await openFilters(page);
   await page.locator('summary', { hasText: 'Cyber, data and software' }).click();
   await page.getByRole('checkbox', { name: 'Cyber', exact: true }).check();
   await expect(page.locator('#result-count')).toContainText('5 companies');
-  await expect(page.locator('#result-count')).toContainText('4 on the map');
+  await expect(page.locator('#result-count')).toContainText('4 are on the map');
   const results = page.getByRole('list', { name: 'Results' });
   await expect(results).toContainText('Example Cyber Defence');
   await expect(results).not.toContainText('Example Robotics');

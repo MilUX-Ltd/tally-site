@@ -1,43 +1,78 @@
-// The explorer island: filters, heatmap, area list and results. Its whole
-// state is one ViewState, kept in the URL (src/lib/url-state.ts).
+// The Find page: the map filling the window with the search over it, then the
+// results beside it. Its whole state is one ViewState, kept in the URL
+// (src/lib/url-state.ts); what is open on screen (a panel, the shortlist) is
+// not part of a link.
 import '../styles/explorer.css';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
-import AreaPanel from './AreaPanel';
-import Filters from './Filters';
-import MapView, { type Binning } from './MapView';
-import ResultsList from './ResultsList';
-import { emptyFilters, filterCompanies, isLocated, type Facet } from '../lib/filters';
-import { companiesInBbox } from '../lib/matrix';
-import type { TallyData } from '../lib/types';
-import { fromQuery, keywordText, roundPosition, sanitiseClusters, sanitiseSites, sanitiseState, toQuery, type ViewState } from '../lib/url-state';
-import SearchBox from './SearchBox';
-import { askSearch, keywordSearch, readSearchAnswer } from '../lib/search';
-import Matrix from './Matrix';
-import Shortlist from './Shortlist';
-import Growth from './Growth';
-import SitesPanel from './SitesPanel';
-import { companiesNearSite, ringPolygon, type SitesData } from '../lib/sites';
 import CapMatchToggle from './CapMatchToggle';
-import ClustersPanel from './ClustersPanel';
-import ClusterMapLegend from './ClusterMapLegend';
-import { clusterLabels, clusterMembers, eventMarkers, legendEntries, rankedRegions, regionBounds, today, upcoming, type ClustersData, type EventsData, type RegionsData } from '../lib/clusters';
+import Chips, { type Chip } from './Chips';
+import Filters from './Filters';
+import LayersPanel from './LayersPanel';
+import MapView, { type Binning, type MapApi, type Padding } from './MapView';
+import Matrix from './Matrix';
 import OverseasList from './OverseasList';
-import NearPanel from './NearPanel';
-import { findPlace } from '../lib/near';
+import ResultsPanel, { type Hit } from './ResultsPanel';
+import SearchForm, { type Query } from './SearchForm';
+import Sheet from './Sheet';
+import Shortlist from './Shortlist';
+import { clusterLabels, clusterMembers, eventMarkers, legendEntries, rankedRegions, regionBounds, today, upcoming, type ClustersData, type EventsData, type RegionsData } from '../lib/clusters';
+import { activeFilterCount, emptyFilters, FACETS, filterCompanies, isLocated, type Facet } from '../lib/filters';
+import { monthLabel } from '../lib/history';
+import { companiesInBbox } from '../lib/matrix';
+import { findPlace, isNearRadius, NEAR_RADII } from '../lib/near';
+import { askSearch, keywordSearch, readSearchAnswer } from '../lib/search';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
-import type { Company } from '../lib/types';
+import { companiesNearSite, distanceMiles, isRadius, RADII, ringPolygon, type Radius, type SitesData } from '../lib/sites';
+import type { Company, TallyData } from '../lib/types';
+import { defaultState, fromLink, keywordText, roundPosition, sanitiseClusters, sanitiseSites, sanitiseState, toQuery, type Bbox, type ViewState } from '../lib/url-state';
 
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+const plural = (n: number, one: string, many: string) => `${n.toLocaleString('en-GB')} ${n === 1 ? one : many}`;
+const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+/** The site distance nearest to a number of miles. */
+const asRadius = (miles: number): Radius => (isRadius(miles) ? miles : RADII.reduce((best, r) => (Math.abs(r - miles) < Math.abs(best - miles) ? r : best)));
+const PHONE = '(max-width: 760px)';
+/** Stands for "n companies found." in the status line, worked out when it is shown. */
+const FOUND = '\u0000found';
+const EXAMPLES: Array<Query & { label: string }> = [
+  { label: 'Counter-drone near Salisbury', what: 'counter-drone', near: 'Salisbury' },
+  { label: 'Space', what: 'space', near: '' },
+  { label: 'Cyber near Cheltenham', what: 'cyber', near: 'Cheltenham' },
+];
+
+/** Whether anything in a link narrows the companies or asks for a page of them. */
+function narrows(s: ViewState): boolean {
+  return activeFilterCount(s.filters) > 0 || Boolean(s.q || s.site || s.near || s.cluster || s.cell || s.area) || s.sel.length > 0 || s.page > 1;
+}
+
+function usePhone(): boolean {
+  const [phone, setPhone] = useState(() => window.matchMedia(PHONE).matches);
+  useEffect(() => {
+    const query = window.matchMedia(PHONE);
+    const on = () => setPhone(query.matches);
+    query.addEventListener('change', on);
+    return () => query.removeEventListener('change', on);
+  }, []);
+  return phone;
+}
 
 export default function Explorer() {
   const [data, setData] = useState<TallyData | null>(null);
   const [failed, setFailed] = useState(false);
-  const [state, setState] = useState<ViewState>(() => fromQuery(window.location.search));
+  const [state, setState] = useState<ViewState>(() => fromLink(window.location.search));
   const [binning, setBinning] = useState<Binning | null>(null);
-  // Focus moves to the area list only when the user picks an area, not on load.
-  const [picked, setPicked] = useState(false);
+  // Goes up when the panel's heading should take focus: a pick on the map, the shortlist opening.
+  const [focusPanel, setFocusPanel] = useState(0);
+  // A shared shortlist link opens on the shortlist.
+  const [showList, setShowList] = useState(() => state.list.length > 0 && state.view === 'map' && !narrows(state));
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
+  const [drawing, setDrawing] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const phone = usePhone();
+  const mapApi = useRef<MapApi | null>(null);
 
   useEffect(() => {
+    setFailed(false);
     fetch('/data/tally.json')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((d: TallyData) => {
@@ -45,7 +80,7 @@ export default function Explorer() {
         setData(d);
       })
       .catch(() => setFailed(true));
-  }, []);
+  }, [attempt]);
 
   // Defence sites: a small committed dataset, fetched as data.
   const [sitesData, setSitesData] = useState<SitesData | null>(null);
@@ -99,7 +134,7 @@ export default function Explorer() {
     const shown = regions.features.filter((f) => state.clusters || f.properties.id === state.cluster);
     return rankedRegions(shown, state.cluster, clustersData?.clusters ?? []);
   }, [regions, state.clusters, state.cluster, clustersData]);
-  const labels = useMemo(
+  const labels2 = useMemo(
     () => (regions && clustersData && state.clusters ? clusterLabels(regions.features, clustersData.clusters) : null),
     [regions, clustersData, state.clusters],
   );
@@ -107,14 +142,6 @@ export default function Explorer() {
     () => (regions && clustersData && state.clusters ? eventMarkers(upcomingEvents, regions.features, clustersData.clusters) : null),
     [regions, clustersData, upcomingEvents, state.clusters],
   );
-  // A cluster opened from a URL that also holds a map position keeps that position.
-  const openedWith = useRef({ cluster: state.cluster, positioned: Boolean(state.map) });
-  const clusterFocus = useMemo(() => {
-    if (openedWith.current.positioned && state.cluster === openedWith.current.cluster) return null;
-    const feature = regions?.features.find((f) => f.properties.id === state.cluster);
-    return feature ? { key: feature.properties.id, bounds: regionBounds(feature) } : null;
-  }, [regions, state.cluster]);
-
   // Layout effect: the address changes in the same frame as the view.
   useLayoutEffect(() => {
     if (!data) return;
@@ -186,218 +213,629 @@ export default function Explorer() {
       return { ...s, filters: { ...s.filters, [facet]: next }, capMatch, page: 1, matrix: { ...s.matrix, page: 1 } };
     });
 
+
+
+  // What the page looks like: the landing page, results beside the map, or
+  // the List view. Anything that narrows the companies, a page of them, or
+  // the shortlist being open, makes it results.
+  // Paging through every company is still looking at results, on any page.
+  // A link that only switches on a layer, moves the map or names a month showed
+  // every company before the redesign, and still opens on the results.
+  const [browsing, setBrowsing] = useState(() => Boolean(state.month || state.clusters || state.sites || state.onTop || state.map));
+  const active = narrows(state) || browsing;
+  const mode: 'landing' | 'results' | 'list' = state.view === 'list' ? 'list' : active || showList ? 'results' : 'landing';
+  const listed = mode !== 'landing';
+
+  // The status line: the page's one live region. A message is said once and
+  // stands until the results next change; after the first change, the count
+  // is always part of it.
+  const [toast, setToast] = useState<{ text: string; n: number; at: string | null }>({ text: '', n: 0, at: null });
+  const say = (text: string) => setToast((t) => ({ text, n: t.n + 1, at: null }));
+  const [quiet, setQuiet] = useState(false);
+  useEffect(() => {
+    setQuiet(false);
+    const timer = window.setTimeout(() => setQuiet(true), 6000);
+    return () => window.clearTimeout(timer);
+  }, [toast.n]);
+
   // Plain-English search: filters from the route, checked against the data;
-  // otherwise a keyword search, and the page says so.
-  const [searchMessage, setSearchMessage] = useState('');
+  // otherwise a keyword search, and the page says so. The place is found
+  // separately: a defence site by its name, anything else by postcodes.io,
+  // which is sent only the place and only on Search.
   const [searching, setSearching] = useState(false);
   const [reveal, setReveal] = useState(0);
-  const runSearch = async (text: string) => {
+  const [preset, setPreset] = useState<(Query & { clear?: boolean }) | null>(null);
+  const searchedFor = useRef('');
+  const submit = async ({ what, near }: Query) => {
     if (!data) return;
     setSearching(true);
-    setSearchMessage('Searching.');
-    const siteNames = new Map((sitesData?.sites ?? []).map((x) => [x.id, x.name]));
-    const answer = readSearchAnswer(await askSearch(text), data.taxonomy, siteNames.keys(), siteNames);
+    const messages: string[] = [];
     // A new search replaces the selection, including any chosen cluster.
     const reset = { cell: null, sel: [], area: null, page: 1, cluster: null };
-    if (answer.kind === 'filters') {
-      // A site from the search replaces a typed place; otherwise the place stays.
-      setState((s) => ({ ...s, ...reset, filters: answer.filters, capMatch: answer.capMatch, site: answer.site, radius: answer.radius, near: answer.site ? null : s.near, q: '', matrix: { ...s.matrix, page: 1 } }));
-      setReveal((n) => n + 1);
-      setSearchMessage(`Search set these filters: ${answer.labels.join(', ')}.`);
-    } else {
-      const q = keywordText(text);
-      setState((s) => ({ ...s, ...reset, filters: emptyFilters(), capMatch: 'any', site: null, q, matrix: { ...s.matrix, page: 1 } }));
-      setSearchMessage(
-        `We used a simple keyword search for this request, so filters were cleared and the list shows companies whose names, summaries or capabilities match: ${q}.`,
-      );
+    let change: Partial<ViewState> = {};
+    let nearText = near;
+    let siteFromSearch = false;
+    if (what && what !== searchedFor.current) {
+      // "counter-drone near Salisbury" typed into one box still finds the place.
+      const split = near ? null : /^(.*?)\s+near\s+(.+)$/i.exec(what);
+      const siteNames = new Map((sitesData?.sites ?? []).map((x) => [x.id, x.name]));
+      const answer = readSearchAnswer(await askSearch(what), data.taxonomy, siteNames.keys(), siteNames);
+      if (answer.kind === 'filters') {
+        change = { ...reset, filters: answer.filters, capMatch: answer.capMatch, q: '' };
+        if (answer.site && !near) {
+          change = { ...change, site: answer.site, radius: answer.radius, near: null };
+          siteFromSearch = true;
+        } else if (split) nearText = split[2];
+        setReveal((n) => n + 1);
+        messages.push(`Showing: ${answer.labels.join(', ')}. Change these in Filters.`);
+      } else {
+        const q = keywordText(split ? split[1] : what);
+        change = { ...reset, filters: emptyFilters(), capMatch: 'any', q };
+        if (split) nearText = split[2];
+        messages.push(`We could not turn that into filters, so we searched company names and descriptions for: ${q}.`);
+      }
+      searchedFor.current = what;
+    } else if (!what && state.q) {
+      change = { ...reset, q: '' };
+      searchedFor.current = '';
     }
+    if (!siteFromSearch) {
+      const current = site?.name ?? place?.name ?? '';
+      nearText = nearText.replace(/\s+/g, ' ').trim();
+      if (!nearText) {
+        if (current) change = { ...change, ...reset, near: null, site: null };
+      } else if (!same(nearText, current)) {
+        const named = sitesData?.sites.find((x) => same(x.name, nearText));
+        if (named) {
+          // The distance showing in Within carries over to the site.
+          change = { ...change, ...reset, site: named.id, radius: asRadius(site ? state.radius : state.within), near: null };
+        } else {
+          const result = await findPlace(nearText);
+          if (result.kind === 'found') change = { ...change, ...reset, near: result.place, site: null };
+          else if (result.kind === 'invalid') messages.push('Type a full postcode, the first part of one, a town or city name, or a defence site, using letters, numbers, spaces, hyphens, full stops and apostrophes.');
+          else if (result.kind === 'not-found') messages.push(`We could not find ${nearText}. Try a full postcode, the first part of one, or a town or city name.`);
+          else if (result.kind === 'outside') messages.push(`${nearText} is outside the UK area Tally maps.`);
+          else messages.push('The place finder (postcodes.io) could not be reached. Please try again.');
+        }
+      }
+    }
+    if (Object.keys(change).length) {
+      setShowList(false);
+      setState((s) => ({ ...s, ...change, matrix: { ...s.matrix, page: 1 } }));
+    }
+    say(messages.join(' ') || (Object.keys(change).length ? FOUND : ''));
     setSearching(false);
   };
 
-  // Near-me search: the typed place goes to postcodes.io only on Find.
-  const [nearMessage, setNearMessage] = useState('');
-  const [finding, setFinding] = useState(false);
-  const findNear = async (text: string) => {
-    setFinding(true);
-    setNearMessage('Finding the place.');
-    const result = await findPlace(text);
-    const typed = text.replace(/\s+/g, ' ').trim();
-    if (result.kind === 'found') {
-      setState((s) => ({ ...s, near: result.place, site: null, cell: null, sel: [], area: null, page: 1, matrix: { ...s.matrix, page: 1 } }));
-      setNearMessage('');
-    } else if (result.kind === 'invalid') {
-      setNearMessage('Type a full postcode, the first part of one, or a town or city name, using letters, numbers, spaces, hyphens, full stops and apostrophes.');
-    } else if (result.kind === 'not-found') {
-      setNearMessage(`We could not find ${typed}. Try a full postcode, the first part of one, or a town or city name.`);
-    } else if (result.kind === 'outside') {
-      setNearMessage(`${typed} is outside the UK area Tally maps.`);
-    } else {
-      setNearMessage('The place finder (postcodes.io) could not be reached. Please try again.');
-    }
-    setFinding(false);
-  };
-
   const byId = useMemo(() => new Map((data?.companies ?? []).map((c) => [c.id, c])), [data]);
-  const shortlisted = state.list.map((id) => byId.get(id)).filter((c): c is Company => Boolean(c));
+  const shortlisted = useMemo(() => state.list.map((id) => byId.get(id)).filter((c): c is Company => Boolean(c)), [state.list, byId]);
   const shareUrl = `${window.location.origin}${window.location.pathname}${state.list.length ? `?list=${state.list.join(',')}` : ''}`;
-  const removeFromList = (id: string) => setState((s) => ({ ...s, list: removeFromShortlist(s.list, id) }));
+  const setShortlist = (c: Company, add: boolean) => {
+    const list = add ? addToShortlist(state.list, c.id) : removeFromShortlist(state.list, c.id);
+    update({ list });
+    say(`${c.name} ${add ? 'added to' : 'removed from'} your shortlist. ${list.length} on your shortlist.`);
+  };
   const shortlistButton = (c: Company) =>
     state.list.includes(c.id) ? (
-      <button type="button" class="secondary small" onClick={() => removeFromList(c.id)}>
+      <button type="button" class="btn btn-sm is-selected" onClick={() => setShortlist(c, false)}>
         Remove<span class="vh"> {c.name}</span> from shortlist
       </button>
     ) : (
-      <button type="button" class="secondary small" onClick={() => setState((s) => ({ ...s, list: addToShortlist(s.list, c.id) }))}>
+      <button type="button" class="btn btn-sm" onClick={() => setShortlist(c, true)}>
         Add<span class="vh"> {c.name}</span> to shortlist
       </button>
     );
 
-  if (failed) return <p class="notice">The company data could not be loaded. Please refresh the page to try again.</p>;
-  if (!data) return <p class="notice">Loading companies.</p>;
+  // The shortlist button lives in the top bar, outside this island: keep its
+  // count and state in step, and let it open and close the shortlist.
+  useEffect(() => {
+    const button = document.getElementById('shortlist-toggle');
+    if (!button) return;
+    const count = document.getElementById('shortlist-count');
+    if (count) count.textContent = String(state.list.length);
+    button.classList.toggle('has', state.list.length > 0);
+    button.setAttribute('aria-pressed', String(showList));
+  }, [state.list.length, showList]);
+  useEffect(() => {
+    const button = document.getElementById('shortlist-toggle');
+    if (!button) return;
+    const toggle = () => {
+      setShowList((on) => !on);
+      setFocusPanel((n) => n + 1);
+    };
+    button.addEventListener('click', toggle);
+    return () => button.removeEventListener('click', toggle);
+  }, []);
 
-  return (
-    <div class="explorer">
-      <aside class="explorer-filters" aria-label="Filters and shortlist">
-        <Filters
-          taxonomy={data.taxonomy}
-          filters={state.filters}
-          onToggle={toggle}
-          reveal={reveal}
-          onClear={() => update({ filters: emptyFilters(), page: 1, matrix: { ...state.matrix, page: 1 } })}
-        />
-        <Shortlist
-          companies={shortlisted}
-          taxonomy={data.taxonomy}
-          shareUrl={shareUrl}
-          onRemove={removeFromList}
-          overlap={overlapOn}
-        />
-      </aside>
-      <div class="explorer-main">
-        <SearchBox
-          keywords={state.q}
-          message={searchMessage}
-          busy={searching}
-          onSearch={(text) => void runSearch(text)}
-          onClear={() => {
-            setSearchMessage('');
-            update({ q: '', page: 1, matrix: { ...state.matrix, page: 1 } });
-          }}
-        />
-        {state.filters.cap.length >= 2 && (
-          <CapMatchToggle
-            count={state.filters.cap.length}
-            value={state.capMatch}
-            onChange={(capMatch) => update({ capMatch, cell: null, page: 1, matrix: { ...state.matrix, page: 1 } })}
-          />
-        )}
-        <p id="result-count" role="status">
-          {overlapPending
-            ? `${plural(filtered.length, 'company', 'companies')}${within} so far; working out where all chosen capabilities overlap.`
-            : overlapOn
-              ? `${plural(filtered.length, 'company', 'companies')} with a chosen capability${within}, in ${plural(places, 'place', 'places')} where all chosen capabilities overlap.`
-              : `${plural(filtered.length, 'company matches', 'companies match')}${within}; ${onMap} on the map.`}
-        </p>
-        <MapView
-          companies={filtered}
-          sites={state.sites ? (sitesData?.sites ?? null) : site ? [site] : null}
-          chosenSite={site?.id ?? null}
-          ring={ring}
-          place={place}
-          clusterRegions={regionFeatures}
-          clusterEvents={markers}
-          clusterFocus={clusterFocus}
-          clusterLabels={labels}
-          clusterMap={state.clusters}
-          companiesOnTop={state.onTop}
-          onClusterMap={(clusters) => update({ clusters })}
-          onSelectCluster={(id) => chooseCluster(id)}
-          fixedResolution={overlapOn && binning ? binning.OVERLAP_RESOLUTION : null}
-          selectedCell={state.cell}
-          initialPosition={state.map}
-          onSelectCell={(cell) => {
-            setPicked(true);
-            update({ cell, sel: [], area: null });
-          }}
-          onSelectIds={(ids) => {
-            setPicked(true);
-            update({ cell: null, sel: ids, area: null });
-          }}
-          onMove={(position) => update({ map: roundPosition(position) })}
-          onBinning={(b) => setBinning(() => b)}
-          area={state.area}
-          onArea={(area) => {
-            setPicked(true);
-            update({ area, cell: null, sel: [], matrix: { ...state.matrix, page: 1 } });
-          }}
-        />
-        {legend && (
-          <ClusterMapLegend
-            entries={legend}
-            chosen={state.cluster}
-            onTop={state.onTop}
-            onOnTop={(onTop) => update({ onTop })}
-            onChoose={(id) => chooseCluster(id === state.cluster ? null : id)}
-          />
-        )}
-        <NearPanel
-          place={place}
-          radius={state.within}
-          busy={finding}
-          message={nearMessage || (place ? `Showing companies within ${state.within} miles of ${place.name}.` : '')}
-          onFind={(text) => void findNear(text)}
-          onRadius={(within) => update({ within, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } })}
-          onClear={() => {
-            setNearMessage('');
-            update({ near: null, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } });
-          }}
-        />
-        {(sitesData || sitesFailed) && (
-          <SitesPanel
-            data={sitesData}
-            failed={sitesFailed}
-            show={state.sites}
-            site={site}
-            radius={state.radius}
-            onShow={(sites) => update({ sites })}
-            onSite={(id) => {
-              if (id) setNearMessage('');
-              update({ site: id, near: id ? null : state.near, cell: null, sel: [], area: null, page: 1, matrix: { ...state.matrix, page: 1 } });
-            }}
-            onRadius={(radius) => update({ radius, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } })}
-          />
-        )}
-        {(clustersData || clustersFailed) && (
-          <ClustersPanel
-            data={clustersData}
-            events={upcomingEvents}
-            regions={regions}
-            failed={clustersFailed}
-            show={state.clusters}
-            cluster={cluster}
-            memberCount={memberCount}
-            onShow={(clusters) => update({ clusters })}
-            onCluster={chooseCluster}
-          />
+  // Escape stops drawing an area.
+  useEffect(() => {
+    if (!drawing) return;
+    const stop = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDrawing(false);
+    };
+    window.addEventListener('keydown', stop);
+    return () => window.removeEventListener('keydown', stop);
+  }, [drawing]);
+  useEffect(() => {
+    if (mode === 'list') setDrawing(false);
+  }, [mode]);
+
+  // The companies in the panel, in the order shown: the shortlist as added,
+  // otherwise nearest first when a place is set, and A to Z when not.
+  const narrowed = areaCompanies ?? filtered;
+  const hits = useMemo<Hit[]>(() => {
+    const from = location;
+    const all = (showList ? shortlisted : narrowed).map((company) => ({
+      company,
+      miles: from && isLocated(company) ? distanceMiles(from.lat, from.lon, company.lat, company.lon) : null,
+    }));
+    if (showList) return all;
+    const byName = (a: Hit, b: Hit) => a.company.name.localeCompare(b.company.name, 'en-GB');
+    return all.sort((a, b) => (a.miles !== null && b.miles !== null ? a.miles - b.miles || byName(a, b) : byName(a, b)));
+  }, [showList, shortlisted, narrowed, location]);
+  const labels = useMemo(() => new Map((data?.taxonomy.capabilities ?? []).map((c) => [c.slug, c.label])), [data]);
+
+  // The count in words. #result-count always holds it; the status line says it when it changes.
+  const n = filtered.length;
+  const countSentence = failed
+    ? 'The company data could not be loaded.'
+    : !data
+      ? 'Loading companies.'
+      : overlapPending
+        ? `${plural(n, 'company', 'companies')}${within} so far; working out where all chosen capabilities overlap.`
+        : overlapOn
+          ? `${plural(n, 'company', 'companies')} with a chosen capability${within}, in ${plural(places, 'place', 'places')} where all chosen capabilities overlap.`
+          : `${plural(n, 'company', 'companies')}${within}.${n ? ` ${onMap.toLocaleString('en-GB')} ${onMap === 1 ? 'is' : 'are'} on the map${onMap < n ? '; the rest are overseas or have no published address' : ''}.` : ''}`;
+  const firstCount = useRef<string | null>(null);
+  if (data && firstCount.current === null) firstCount.current = countSentence;
+  const [changed, setChanged] = useState(false);
+  useEffect(() => {
+    if (firstCount.current !== null && countSentence !== firstCount.current) setChanged(true);
+  }, [countSentence]);
+  useLayoutEffect(() => {
+    if (toast.at === null && toast.text) setToast((t) => (t.at === null ? { ...t, at: countSentence } : t));
+  }, [toast, countSentence]);
+  const live = toast.text && (toast.at === null || toast.at === countSentence) ? toast.text : '';
+  const message = live === FOUND ? `${plural(showList ? shortlisted.length : narrowed.length, 'company', 'companies')} found.` : live || (!toast.n && state.q ? `Showing companies whose names or descriptions match: ${state.q}.` : '');
+
+  // Chips: everything that narrows the results, each with its own way out.
+  const chips = useMemo<Chip[]>(() => {
+    if (!data) return [];
+    const out: Chip[] = [];
+    const t = data.taxonomy;
+    const options: Record<Facet, Array<{ slug: string; label: string }>> = { cap: t.capabilities, size: t.sizes, region: t.regions, fw: t.frameworks, accr: t.accreditations, mbr: t.memberships };
+    if (state.q) out.push({ key: 'q', label: `Keyword: ${state.q}`, onRemove: () => update({ q: '', page: 1 }) });
+    for (const facet of FACETS) {
+      for (const value of state.filters[facet]) {
+        out.push({ key: `${facet}:${value}`, label: options[facet].find((o) => o.slug === value)?.label ?? value, onRemove: () => toggle(facet, value, false) });
+      }
+    }
+    if (overlapOn) out.push({ key: 'capmatch', label: 'All in the same area', onRemove: () => update({ capMatch: 'any', cell: null, page: 1 }) });
+    if (location) out.push({ key: 'place', label: `Within ${location.miles} miles of ${location.name}`, onRemove: () => update({ near: null, site: null, cell: null, sel: [], page: 1 }) });
+    if (cluster) out.push({ key: 'cluster', label: `${cluster.name} cluster`, onRemove: () => chooseCluster(null) });
+    if (areaCompanies) out.push({ key: 'area', label: 'Map area', onRemove: () => update({ cell: null, sel: [], area: null, page: 1 }) });
+    return out;
+  }, [data, state.q, state.filters, overlapOn, location, cluster, areaCompanies !== null]);
+  const clearAll = () => {
+    searchedFor.current = '';
+    setBrowsing(false);
+    setState((s) => ({ ...s, filters: emptyFilters(), capMatch: 'any', q: '', near: null, site: null, cluster: null, cell: null, sel: [], area: null, page: 1, matrix: { ...s.matrix, page: 1 } }));
+  };
+  const startAgain = () => {
+    clearAll();
+    setShowList(false);
+    setPreset({ what: '', near: '' });
+    setState((s) => ({ ...s, view: 'map', matrix: defaultState().matrix }));
+    requestAnimationFrame(() => document.getElementById('search-what')?.focus());
+  };
+
+  // The room the panels take over the map, so the camera frames what is left.
+  const padding = useMemo<Padding>(() => {
+    if (phone) return mode === 'landing' ? { top: 120, right: 0, bottom: 0, left: 0 } : { top: 170, right: 0, bottom: Math.round(window.innerHeight * (window.innerHeight < 700 ? 0.6 : 0.46)), left: 0 };
+    return { top: 60, right: 0, bottom: 0, left: Math.min(mode === 'landing' ? 592 : 480, Math.round(window.innerWidth * 0.45)) };
+  }, [phone, mode === 'landing']);
+  // What the camera frames, once everything a link may name has loaded.
+  const settled = Boolean(data) && Boolean(sitesData || sitesFailed) && Boolean(clustersData || clustersFailed) && (!state.cluster || Boolean(regions) || clustersFailed);
+  const focus = useMemo(() => {
+    if (!settled) return null;
+    if (ring) {
+      const lons = ring.map((p) => p[0]);
+      const lats = ring.map((p) => p[1]);
+      return { key: `ring:${ring[0].join(',')}:${ring[24].join(',')}`, bounds: [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)] as Bbox };
+    }
+    const feature = regions?.features.find((f) => f.properties.id === state.cluster);
+    if (feature) return { key: `cluster:${feature.properties.id}`, bounds: regionBounds(feature) as Bbox };
+    return { key: 'uk', bounds: null };
+  }, [settled, ring, regions, state.cluster]);
+
+  const pick = (change: Partial<ViewState>) => {
+    setShowList(false);
+    setFocusPanel((k) => k + 1);
+    update({ ...change, page: 1, matrix: { ...state.matrix, page: 1 } });
+  };
+  const searchArea = () => {
+    const area = mapApi.current?.viewArea();
+    if (area) pick({ area, cell: null, sel: [] });
+  };
+  const radii = site ? RADII : NEAR_RADII;
+  const setWithin = (miles: number) => {
+    if (site && isRadius(miles)) update({ radius: miles, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } });
+    else if (!site && isNearRadius(miles)) update({ within: miles, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } });
+  };
+  const setView = (view: ViewState['view']) => {
+    // Having looked at the list, the map comes back with the results beside it.
+    if (view === 'list') setBrowsing(true);
+    update(view === 'map' ? { view, matrix: defaultState().matrix } : { view });
+  };
+
+  const panelKind = showList ? 'shortlist' : areaCompanies ? 'area' : 'results';
+  const sub = !data
+    ? ''
+    : showList
+      ? 'The companies you have shortlisted.'
+      : [
+          areaCompanies ? 'In the area you chose on the map.' : '',
+          location ? `Within ${location.miles} miles of ${location.name}, nearest first.` : areaCompanies ? '' : active ? 'Across the UK and overseas, A to Z.' : 'Every company, A to Z.',
+          cluster?.membership ? `Members of the ${cluster.name} cluster.` : '',
+          overlapOn && !overlapPending ? `In ${plural(places, 'place', 'places')} where all chosen capabilities are found.` : '',
+          !areaCompanies && n > 0 && onMap < n ? `${onMap.toLocaleString('en-GB')} on the map; the rest are overseas or have no published address.` : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
+  // When nothing matches, name the commonest way out and offer it.
+  const wider = useMemo(() => {
+    if (!location || hits.length > 0 || showList) return null;
+    for (const miles of radii) {
+      if (miles <= location.miles) continue;
+      const found = companiesNearSite(facetFiltered, location, miles).length;
+      if (found > 0) return { miles, found };
+    }
+    return null;
+  }, [location, hits.length, showList, facetFiltered, radii]);
+  const empty = showList ? (
+    <p>Your shortlist is empty. Use + Shortlist on any company.</p>
+  ) : failed ? (
+    <>
+      <p>The company data could not be loaded.</p>
+      <p>
+        <button type="button" class="btn" onClick={() => setAttempt((k) => k + 1)}>
+          Try again
+        </button>
+      </p>
+    </>
+  ) : (
+    <>
+      <p>No companies match. Try a wider distance, or remove a filter.</p>
+      <p class="empty-actions">
+        {wider && (
+          <button type="button" class="btn" onClick={() => setWithin(wider.miles)}>
+            Widen to {wider.miles} miles ({plural(wider.found, 'company', 'companies')})
+          </button>
         )}
         {areaCompanies && (
-          <AreaPanel companies={areaCompanies} focus={picked} actions={shortlistButton} onClear={() => update({ cell: null, sel: [], area: null })} />
+          <button type="button" class="btn" onClick={() => update({ cell: null, sel: [], area: null, page: 1 })}>
+            Clear the area
+          </button>
         )}
-        <Matrix
-          taxonomy={data.taxonomy}
-          companies={areaCompanies ?? filtered}
-          selectedCaps={state.filters.cap}
-          group={state.matrix.group}
-          page={state.matrix.page}
-          inArea={areaCompanies !== null}
-          onToggleCap={(slug, on) => toggle('cap', slug, on)}
-          onGroup={(group) => update({ matrix: { group, page: state.matrix.page } })}
-          onPage={(page) => update({ matrix: { ...state.matrix, page } })}
+      </p>
+    </>
+  );
+  const facts: Array<[string, string]> = [
+    ['Companies', data ? data.companies.length.toLocaleString('en-GB') : '–'],
+    ['Capabilities', data ? String(data.taxonomy.capabilities.length) : '–'],
+    ['Defence sites', sitesData ? String(sitesData.sites.length) : '–'],
+    ['Last updated', data ? new Date(data.generated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '–'],
+  ];
+  const filterCount = activeFilterCount(state.filters);
+  const siteNames = useMemo(() => (sitesData?.sites ?? []).map((x) => x.name), [sitesData]);
+  const mapTools = (
+    <div class="map-tools" role="group" aria-label="Map tools">
+      <button type="button" class="btn btn-sm" onClick={searchArea}>
+        Search this area
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm"
+        aria-pressed={drawing}
+        onClick={() => {
+          if (!drawing) say('Press and drag on the map to draw a rectangle. Escape stops.');
+          setDrawing(!drawing);
+        }}
+      >
+        Draw an area
+      </button>
+      <button type="button" class="btn btn-sm" aria-pressed={state.clusters} onClick={() => update({ clusters: !state.clusters })}>
+        Cluster map
+      </button>
+    </div>
+  );
+  // The landing page keeps to the four main controls; the map tools join them
+  // once there are results, the map has been moved or a layer is on.
+  const showTools = (mode !== 'list' && (mode === 'results' || Boolean(state.map) || state.clusters || state.sites));
+  const mapStyle = (
+    <div class="seg" role="group" aria-label="Map style">
+      <button type="button" class="btn" aria-pressed={!state.flat} onClick={() => update({ flat: false })}>
+        3D
+      </button>
+      <button type="button" class="btn" aria-pressed={state.flat} onClick={() => update({ flat: true })}>
+        Flat
+      </button>
+    </div>
+  );
+
+  return (
+    <div class={`find ${mode === 'landing' ? 'landing' : mode === 'list' ? 'as-list' : 'with-results'}${layersOpen ? ' layers-open' : ''}`}>
+      <p id="result-count" class="vh">
+        {countSentence}
+      </p>
+      <div class={mode === 'landing' ? 'lead hero' : 'lead'}>
+        {mode === 'landing' && <p class="mono kicker">Open directory · public sources · free to use</p>}
+        <h1 class={mode === 'landing' ? 'display' : 'vh'}>
+          Find UK defence capability<span class="stop">.</span>
+        </h1>
+        {mode === 'landing' && <p class="lede">Companies, clusters and defence sites on one map. Search by capability and place, shortlist the companies you want and share the list.</p>}
+        <SearchForm
+          compact={listed}
+          busy={searching || !data}
+          keywords={state.q}
+          place={site?.name ?? place?.name ?? ''}
+          radii={radii}
+          within={site ? state.radius : state.within}
+          siteNames={siteNames}
+          preset={preset}
+          onSubmit={(query) => void submit(query)}
+          onWithin={setWithin}
         />
-        <ResultsList companies={filtered} page={state.page} onPage={(page) => update({ page })} actions={shortlistButton} />
-        <OverseasList companies={facetFiltered} overlap={overlapOn} actions={shortlistButton} />
-        <Growth month={state.month} onMonth={(month) => update({ month })} />
+        {state.month && (
+          <p class="moved">
+            Growth over time has moved to New companies.{' '}
+            <a class="link" href={`/new/?month=${state.month}`}>
+              See growth over time for {monthLabel(state.month)}
+            </a>{' '}
+            <button type="button" class="link" onClick={() => update({ month: null })}>
+              Dismiss
+            </button>
+          </p>
+        )}
+        {mode === 'landing' ? (
+          <>
+            <div class="try" role="group" aria-label="Example searches">
+              <span class="mono" aria-hidden="true">
+                Try
+              </span>
+              {EXAMPLES.map((example) => (
+                <button
+                  key={example.label}
+                  type="button"
+                  disabled={searching || !data}
+                  onClick={() => {
+                    setPreset({ what: example.what, near: example.near });
+                    // Examples with a place look a little wider than the default distance.
+                    if (example.near && !site && state.within < 50) update({ within: 50 });
+                    void submit(example);
+                  }}
+                >
+                  {example.label}
+                </button>
+              ))}
+            </div>
+            <dl class="facts">
+              {facts.map(([label, value]) => (
+                <div key={label}>
+                  <dd>{value}</dd>
+                  <dt class="mono">{label}</dt>
+                </div>
+              ))}
+            </dl>
+            {failed && (
+              <p class="moved">
+                The company data could not be loaded.{' '}
+                <button type="button" class="link" onClick={() => setAttempt((k) => k + 1)}>
+                  Try again
+                </button>
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            {!showList && <Chips chips={chips} onClear={clearAll} />}
+            <ResultsPanel
+              kind={panelKind}
+              hits={hits}
+              page={state.page}
+              onPage={(page) => {
+                setBrowsing(true);
+                update({ page });
+              }}
+              labels={labels}
+              shortlisted={(id) => state.list.includes(id)}
+              onShortlist={setShortlist}
+              sub={sub}
+              loading={!data && !failed}
+              empty={empty}
+              focus={focusPanel}
+              actions={
+                showList ? (
+                  <button
+                    type="button"
+                    class="link"
+                    onClick={() => {
+                      setShowList(false);
+                      setFocusPanel((k) => k + 1);
+                    }}
+                  >
+                    Back to results
+                  </button>
+                ) : (
+                  <>
+                    {areaCompanies && (
+                      <button type="button" class="link" onClick={() => update({ cell: null, sel: [], area: null, page: 1 })}>
+                        Clear the area
+                      </button>
+                    )}
+                    <button type="button" class="link" onClick={startAgain}>
+                      Start again
+                    </button>
+                  </>
+                )
+              }
+              tools={showList && data ? <Shortlist companies={shortlisted} taxonomy={data.taxonomy} shareUrl={shareUrl} overlap={overlapOn} onSay={say} /> : undefined}
+            >
+              {mode === 'list' && data && (
+                <>
+                  <Matrix
+                    taxonomy={data.taxonomy}
+                    companies={showList ? shortlisted : narrowed}
+                    selectedCaps={state.filters.cap}
+                    group={state.matrix.group}
+                    page={state.matrix.page}
+                    scope={panelKind}
+                    onToggleCap={(slug, on) => toggle('cap', slug, on)}
+                    onGroup={(group) => update({ matrix: { group, page: state.matrix.page } })}
+                    onPage={(page) => update({ matrix: { ...state.matrix, page } })}
+                  />
+                  <OverseasList companies={facetFiltered} overlap={overlapOn} actions={shortlistButton} />
+                </>
+              )}
+            </ResultsPanel>
+          </>
+        )}
       </div>
+
+      <div class="controls">
+        <button type="button" class="btn" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(true)}>
+          Filters{filterCount > 0 && <span class="count"> {filterCount}</span>}
+        </button>
+        <div class="seg" role="group" aria-label="View">
+          <button type="button" class="btn" aria-pressed={state.view === 'map'} onClick={() => setView('map')}>
+            Map
+          </button>
+          <button type="button" class="btn" aria-pressed={state.view === 'list'} onClick={() => setView('list')}>
+            List
+          </button>
+        </div>
+        {mode !== 'list' && !phone && mapStyle}
+        <button type="button" class={layersOpen ? 'btn is-selected' : 'btn'} aria-haspopup="dialog" aria-expanded={layersOpen} onClick={() => setLayersOpen(!layersOpen)}>
+          Layers
+        </button>
+      </div>
+      {showTools && !phone && <div class="tools">{mapTools}</div>}
+      {phone && mode === 'landing' && (
+        <p class="map-credit">
+          Map: <a href="https://openfreemap.org">OpenFreeMap</a>, <a href="https://www.openmaptiles.org/">© OpenMapTiles</a>, data from <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
+        </p>
+      )}
+      {drawing && <p class="draw-hint">Press and drag on the map to draw a rectangle. Escape stops.</p>}
+
+      <MapView
+        companies={showList ? shortlisted : filtered}
+        sites={state.sites ? (sitesData?.sites ?? null) : site ? [site] : null}
+        chosenSite={site?.id ?? null}
+        ring={ring}
+        place={place}
+        clusterRegions={regionFeatures}
+        clusterEvents={markers}
+        clusterLabels={labels2}
+        clusterMap={state.clusters}
+        companiesOnTop={state.onTop}
+        onSelectCluster={(id) => chooseCluster(id)}
+        fixedResolution={overlapOn && binning ? binning.OVERLAP_RESOLUTION : null}
+        selectedCell={state.cell}
+        initialPosition={state.map}
+        onSelectCell={(cell) => pick(cell === state.cell ? { cell: null } : { cell, sel: [], area: null })}
+        onSelectIds={(ids) => pick({ cell: null, sel: ids, area: null })}
+        onMove={(position) => update({ map: roundPosition(position) })}
+        onBinning={(b) => setBinning(() => b)}
+        area={state.area}
+        onArea={(area) => pick({ area, cell: null, sel: [] })}
+        three={!state.flat}
+        padding={padding}
+        focus={focus}
+        drawing={drawing}
+        onDrawing={setDrawing}
+        hidden={mode === 'list'}
+        api={mapApi}
+      />
+      <div class="fade" aria-hidden="true" />
+
+      <Sheet
+        id="filters"
+        title="Filters"
+        open={filtersOpen}
+        modal
+        onClose={() => setFiltersOpen(false)}
+        footer={
+          <>
+            <button
+              type="button"
+              class="link"
+              disabled={filterCount === 0}
+              onClick={() => {
+                searchedFor.current = '';
+                update({ filters: emptyFilters(), capMatch: 'any', page: 1, matrix: { ...state.matrix, page: 1 } });
+              }}
+            >
+              Clear all filters
+            </button>
+            <button type="button" class="btn btn-primary btn-lg" onClick={() => setFiltersOpen(false)}>
+              Show {plural(n, 'company', 'companies')}
+            </button>
+          </>
+        }
+      >
+        {data && (
+          <>
+            {state.filters.cap.length >= 2 && <CapMatchToggle value={state.capMatch} onChange={(capMatch) => update({ capMatch, cell: null, page: 1, matrix: { ...state.matrix, page: 1 } })} />}
+            <Filters
+              taxonomy={data.taxonomy}
+              filters={state.filters}
+              reveal={reveal}
+              onToggle={(facet, value, on) => {
+                searchedFor.current = '';
+                toggle(facet, value, on);
+              }}
+            />
+          </>
+        )}
+      </Sheet>
+      <Sheet id="layers" title="Layers" open={layersOpen} modal={phone} onClose={() => setLayersOpen(false)}>
+        <LayersPanel
+          clusters={clustersData}
+          clustersFailed={clustersFailed}
+          showClusters={state.clusters}
+          cluster={cluster}
+          memberCount={memberCount}
+          legend={legend}
+          onTop={state.onTop}
+          onShowClusters={(clusters) => update({ clusters })}
+          onCluster={(id) => {
+            setShowList(false);
+            chooseCluster(id);
+          }}
+          onOnTop={(onTop) => update({ onTop })}
+          sites={sitesData}
+          sitesFailed={sitesFailed}
+          showSites={state.sites}
+          site={site}
+          onShowSites={(sites) => update({ sites })}
+          onSite={(id) => {
+            setShowList(false);
+            update({ site: id, near: id ? null : state.near, cell: null, sel: [], area: null, page: 1, matrix: { ...state.matrix, page: 1 } });
+          }}
+        >
+          {phone && mode !== 'list' && (
+            <div class="layer layer-map">
+              {mapStyle}
+              {showTools && mapTools}
+            </div>
+          )}
+        </LayersPanel>
+      </Sheet>
+
+      <p id="search-status" role="status" class={`status${message && !quiet ? '' : ' quiet'}`}>
+        {message}
+        {changed && <span class="vh"> {countSentence}</span>}
+      </p>
     </div>
   );
 }

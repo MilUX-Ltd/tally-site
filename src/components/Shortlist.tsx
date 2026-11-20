@@ -1,11 +1,12 @@
-// The shortlist panel: the companies picked, a link to share them, CSV
-// download, and the way to get in touch. The shortlist lives only in the URL.
+// What the shortlist offers once it holds companies: a link to share them, a
+// spreadsheet download, and the way to talk to MilUX about them. The
+// companies themselves are listed by the results panel. The shortlist lives
+// only in the URL.
 import { useState } from 'preact/hooks';
 import { shortlistCsv, shortlistFilename } from '../lib/shortlist';
 import type { Company, Taxonomy } from '../lib/types';
 
 export const CONTACT_URL = 'https://milux.co.uk/contact/';
-export const AI_LINE = 'This was built with AI. If you would like to know more, please get in touch.';
 
 interface Props {
   companies: Company[];
@@ -13,7 +14,8 @@ interface Props {
   shareUrl: string;
   /** Whether overlap mode is on; the download's file name says so. */
   overlap?: boolean;
-  onRemove: (id: string) => void;
+  /** Says what happened in the page's status line. */
+  onSay: (message: string) => void;
 }
 
 function download(text: string, filename: string) {
@@ -28,55 +30,39 @@ function download(text: string, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
-export default function Shortlist({ companies, taxonomy, shareUrl, onRemove, overlap = false }: Props) {
-  const [status, setStatus] = useState('');
+export default function Shortlist({ companies, taxonomy, shareUrl, overlap = false, onSay }: Props) {
+  const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setStatus('Link copied.');
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 4000);
+      onSay('Link copied.');
     } catch {
       (document.getElementById('shortlist-link') as HTMLInputElement | null)?.select();
-      setStatus('Select the link and copy it.');
+      onSay('Select the link and copy it.');
     }
   };
+  if (companies.length === 0) return null;
   return (
-    <section class="shortlist" aria-label="Shortlist">
-      <h2>{companies.length ? `Shortlist (${companies.length})` : 'Shortlist'}</h2>
-      {companies.length === 0 ? (
-        <p>Add companies from the list or a map area to build a shortlist you can share or download.</p>
-      ) : (
-        <>
-          <ul class="shortlist-items">
-            {companies.map((c) => (
-              <li key={c.id}>
-                <span>{c.name}</span>
-                <button type="button" class="secondary small" onClick={() => onRemove(c.id)}>
-                  Remove<span class="vh"> {c.name}</span> from shortlist
-                </button>
-              </li>
-            ))}
-          </ul>
-          <p class="shortlist-share">
-            <label for="shortlist-link">Link to this shortlist</label>
-            <input id="shortlist-link" type="text" readOnly value={shareUrl} onFocus={(e) => (e.currentTarget as HTMLInputElement).select()} />
-          </p>
-          <p class="shortlist-actions">
-            <button type="button" onClick={copy}>
-              Copy link
-            </button>
-            <button type="button" class="secondary" onClick={() => download(shortlistCsv(companies, taxonomy), shortlistFilename(overlap))}>
-              Download CSV
-            </button>
-            <span role="status">{status}</span>
-          </p>
-        </>
-      )}
-      <p class="shortlist-contact">
-        <a class="button-link" href={CONTACT_URL}>
-          Book a call
-        </a>
+    <div class="shortlist-tools">
+      <p class="shortlist-share">
+        <label for="shortlist-link" class="mono">
+          Link to this shortlist
+        </label>
+        <input id="shortlist-link" type="text" readOnly value={shareUrl} onFocus={(e) => (e.currentTarget as HTMLInputElement).select()} />
       </p>
-      <p>{AI_LINE}</p>
-    </section>
+      <p class="shortlist-actions">
+        <button type="button" class="btn btn-sm" onClick={copy}>
+          {copied ? 'Link copied' : 'Copy link'}
+        </button>
+        <button type="button" class="btn btn-sm" onClick={() => download(shortlistCsv(companies, taxonomy), shortlistFilename(overlap))}>
+          Download as a spreadsheet (CSV)
+        </button>
+      </p>
+      <p class="shortlist-contact">
+        <a href={CONTACT_URL}>Talk to MilUX about this shortlist</a>
+      </p>
+    </div>
   );
 }

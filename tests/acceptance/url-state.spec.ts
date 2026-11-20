@@ -2,7 +2,7 @@
 // build. Not edited after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
-import { AXE_TAGS, clickMapAt, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, clickMapAt, openFilters, useOfflineMap, waitForMap } from '../support/offline-map';
 
 test.beforeEach(async ({ page }) => {
   await useOfflineMap(page);
@@ -13,6 +13,7 @@ const params = (url: string) => new URL(url).searchParams;
 test('a filter is written to the URL and restored from it', async ({ page, context }) => {
   await page.goto('/');
   await waitForMap(page);
+  await openFilters(page);
   await page.locator('summary', { hasText: 'Cyber, data and software' }).click();
   await page.getByRole('checkbox', { name: 'Cyber', exact: true }).check();
   await expect.poll(() => params(page.url()).get('cap')).toBe('cyber');
@@ -22,6 +23,7 @@ test('a filter is written to the URL and restored from it', async ({ page, conte
   await fresh.goto(page.url());
   await waitForMap(fresh);
   await expect(fresh.locator('#result-count')).toContainText('5 companies');
+  await openFilters(fresh);
   await fresh.locator('summary', { hasText: 'Cyber, data and software' }).click();
   await expect(fresh.getByRole('checkbox', { name: 'Cyber', exact: true })).toBeChecked();
   const results = await new AxeBuilder({ page: fresh }).withTags(AXE_TAGS).analyze();
@@ -62,12 +64,24 @@ test('a selected hexagon and its companies are restored from the URL', async ({ 
 });
 
 test('selected companies and the results page are restored from the URL', async ({ page }) => {
-  await page.goto('/?sel=example-robotics,example-subsea&page=2');
+  // Selected companies now narrow the one results list, so the selection and
+  // the page of the full list are opened one after the other.
+  await page.goto('/?sel=example-robotics,example-subsea');
   await waitForMap(page);
   const area = page.getByRole('region', { name: /companies in this area/i });
   await expect(area).toContainText('Example Robotics');
   await expect(area).toContainText('Example Subsea');
   await expect(area).not.toContainText('Example Avionics');
+  // A link with both still opens: the two selected companies show, and the
+  // page number falls back to the only page there is.
+  await page.goto('/?sel=example-robotics,example-subsea&page=2');
+  await waitForMap(page);
+  await expect(area).toContainText('Example Robotics');
+  await expect(area).toContainText('Example Subsea');
+  await expect(area.getByRole('list', { name: 'Results' }).getByRole('listitem')).toHaveCount(2);
+  await expect(page.getByText('Page 2 of')).toHaveCount(0);
+  await page.goto('/?page=2');
+  await waitForMap(page);
   await expect(page.getByText('Page 2 of 2')).toBeVisible();
   await page.getByRole('button', { name: /previous/i }).click();
   await expect.poll(() => params(page.url()).get('page')).toBeNull();

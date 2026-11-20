@@ -3,7 +3,7 @@
 // Committed failing before the build. Not edited after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { AXE_TAGS, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, listView, openFilters, useOfflineMap, waitForMap } from '../support/offline-map';
 
 async function expectNoAxeViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
@@ -11,9 +11,9 @@ async function expectNoAxeViolations(page: Page) {
 }
 
 const params = (url: string) => new URL(url).searchParams;
-const matrix = (page: Page) => page.getByRole('table', { name: /capability matrix/i });
+const matrix = (page: Page) => page.getByRole('table', { name: /compare capabilities/i });
 const rowNames = async (page: Page) => (await matrix(page).locator('tbody th[scope="row"]').allInnerTexts()).map((t) => t.trim()).sort();
-const searchBox = (page: Page) => page.getByRole('searchbox', { name: 'Search in plain English' });
+const searchBox = (page: Page) => page.getByRole('searchbox', { name: 'What do you need?' });
 const searchStatus = (page: Page) => page.locator('#search-status');
 
 /** Answers /api/search and records what the page sent. */
@@ -60,8 +60,10 @@ test('plain-English search sets the filters', async ({ page }) => {
   expect(sent).toEqual([{ q: 'cyber firms with Cyber Essentials Plus' }]);
 
   // Cyber (or a sub-capability) and Cyber Essentials Plus, in the UK fixture.
-  await expect(page.locator('#result-count')).toContainText('2 companies match');
+  await expect(page.locator('#result-count')).toContainText('2 companies');
+  await listView(page);
   await expect.poll(() => rowNames(page)).toEqual(['Example Cyber Defence', 'Example Signals Intelligence']);
+  await openFilters(page);
   await expect(page.getByRole('checkbox', { name: 'Cyber Essentials Plus' })).toBeChecked();
 
   // The page says, in its own words, which filters were set.
@@ -81,9 +83,10 @@ test('falls back to keyword search and says so', async ({ page }) => {
   await searchBox(page).fill('counter drone');
   await searchBox(page).press('Enter');
 
-  await expect(searchStatus(page)).toContainText(/simple keyword search/i);
+  await expect(searchStatus(page)).toContainText(/could not turn that into filters/i);
   await expect.poll(() => params(page.url()).get('q')).toBe('counter drone');
-  await expect(page.locator('#result-count')).toContainText('1 company matches');
+  await expect(page.locator('#result-count')).toContainText('1 company');
+  await listView(page);
   await expect.poll(() => rowNames(page)).toEqual(['Example Counter Drone']);
   await expectNoAxeViolations(page);
 
@@ -92,13 +95,14 @@ test('falls back to keyword search and says so', async ({ page }) => {
   await page.goto('/?q=counter%20drone');
   await waitForMap(page);
   await expect(searchBox(page)).toHaveValue('counter drone');
+  await listView(page);
   await expect.poll(() => rowNames(page)).toEqual(['Example Counter Drone']);
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(scrollWidth).toBeLessThanOrEqual(375);
   await expectNoAxeViolations(page);
 
   // It can be cleared by keyboard.
-  const clear = page.getByRole('button', { name: 'Clear search' });
+  const clear = page.getByRole('button', { name: 'Remove Keyword: counter drone' });
   await clear.focus();
   await page.keyboard.press('Enter');
   await expect.poll(() => params(page.url()).get('q')).toBeNull();
@@ -111,7 +115,8 @@ test('a failing search route still gives a keyword search', async ({ page }) => 
   await waitForMap(page);
   await searchBox(page).fill('photonics');
   await searchBox(page).press('Enter');
-  await expect(searchStatus(page)).toContainText(/simple keyword search/i);
+  await expect(searchStatus(page)).toContainText(/could not turn that into filters/i);
+  await listView(page);
   await expect.poll(() => rowNames(page)).toEqual(['Example Photonics']);
   await expectNoAxeViolations(page);
 });

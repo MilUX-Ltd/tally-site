@@ -1,15 +1,19 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getListedMailto } from '../lib/contact';
 ---
-<Base title="Tally: UK defence capability" description="An open map and directory of UK defence capability. Public information, free to use." wide feed>
-  <header class="site-header home-header">
-    <h1>Tally</h1>
-    <p>An open map and directory of UK defence capability. Public information, free to use. Choose capabilities and other filters to see where companies are, then select an area of the map to list them. Company missing? <a href={getListedMailto()}>Get listed</a>.</p>
-  </header>
+<Base title="Tally: find UK defence companies by capability and place" description="Find UK defence companies by capability and place on an open map, shortlist the ones you want and share the list. Public sources, free to use." wide feed>
+  <button slot="actions" type="button" class="topbar-button" id="shortlist-toggle" aria-pressed="false">Shortlist <span class="count" id="shortlist-count">0</span></button>
   <div id="explorer">
-    <p class="notice">Loading companies.</p>
-    <noscript><p>The map and filters need JavaScript. The full directory is also on <a href="https://github.com/MilUX-Ltd/tally">GitHub</a>.</p></noscript>
+    <div class="find landing">
+      <div class="lead hero">
+        <p class="mono kicker">Open directory · public sources · free to use</p>
+        <h1 class="display">Find UK defence capability<span class="stop">.</span></h1>
+        <p class="lede">Companies, clusters and defence sites on one map. Search by capability and place, shortlist the companies you want and share the list.</p>
+        <p class="moved">Loading companies.</p>
+        <noscript><p class="moved">The map and search need JavaScript. Every company also has its own page, listed in the <a href="/sitemap.xml">sitemap</a>, and the full directory is on <a href="https://github.com/MilUX-Ltd/tally">GitHub</a>.</p></noscript>
+      </div>
+      <div class="fade" aria-hidden="true"></div>
+    </div>
   </div>
   <Fragment slot="credits">
     <p>Company data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from public sources, under CC BY 4.0.</p>
