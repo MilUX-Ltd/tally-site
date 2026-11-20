@@ -1,0 +1,23 @@
+{
+ "_note": "Companies added to tally-data.json only in fixture builds, for the Companies House tests. Kept apart so the older tests' fixture is unchanged.",
+ "companies": [
+  {
+   "name": "Example Closed Engineering",
+   "website": "https://example.com/example-closed-engineering",
+   "linkedin": "",
+   "hq": "Sunderland, United Kingdom",
+   "region": "North East",
+   "size": "small",
+   "headcount": "",
+   "founded": "2015",
+   "tags": ["defence", "manufacturing", "size-small"],
+   "summary": "Example Closed Engineering is a synthetic company used only in tests. It has closed.",
+   "body": "# Example Closed Engineering\n\nSynthetic test company that has closed.\n",
+   "postcode": "",
+   "lat": 54.9069,
+   "lon": -1.3838,
+   "location_source": "town",
+   "country": ""
+  }
+ ]
+}

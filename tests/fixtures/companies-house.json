@@ -1,0 +1,27 @@
+{
+ "generated": "2026-11-20",
+ "attribution": "Contains public sector information licensed under the Open Government Licence v3.0.",
+ "source": "Companies House Public Data API",
+ "checked": {"companies": 40, "found": 39, "not_found": 1, "failed": 0},
+ "closed": [
+  {"name": "Example Closed Engineering", "ch": "09000001", "status": "dissolved", "date": "2024-05-14"}
+ ],
+ "flagged": [
+  {"name": "Example Munitions", "ch": "09000002", "status": "liquidation"}
+ ],
+ "not_found": [
+  {"name": "Example Welding Works", "ch": "09000003"}
+ ],
+ "trend": {
+  "codes": {
+   "25400": "Manufacture of weapons and ammunition",
+   "30400": "Manufacture of military fighting vehicles",
+   "84220": "Defence activities"
+  },
+  "years": [
+   {"year": 2024, "partial": false, "formed": {"total": 151, "25400": 15, "30400": 7, "84220": 130}, "dissolved": {"total": 98, "25400": 17, "30400": 4, "84220": 78}},
+   {"year": 2025, "partial": false, "formed": {"total": 162, "25400": 18, "30400": 6, "84220": 140}, "dissolved": {"total": 104, "25400": 12, "30400": 5, "84220": 88}},
+   {"year": 2026, "partial": true, "formed": {"total": 140, "25400": 12, "30400": 5, "84220": 124}, "dissolved": {"total": 91, "25400": 10, "30400": 3, "84220": 79}}
+  ]
+ }
+}
