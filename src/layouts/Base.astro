@@ -36,7 +36,7 @@ const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.ur
     <link rel="preload" href="/fonts/manrope-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/manrope-800.woff2" as="font" type="font/woff2" crossorigin />
     {feed && <link rel="alternate" type="application/rss+xml" title="New companies in Tally" href={FEED_PATH} />}
-    {beacon && <script is:inline defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={beacon}></script>}
+    {beacon && <script is:inline type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={beacon}></script>}
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
