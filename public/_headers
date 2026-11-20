@@ -4,8 +4,11 @@
 # tiles, sprites and fonts: connect and images only, never scripts. The
 # postcode and place lookup (postcodes.io) is connect only, and is sent only
 # the place a buyer types into near-me search.
+# Visitor counts use Cloudflare Web Analytics (cookieless, D-wsjc7): its
+# beacon script from static.cloudflareinsights.com (scripts only) reports page
+# views to cloudflareinsights.com (connect only). No cookies, no query text.
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://tiles.openfreemap.org; font-src 'self'; connect-src 'self' https://tiles.openfreemap.org https://api.postcodes.io; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self'; img-src 'self' data: blob: https://tiles.openfreemap.org; font-src 'self'; connect-src 'self' https://tiles.openfreemap.org https://api.postcodes.io https://cloudflareinsights.com; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

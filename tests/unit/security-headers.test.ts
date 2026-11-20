@@ -29,8 +29,12 @@ describe('security headers baseline', () => {
     const geocoder = 'https://api.postcodes.io';
     expect(using(tileHost).sort()).toEqual(['connect-src', 'img-src']);
     expect(using(geocoder)).toEqual(['connect-src']);
+    const beacon = 'https://static.cloudflareinsights.com';
+    const analytics = 'https://cloudflareinsights.com';
+    expect(using(beacon)).toEqual(['script-src']);
+    expect(using(analytics)).toEqual(['connect-src']);
     const thirdParty = csp.match(/https:\/\/[a-z0-9.-]+/g) ?? [];
-    expect(new Set(thirdParty)).toEqual(new Set([tileHost, geocoder]));
+    expect(new Set(thirdParty)).toEqual(new Set([tileHost, geocoder, beacon, analytics]));
   });
   it('never allows inline script', () => {
     expect(headers).not.toContain("'unsafe-inline'");
