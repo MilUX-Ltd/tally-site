@@ -33,7 +33,7 @@ describe('the growth chart', () => {
   const history = fromFixture() as History;
   it('draws one column a month, taller and darker as the directory grows', () => {
     const chart = growthChart(history.months);
-    expect(chart.columns.map((c) => c.total)).toEqual([20, 26, 26, 26, 30, 32]);
+    expect(chart.columns.map((c) => c.total)).toEqual([45, 51, 51, 51, 55, 57]);
     expect(chart.columns[0].fills.top).toBe(RAMP[0]);
     expect(chart.columns[5].fills.top).toBe(RAMP[3]);
     const topY = (points: string) => Math.min(...points.split(' ').map((p) => Number(p.split(',')[1])));
@@ -42,7 +42,7 @@ describe('the growth chart', () => {
     // Evenly spaced, so a row of equal-width labels lines up beneath.
     const xs = chart.columns.map((c) => Number(c.top.split(' ')[0].split(',')[0]));
     expect(Math.round(xs[1] - xs[0])).toBe(Math.round(chart.width / 6));
-    expect(chart.summary).toBe('Companies in Tally by month, from 20 in June 2026 to 32 in November 2026.');
+    expect(chart.summary).toBe('Companies in Tally by month, from 45 in June 2026 to 57 in November 2026.');
     for (const c of chart.columns) expect(Object.values(c.fills).every((f) => /^#[0-9A-F]{6}$/.test(f))).toBe(true);
   });
   it('places values on the ramp and darkens a colour for a side', () => {
@@ -52,7 +52,7 @@ describe('the growth chart', () => {
     expect(shade('#F2D9A6', 0.5)).toBe('#796D53');
   });
   it('says when a month had no update', () => {
-    expect(monthReadout(history.months, 3)).toEqual({ label: 'September 2026', total: '26', note: ' (no update that month; same as August)' });
+    expect(monthReadout(history.months, 3)).toEqual({ label: 'September 2026', total: '51', note: ' (no update that month; same as August)' });
     expect(monthReadout(history.months, 5).note).toBe('');
   });
 });

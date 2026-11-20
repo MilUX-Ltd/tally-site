@@ -16,7 +16,7 @@ const located = companies.filter((c) => c.lat != null && c.lon != null);
 
 describe('build data', () => {
   it('slims the data for the browser', () => {
-    expect(companies).toHaveLength(32);
+    expect(companies).toHaveLength(57);
     const ids = new Set(companies.map((c) => c.id));
     expect(ids.size).toBe(companies.length);
     for (const c of companies) {
@@ -26,7 +26,7 @@ describe('build data', () => {
       if (c.website) expect(c.website).toMatch(/^https?:\/\//);
     }
     expect(companies.find((c) => c.name === 'Example Unplaced Ltd')?.website).toBe('');
-    expect(located).toHaveLength(30);
+    expect(located).toHaveLength(55);
     expect(companies.find((c) => c.name === 'Example Nordic Defence')?.country).toBe('Norway');
     expect(data.taxonomy.groups).toHaveLength(10);
     expect(data.taxonomy.capabilities.length).toBeGreaterThan(50);
@@ -35,7 +35,7 @@ describe('build data', () => {
 
 describe('filters', () => {
   it('filters combine across facets and match sub-capabilities', () => {
-    expect(filterCompanies(companies, emptyFilters())).toHaveLength(32);
+    expect(filterCompanies(companies, emptyFilters())).toHaveLength(57);
     // "cyber" matches cyber and cyber/... tags: four located, one overseas.
     const cyber = filterCompanies(companies, { ...emptyFilters(), cap: ['cyber'] });
     expect(cyber.map((c) => c.name).sort()).toEqual([

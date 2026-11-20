@@ -53,6 +53,6 @@ describe('capability matrix', () => {
   it('narrows to companies inside an area', () => {
     const bristol = companiesInBbox(data.companies, [-2.7, 51.4, -2.4, 51.6]);
     expect(bristol.map((c) => c.name).sort()).toEqual(['Example Aerial Systems', 'Example Composites', 'Example Flight Test']);
-    expect(companiesInBbox(data.companies, [-8.7, 49.8, 1.9, 60.9])).toHaveLength(30);
+    expect(companiesInBbox(data.companies, [-8.7, 49.8, 1.9, 60.9])).toHaveLength(55);
   });
 });

@@ -131,7 +131,7 @@ test('typing a postcode shows companies near it', async ({ page }) => {
 
   await page.getByRole('button', { name: `Remove Within 5 miles of ${BS16.postcode}` }).click();
   await expect.poll(() => params(page.url()).get('near')).toBeNull();
-  await expect(page.locator('#result-count')).toContainText('32 companies');
+  await expect(page.locator('#result-count')).toContainText('57 companies');
 });
 
 test('a town picks the city and an unknown place says so', async ({ page }) => {

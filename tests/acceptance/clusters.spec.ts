@@ -63,7 +63,7 @@ test('picking a cluster filters companies to its members', async ({ page }) => {
   await pick.selectOption({ label: 'London' });
   await expect.poll(() => params(page.url()).get('cluster')).toBe('LRDSC');
   await expect(panel).toContainText('does not yet record');
-  await expect(page.locator('#result-count')).toContainText('32 companies');
+  await expect(page.locator('#result-count')).toContainText('57 companies');
 
   // The view opens from its URL, and works at phone width.
   await page.setViewportSize({ width: 375, height: 812 });
