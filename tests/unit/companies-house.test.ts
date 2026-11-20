@@ -46,6 +46,7 @@ describe('slimCompaniesHouse', () => {
       (d: typeof rawCh) => { d.trend.years[0].partial = true; },
       (d: typeof rawCh) => { d.trend.years[0].dissolved['25400'] = -1; },
       (d: typeof rawCh) => { d.trend.codes['25400'] = '<b>x</b>'; },
+      (d: typeof rawCh) => { d.flagged[0] = { name: 'Example Munitions', ch: '09000002', status: 'active', detail: 'active-dormant' }; },
     ];
     for (const change of bad) {
       const doc = copy();

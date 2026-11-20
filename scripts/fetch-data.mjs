@@ -483,7 +483,7 @@ const CH_KEYS = ['attribution', 'checked', 'closed', 'flagged', 'generated', 'no
 export const CH_CLOSED = ['closed', 'converted-closed', 'dissolved', 'removed'];
 export const CH_FLAGGED = ['administration', 'insolvency-proceedings', 'liquidation', 'receivership', 'voluntary-arrangement'];
 const CH_DETAIL = /^[a-z][a-z-]{2,60}$/;
-const CH_NUMBER = /^(?:[0-9]{8}|[A-Z]{2}[0-9]{6})$/;
+const CH_NUMBER = /^(?:[0-9]{8}|[A-Z]{2}[0-9]{6}|R[0-9]{7})$/;
 export const CH_LIMITS = { rows: 5000, years: 60, count: 1_000_000 };
 
 function chFail(message) {
@@ -530,7 +530,7 @@ export function slimCompaniesHouse(raw, ids) {
     chKeys(row, ['ch', 'detail', 'name', 'status'], `flagged ${row.name}`, ['ch', 'name', 'status']);
     const detail = 'detail' in row ? str(row.detail) : null;
     if (detail !== null && !CH_DETAIL.test(detail)) chFail(`flagged ${row.name} has a bad detail`);
-    if (!CH_FLAGGED.includes(row.status) && !(row.status === 'active' && detail)) chFail(`flagged ${row.name} has a status that is not flagged (${JSON.stringify(row.status)})`);
+    if (!CH_FLAGGED.includes(row.status) && !(row.status === 'active' && detail === 'active-proposal-to-strike-off')) chFail(`flagged ${row.name} has a status that is not flagged (${JSON.stringify(row.status)})`);
     const id = ids.get(str(row.name));
     if (id && !closed[id]) flagged[id] = { status: row.status, detail };
   });
