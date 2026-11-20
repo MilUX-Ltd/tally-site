@@ -1,6 +1,6 @@
 // Overseas companies that match the filters, listed by country: Europe first,
 // then the rest of the world, a page at a time. They are never drawn on the UK map.
-import { useMemo } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { ComponentChildren } from 'preact';
 import CompanyItem from './CompanyItem';
 import { Pager, pageOf } from './ResultsList';
@@ -13,6 +13,8 @@ interface Props {
   overlap?: boolean;
   page: number;
   onPage: (page: number) => void;
+  /** Opens the list, for example when the filters leave no UK companies. */
+  open?: boolean;
   actions?: (company: Company) => ComponentChildren;
 }
 
@@ -37,7 +39,12 @@ function Region({ title, id, groups, actions }: { title: string; id: string; gro
   );
 }
 
-export default function OverseasList({ companies, overlap = false, page, onPage, actions }: Props) {
+export default function OverseasList({ companies, overlap = false, page, onPage, open: openWanted = false, actions }: Props) {
+  // Closed by default; whether it is open is remembered in the page only, not the URL.
+  const [open, setOpen] = useState(openWanted);
+  useEffect(() => {
+    if (openWanted) setOpen(true);
+  }, [openWanted]);
   // Europe first, then the rest of the world, by country; one page of that order is shown.
   const ordered = useMemo(() => {
     const all = overseasByCountry(companies);
@@ -47,20 +54,24 @@ export default function OverseasList({ companies, overlap = false, page, onPage,
   const { europe, world } = overseasByCountry(shown);
   return (
     <section class="overseas" aria-labelledby="overseas-heading">
-      <h2 id="overseas-heading">Overseas companies</h2>
-      <p>
-        Companies based outside the UK, by country. They are not shown on the UK map
-        {overlap ? ', so overlap places do not apply: those with any chosen capability are listed' : ''}.
-      </p>
-      {europe.length + world.length === 0 ? (
-        <p>No overseas companies match these filters.</p>
-      ) : (
-        <>
-          <Region title="Europe" id="overseas-europe" groups={europe} actions={actions} />
-          <Region title="Rest of the world" id="overseas-world" groups={world} actions={actions} />
-          <Pager label="Overseas pages" current={current} pages={pages} onPage={onPage} />
-        </>
-      )}
+      <details open={open} onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+        <summary>
+          <h2 id="overseas-heading">Overseas companies ({ordered.length})</h2>
+        </summary>
+        <p>
+          Companies based outside the UK, by country. They are not shown on the UK map
+          {overlap ? ', so overlap places do not apply: those with any chosen capability are listed' : ''}.
+        </p>
+        {europe.length + world.length === 0 ? (
+          <p>No overseas companies match these filters.</p>
+        ) : (
+          <>
+            <Region title="Europe" id="overseas-europe" groups={europe} actions={actions} />
+            <Region title="Rest of the world" id="overseas-world" groups={world} actions={actions} />
+            <Pager label="Overseas pages" current={current} pages={pages} onPage={onPage} />
+          </>
+        )}
+      </details>
     </section>
   );
 }

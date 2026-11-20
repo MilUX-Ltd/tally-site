@@ -26,6 +26,7 @@ import OverseasList from './OverseasList';
 import NearPanel from './NearPanel';
 import { findPlace } from '../lib/near';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
+import { isOverseas } from '../lib/countries';
 import type { Company } from '../lib/types';
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
@@ -243,6 +244,10 @@ export default function Explorer() {
   }, [overlapOn, binning, facetFiltered, state.filters.cap, location]);
   lastFiltered.current = filtered;
   const onMap = useMemo(() => filtered.filter(isLocated).length, [filtered]);
+  // The overseas list opens by itself when the filters leave no UK companies,
+  // or when the link was to a later page of it.
+  const noUk = useMemo(() => !filtered.some((c) => !isOverseas(c)), [filtered]);
+  const openedOnOverseasPage = useRef(state.opage > 1).current;
   const inCluster = cluster?.membership ? ` in the ${cluster.name} cluster` : '';
   const within = `${inCluster}${location ? ` within ${location.miles} miles of ${location.name}` : ''}`;
   const places = useMemo(
@@ -487,7 +492,7 @@ export default function Explorer() {
             <AreaPanel companies={areaCompanies} focus={picked && state.view === 'companies'} actions={shortlistButton} onClear={clearArea} />
           )}
           <ResultsList companies={filtered} page={state.page} onPage={(page) => update({ page })} actions={shortlistButton} />
-          <OverseasList companies={facetFiltered} overlap={overlapOn} page={state.opage} onPage={(opage) => update({ opage })} actions={shortlistButton} />
+          <OverseasList companies={facetFiltered} overlap={overlapOn} page={state.opage} onPage={(opage) => update({ opage })} open={noUk || openedOnOverseasPage} actions={shortlistButton} />
         </div>
         <div id="view-compare" class="view" hidden={state.view !== 'compare'}>
           <Matrix

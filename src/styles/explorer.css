@@ -108,6 +108,8 @@ button.small { min-height: 36px; padding: 0.2rem 0.6rem; font-size: 0.95rem; }
 .cap-match .choice input { accent-color: var(--green); }
 .cap-match .hint { margin: 0.25rem 0 0; color: var(--blue-grey); font-size: 0.95rem; }
 .overseas { margin-top: 2rem; }
+.overseas summary { cursor: pointer; padding: 0.25rem 0; }
+.overseas summary h2 { display: inline; margin: 0; }
 .overseas h3 { margin: 1rem 0 0.25rem; font-size: 1.15rem; }
 .overseas h4 { margin: 0.75rem 0 0; font-size: 1.05rem; color: var(--blue-grey); }
 .company h5 { margin: 0; font-size: 1.05rem; }
