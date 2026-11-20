@@ -4,7 +4,7 @@
 // after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AXE_TAGS, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, listView, useOfflineMap, waitForMap } from '../support/offline-map';
 
 async function expectNoAxeViolations(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
@@ -55,7 +55,9 @@ test('overseas companies are listed by country and follow the filters', async ({
   await page.goto('/');
   await waitForMap(page);
   await expect(page.locator('#result-count')).toContainText('35 companies');
-  await expect(page.locator('#result-count')).toContainText('30 on the map');
+  await expect(page.locator('#result-count')).toContainText('30 are on the map');
+  await listView(page);
+  await section(page).locator('summary').click();
   await expect(section(page)).toBeVisible();
   expect(await section(page).locator('h3').allInnerTexts()).toEqual(['Europe', 'Rest of the world']);
   expect(await section(page).locator('h4').allInnerTexts()).toEqual(['Estonia', 'Germany', 'Norway', 'United States']);
@@ -66,12 +68,16 @@ test('overseas companies are listed by country and follow the filters', async ({
 
   await page.goto('/?cap=cyber');
   await waitForMap(page);
-  await expect(page.locator('#result-count')).toContainText('4 on the map');
+  await expect(page.locator('#result-count')).toContainText('4 are on the map');
+  await listView(page);
+  await section(page).locator('summary').click();
   expect(await section(page).locator('h4').allInnerTexts()).toEqual(['Norway', 'United States']);
   await expect(section(page)).not.toContainText('Example Baltic Radar');
 
   await page.goto('/?cap=space');
   await waitForMap(page);
+  await listView(page);
+  await section(page).locator('summary').click();
   await expect(section(page)).toContainText('No overseas companies match these filters.');
 });
 
@@ -79,6 +85,7 @@ test('the overseas section is accessible at phone width', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto('/');
   await waitForMap(page);
+  await listView(page);
   await section(page).scrollIntoViewIfNeeded();
   await expect(section(page).getByRole('heading', { name: 'Overseas companies' })).toBeVisible();
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);

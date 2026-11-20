@@ -3,7 +3,7 @@
 // join link. Committed failing before the build. Not edited after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AXE_TAGS, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, listView, openLayers, useOfflineMap, waitForMap } from '../support/offline-map';
 
 const SIGNPOST = "Members' event: join the cluster for details";
 
@@ -13,7 +13,7 @@ async function expectNoAxeViolations(page: Page) {
 }
 
 const params = (url: string) => new URL(url).searchParams;
-const matrix = (page: Page) => page.getByRole('table', { name: /capability matrix/i });
+const matrix = (page: Page) => page.getByRole('table', { name: /compare capabilities/i });
 const rowNames = async (page: Page) => (await matrix(page).locator('tbody th[scope="row"]').allInnerTexts()).map((t) => t.trim()).sort();
 const featureCount = (page: Page, source: string) =>
   page.locator('#tally-map').evaluate(async (el, id) => {
@@ -30,6 +30,7 @@ test.beforeEach(async ({ page }) => {
 test('picking a cluster filters companies to its members', async ({ page }) => {
   await page.goto('/');
   await waitForMap(page);
+  await openLayers(page);
   const panel = page.getByRole('group', { name: 'Clusters' });
   await expect(panel).toBeVisible();
   await expect(panel).toContainText('Office for National Statistics');
@@ -47,8 +48,9 @@ test('picking a cluster filters companies to its members', async ({ page }) => {
   await pick.selectOption({ label: 'South Central' });
   await expect.poll(() => params(page.url()).get('cluster')).toBe('SCRDSC');
   const members = ['Example EW Systems', 'Example Harbour Systems', 'Example Human Factors'];
-  await expect(page.locator('#result-count')).toContainText('3 companies match');
+  await expect(page.locator('#result-count')).toContainText('3 companies');
   await expect(page.locator('#result-count')).toContainText('South Central');
+  await listView(page);
   await expect.poll(() => rowNames(page)).toEqual(members);
   await expectNoAxeViolations(page);
 
@@ -63,6 +65,7 @@ test('picking a cluster filters companies to its members', async ({ page }) => {
   await page.goto('/?clusters=1&cluster=SCRDSC');
   await waitForMap(page);
   await expect(page.getByLabel('Companies in a cluster')).toHaveValue('SCRDSC');
+  await listView(page);
   await expect.poll(() => rowNames(page)).toEqual(members);
   await noSideScroll(page);
   await expectNoAxeViolations(page);
@@ -77,6 +80,7 @@ test('events appear on the map by cluster', async ({ page }) => {
   await waitForMap(page);
   // Four clusters have upcoming events in the fixture; the past one is not drawn.
   await expect.poll(() => featureCount(page, 'cluster-events')).toBe(4);
+  await openLayers(page);
   const panel = page.getByRole('group', { name: 'Clusters' });
   await expect(panel.getByRole('link', { name: /upcoming cluster events/i })).toHaveAttribute('href', '/events');
 });

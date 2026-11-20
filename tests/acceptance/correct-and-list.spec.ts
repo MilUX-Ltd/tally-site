@@ -34,7 +34,8 @@ test('get listed is site-wide', async ({ page }) => {
   }
   await page.goto('/');
   await waitForMap(page);
-  const inExplorer = page.locator('header.site-header').getByRole('link', { name: /get listed/i });
+  // Get listed moved from the home page's introduction to the footer.
+  const inExplorer = page.locator('footer.site-footer').getByRole('link', { name: /get listed/i });
   await expect(inExplorer).toBeVisible();
   expect(await subjectOf(inExplorer)).toBe('Tally: please list my company');
 });

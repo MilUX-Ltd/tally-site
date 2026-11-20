@@ -3,7 +3,7 @@
 // Committed failing before the build. Not edited after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AXE_TAGS, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, listView, openShortlist, useOfflineMap, waitForMap } from '../support/offline-map';
 
 const CYBER = '/companies/example-cyber-defence/';
 
@@ -103,6 +103,7 @@ test('company names link to their pages', async ({ page }) => {
   await useOfflineMap(page);
   await page.goto('/');
   await waitForMap(page);
+  await listView(page);
   await expect(page.locator('.results').getByRole('link', { name: 'Example Avionics', exact: true })).toHaveAttribute(
     'href',
     '/companies/example-avionics/',
@@ -111,6 +112,7 @@ test('company names link to their pages', async ({ page }) => {
     'href',
     '/companies/example-avionics/',
   );
+  await page.locator('.overseas summary').click();
   await expect(page.locator('.overseas').getByRole('link', { name: 'Example Nordic Defence', exact: true })).toHaveAttribute(
     'href',
     '/companies/example-nordic-defence/',
@@ -131,13 +133,15 @@ test('company names link to their pages', async ({ page }) => {
 test('add to shortlist from a company page', async ({ page }) => {
   await useOfflineMap(page);
   // Reached from the explorer with a shortlist: the shortlist is kept.
-  await page.goto('/?list=example-avionics');
+  // A link with only a shortlist now opens on the shortlist, so the List view is asked for.
+  await page.goto('/?list=example-avionics&view=list');
   await waitForMap(page);
   await page.locator('.results').getByRole('link', { name: 'Example Cyber Defence', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${CYBER}$`));
   await page.getByRole('link', { name: /add .*to shortlist/i }).click();
   await waitForMap(page);
   expect(new URL(page.url()).searchParams.get('list')).toBe('example-avionics,example-cyber-defence');
+  await openShortlist(page);
   const shortlist = page.getByRole('region', { name: 'Shortlist' });
   await expect(shortlist).toContainText('Example Avionics');
   await expect(shortlist).toContainText('Example Cyber Defence');

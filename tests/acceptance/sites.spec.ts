@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AXE_TAGS, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, listView, openLayers, useOfflineMap, waitForMap } from '../support/offline-map';
 
 const fixture = JSON.parse(readFileSync(new URL('../fixtures/tally-data.json', import.meta.url), 'utf8')) as {
   companies: Array<{ name: string; lat: number | null; lon: number | null; country?: string }>;
@@ -19,7 +19,7 @@ async function expectNoAxeViolations(page: Page) {
 }
 
 const params = (url: string) => new URL(url).searchParams;
-const matrix = (page: Page) => page.getByRole('table', { name: /capability matrix/i });
+const matrix = (page: Page) => page.getByRole('table', { name: /compare capabilities/i });
 const rowNames = async (page: Page) => (await matrix(page).locator('tbody th[scope="row"]').allInnerTexts()).map((t) => t.trim()).sort();
 const featureCount = (page: Page, source: string) =>
   page.locator('#tally-map').evaluate(async (el, id) => {
@@ -48,6 +48,7 @@ test.beforeEach(async ({ page }) => {
 test('the sites overlay shows every site with attribution', async ({ page }) => {
   await page.goto('/');
   await waitForMap(page);
+  await openLayers(page);
   const panel = page.getByRole('group', { name: 'Defence sites' });
   await expect(panel).toBeVisible();
   await expect(panel).toContainText('Wikipedia');
@@ -65,11 +66,13 @@ test('picking a site and radius filters the companies', async ({ page }) => {
   expect(abbeyWood).toBeTruthy();
   await page.goto('/');
   await waitForMap(page);
+  await openLayers(page);
   await page.getByLabel('Companies near a site').selectOption({ label: abbeyWood.name });
   await page.getByLabel('Within').selectOption({ label: '10 miles' });
   await expect.poll(() => params(page.url()).get('site')).toBe(abbeyWood.id);
   await expect.poll(() => params(page.url()).get('radius')).toBe('10');
   const ten = near(abbeyWood, 10);
+  await listView(page);
   expect(ten.length).toBeGreaterThan(0);
   await expect(page.locator('#result-count')).toContainText(`${ten.length} compan`);
   await expect(page.locator('#result-count')).toContainText(`within 10 miles of ${abbeyWood.name}`);
@@ -89,11 +92,13 @@ test('picking a site and radius filters the companies', async ({ page }) => {
   await page.goto(`/?site=${abbeyWood.id}&radius=10`);
   await waitForMap(page);
   await expect(page.getByLabel('Companies near a site')).toHaveValue(abbeyWood.id);
+  await listView(page);
   await expect.poll(() => rowNames(page)).toEqual(ten);
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(scrollWidth).toBeLessThanOrEqual(375);
   await expectNoAxeViolations(page);
 
+  await openLayers(page);
   await page.getByLabel('Companies near a site').selectOption({ label: 'No site chosen' });
   await expect.poll(() => params(page.url()).get('site')).toBeNull();
   await expect(page.locator('#result-count')).toContainText('32 companies');

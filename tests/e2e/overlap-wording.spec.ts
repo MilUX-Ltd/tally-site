@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
-import { useOfflineMap, waitForMap } from '../support/offline-map';
+import { openFilters, openShortlist, useOfflineMap, waitForMap } from '../support/offline-map';
 
 test.beforeEach(async ({ page }) => {
   await useOfflineMap(page);
@@ -13,16 +13,18 @@ test('overlap mode reads clearly, leaves the URL with one capability and names t
   await expect(count).toHaveText('4 companies with a chosen capability, in 2 places where all chosen capabilities overlap.');
   await expect(count).not.toContainText('0 companies');
 
-  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /download csv/i }).click()]);
+  await openShortlist(page);
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /download as a spreadsheet \(csv\)/i }).click()]);
   expect(download.suggestedFilename()).toBe('tally-shortlist-overlap.csv');
   const lines = readFileSync(await download.path(), 'utf8').split(/\r?\n/).filter(Boolean);
   expect(lines).toHaveLength(2);
   expect(lines[1].startsWith('Example Cyber Defence,')).toBe(true);
 
+  await openFilters(page);
   await page.locator('summary', { hasText: 'Cyber, data and software' }).click();
   await page.getByRole('checkbox', { name: 'Data', exact: true }).uncheck();
   await expect.poll(() => new URL(page.url()).searchParams.get('capmatch')).toBeNull();
-  await expect(count).toContainText('companies match');
+  await expect(count).toContainText('are on the map');
   await page.getByRole('checkbox', { name: 'Data', exact: true }).check();
-  await expect(page.getByRole('radio', { name: /any chosen capability/i })).toBeChecked();
+  await expect(page.getByRole('radio', { name: 'any of these capabilities' })).toBeChecked();
 });

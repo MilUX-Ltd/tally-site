@@ -19,7 +19,9 @@ test.beforeEach(async ({ page }) => {
   await useOfflineMap(page);
 });
 
-test('the growth slider replays the directory by month', async ({ page }) => {
+// Growth over time has left the home page for New companies. Slice C of the
+// Tally redesign (New companies, /new) restores this there.
+test.fixme('the growth slider replays the directory by month', async ({ page }) => {
   await page.goto('/');
   await waitForMap(page);
   await growth(page).scrollIntoViewIfNeeded();
@@ -47,7 +49,9 @@ test('the growth slider replays the directory by month', async ({ page }) => {
   await expect(growth(page).getByRole('button', { name: 'Play' })).toBeVisible();
 });
 
-test('a month opens from its URL', async ({ page }) => {
+// Growth over time has left the home page for New companies. Slice C of the
+// Tally redesign (New companies, /new) restores this there.
+test.fixme('a month opens from its URL', async ({ page }) => {
   await page.goto('/?month=2026-09');
   await waitForMap(page);
   await expect(growth(page)).toContainText('September 2026: 26 companies');

@@ -6,10 +6,10 @@ test.beforeEach(async ({ page }) => {
   await useOfflineMap(page);
 });
 
-test('home page shows Tally and the built-with-AI line', async ({ page }) => {
+test('home page shows its headline and the built-with-AI line', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1, name: 'Tally' })).toBeVisible();
-  await expect(page.getByText('This was built with AI.').first()).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Find UK defence capability.' })).toBeVisible();
+  await expect(page.getByText('using AI-assisted engineering').first()).toBeVisible();
 });
 
 test('home page meets WCAG 2.2 AA (automated checks)', async ({ page }) => {
