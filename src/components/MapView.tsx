@@ -64,8 +64,19 @@ interface Props {
   onDrawing: (drawing: boolean) => void;
   /** The List view covers the map: it is taken out of reach. */
   hidden?: boolean;
+  /** The Money view: regions shaded by contract value and arcs to overseas countries; company shading is hidden. */
+  money?: MoneyOverlay | null;
+  /** While set, the map zooms out to these bounds to show the overseas money. */
+  overseasBounds?: Bbox | null;
   /** Lets the page ask for the area in view ("Search this area"). */
   api?: { current: MapApi | null };
+}
+
+export interface MoneyOverlay {
+  year: number;
+  regions: unknown | null;
+  arcs: unknown;
+  ends: unknown;
 }
 
 export interface Padding {
@@ -187,6 +198,24 @@ function companyPaint(faded: boolean): Array<[string, PaintName, number]> {
 }
 const CLUSTER_COLOUR = '#A35C17';
 const COMPANY_LAYERS = ['hex-fill', 'hex-3d', 'clusters', 'pins'];
+const MONEY_LAYERS = ['money-fill', 'money-line', 'money-arc', 'money-end'];
+/** Regions with no money (t below 0) are left unshaded. */
+const MONEY_FILL: ExpressionSpecification = ['case', ['<', ['get', 't'], 0], PAPER, ['interpolate', ['linear'], ['get', 't'], 0, RAMP[0], 0.3, RAMP[1], 0.6, RAMP[2], 1, RAMP[3]]];
+const ARC_COLOUR = '#A35C17';
+
+/** Company shading shows unless the Money view is open; columns in 3D, flat hexagons otherwise. */
+function companyVisibility(three: boolean, money: boolean): Array<[string, 'visible' | 'none']> {
+  const on = (show: boolean) => (show && !money ? 'visible' : 'none');
+  return [
+    ['hex-3d', on(three)],
+    ['hex-fill', on(!three)],
+    ['hex-line', on(!three)],
+    ['hex-selected', on(!three)],
+    ['clusters', on(true)],
+    ['cluster-count', on(true)],
+    ['pins', on(true)],
+  ];
+}
 const SELECTED_COLOUR = FOREST;
 
 function pointsGeoJSON(companies: Company[]) {
@@ -388,6 +417,13 @@ export default function MapView(props: Props) {
           m.addLayer({ id: 'area-fill', type: 'fill', source: 'area', paint: { 'fill-color': FOREST, 'fill-opacity': 0.06 } }, under);
           m.addLayer({ id: 'area-line', type: 'line', source: 'area', paint: { 'line-color': FOREST, 'line-width': 2, 'line-dasharray': [2, 1] } }, under);
 
+          // The Money view: regions shaded by contract value, under the
+          // companies and place names; arcs to overseas countries on top.
+          const moneyOn = propsRef.current.money ? 'visible' : 'none';
+          m.addSource('money-regions', { type: 'geojson', data: (propsRef.current.money?.regions ?? EMPTY) as GeoData });
+          m.addLayer({ id: 'money-fill', type: 'fill', source: 'money-regions', layout: { visibility: moneyOn }, paint: { 'fill-color': MONEY_FILL, 'fill-opacity': 0.82 } }, under);
+          m.addLayer({ id: 'money-line', type: 'line', source: 'money-regions', layout: { visibility: moneyOn }, paint: { 'line-color': '#FFFFFF', 'line-width': 1 } }, under);
+
           m.addSource('site-ring', { type: 'geojson', data: ringGeoJSON(propsRef.current.ring) });
           m.addLayer({ id: 'site-ring-fill', type: 'fill', source: 'site-ring', paint: { 'fill-color': RING_COLOUR, 'fill-opacity': 0.05 } }, under);
           m.addLayer({ id: 'site-ring-line', type: 'line', source: 'site-ring', paint: { 'line-color': RING_COLOUR, 'line-width': 1.5, 'line-dasharray': [3, 2] } }, under);
@@ -565,6 +601,23 @@ export default function MapView(props: Props) {
               'text-halo-width': 1.5,
             },
           });
+          m.addSource('money-arcs', { type: 'geojson', data: (propsRef.current.money?.arcs ?? EMPTY) as GeoData });
+          m.addLayer({
+            id: 'money-arc',
+            type: 'line',
+            source: 'money-arcs',
+            layout: { visibility: moneyOn, 'line-cap': 'round', 'line-join': 'round' },
+            paint: { 'line-color': ARC_COLOUR, 'line-width': ['get', 'width'], 'line-opacity': 0.75 },
+          });
+          m.addSource('money-ends', { type: 'geojson', data: (propsRef.current.money?.ends ?? EMPTY) as GeoData });
+          m.addLayer({
+            id: 'money-end',
+            type: 'circle',
+            source: 'money-ends',
+            layout: { visibility: moneyOn },
+            paint: { 'circle-color': ARC_COLOUR, 'circle-radius': 4, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 1.5 },
+          });
+          for (const [layer, value] of companyVisibility(three, Boolean(propsRef.current.money))) m.setLayoutProperty(layer, 'visibility', value);
           for (const [layer, name, value] of companyPaint(isFaded(propsRef.current))) m.setPaintProperty(layer, name, value);
 
           // Drawing a rectangle: press, drag and release while "Draw an area" is on.
@@ -688,8 +741,7 @@ export default function MapView(props: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !loaded || !map.getLayer('hex-3d')) return;
-    map.setLayoutProperty('hex-3d', 'visibility', props.three ? 'visible' : 'none');
-    for (const layer of ['hex-fill', 'hex-line', 'hex-selected']) map.setLayoutProperty(layer, 'visibility', props.three ? 'none' : 'visible');
+    for (const [layer, value] of companyVisibility(props.three, Boolean(props.money))) map.setLayoutProperty(layer, 'visibility', value);
     if (props.three) {
       map.dragRotate.enable();
       map.touchZoomRotate.enableRotation();
@@ -703,6 +755,42 @@ export default function MapView(props: Props) {
     if (reducedMotion()) map.jumpTo(camera);
     else map.easeTo({ ...camera, duration: 700 });
   }, [props.three, loaded]);
+
+  // The Money view: its overlay replaces the company shading while it is open.
+  const moneyOpen = Boolean(props.money);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded || !map.getLayer('money-arc')) return;
+    for (const layer of MONEY_LAYERS) map.setLayoutProperty(layer, 'visibility', moneyOpen ? 'visible' : 'none');
+    for (const [layer, value] of companyVisibility(propsRef.current.three, moneyOpen)) map.setLayoutProperty(layer, 'visibility', value);
+  }, [moneyOpen, loaded]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded) return;
+    (map.getSource('money-regions') as GeoJSONSource | undefined)?.setData((props.money?.regions ?? EMPTY) as GeoData);
+    (map.getSource('money-arcs') as GeoJSONSource | undefined)?.setData((props.money?.arcs ?? EMPTY) as GeoData);
+    (map.getSource('money-ends') as GeoJSONSource | undefined)?.setData((props.money?.ends ?? EMPTY) as GeoData);
+  }, [props.money, loaded]);
+
+  // See overseas: zoom out, flat, to the UK and every country money went to;
+  // Back to the UK returns to the usual view. The map is never remounted.
+  const overseasKey = props.overseasBounds ? props.overseasBounds.join(',') : '';
+  const lastOverseas = useRef('');
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded || overseasKey === lastOverseas.current) return;
+    const was = lastOverseas.current;
+    lastOverseas.current = overseasKey;
+    const bounds = propsRef.current.overseasBounds;
+    if (bounds) {
+      map.setMinZoom(1);
+      // The map's own padding keeps the panel clear; this adds a margin round the arcs.
+      map.fitBounds(bounds, { padding: 24, pitch: 0, bearing: 0, maxZoom: 5, duration: 1400, animate: !reducedMotion() });
+    } else if (was) {
+      map.setMinZoom(3);
+      frame(false);
+    }
+  }, [overseasKey, loaded]);
 
   // The panels over the map change with the layout; keep the camera's centre in the room they leave.
   const paddingKey = `${props.padding.top},${props.padding.right},${props.padding.bottom},${props.padding.left}`;
@@ -812,27 +900,45 @@ export default function MapView(props: Props) {
   const overlap = props.fixedResolution != null;
   return (
     <div class="map-wrap" inert={props.hidden}>
-      <div id="tally-map" class="map" ref={container} role="region" aria-label="Map of the companies that match the filters">
+      <div id="tally-map" class="map" ref={container} role="region" aria-label={props.money ? 'Map of defence contract money by region' : 'Map of the companies that match the filters'}>
         {failed && <p class="map-failed">The map cannot be shown in this browser. Every company is in the list.</p>}
       </div>
-      <div class="map-legend">
-        <h2 id="legend-heading" class="mono">
-          {overlap ? 'Companies in places where all chosen capabilities overlap' : 'Companies per hexagon'}
-        </h2>
-        {legend === 'loading' && !failed ? (
-          <p>Loading the map.</p>
-        ) : legend === 'empty' ? (
-          <p>No companies with a location match.</p>
-        ) : (
+      {props.money ? (
+        <div class="map-legend">
+          <h2 id="legend-heading" class="mono">
+            Contract value by region, {props.money.year}
+          </h2>
           <div class="ramp" aria-hidden="true">
-            <div class="r1">Fewest</div>
+            <div class="r1">Least</div>
             <div class="r2" />
             <div class="r3" />
             <div class="r4">Most</div>
           </div>
-        )}
-        {legend === 'shown' && <p class="legend-note">{pins ? 'Each pin is a company; numbered circles group those close together.' : `Select ${props.three ? 'a column' : 'a hexagon'} to list its companies.`}</p>}
-      </div>
+          <p class="legend-note">
+            <span class="legend-arc" aria-hidden="true" />
+            Lines run to the countries of overseas suppliers, thicker for more money. Every figure is in the tables.
+          </p>
+        </div>
+      ) : (
+        <div class="map-legend">
+          <h2 id="legend-heading" class="mono">
+            {overlap ? 'Companies in places where all chosen capabilities overlap' : 'Companies per hexagon'}
+          </h2>
+          {legend === 'loading' && !failed ? (
+            <p>Loading the map.</p>
+          ) : legend === 'empty' ? (
+            <p>No companies with a location match.</p>
+          ) : (
+            <div class="ramp" aria-hidden="true">
+              <div class="r1">Fewest</div>
+              <div class="r2" />
+              <div class="r3" />
+              <div class="r4">Most</div>
+            </div>
+          )}
+          {legend === 'shown' && <p class="legend-note">{pins ? 'Each pin is a company; numbered circles group those close together.' : `Select ${props.three ? 'a column' : 'a hexagon'} to list its companies.`}</p>}
+        </div>
+      )}
     </div>
   );
 }

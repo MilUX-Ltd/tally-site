@@ -10,6 +10,7 @@ import Filters from './Filters';
 import LayersPanel from './LayersPanel';
 import MapView, { type Binning, type MapApi, type Padding } from './MapView';
 import Matrix from './Matrix';
+import MoneyPanel from './MoneyPanel';
 import OverseasList from './OverseasList';
 import ResultsPanel, { type Hit } from './ResultsPanel';
 import SearchForm, { type Query } from './SearchForm';
@@ -22,6 +23,9 @@ import { companiesInBbox } from '../lib/matrix';
 import { findPlace, isNearRadius, NEAR_RADII } from '../lib/near';
 import { askSearch, keywordSearch, readSearchAnswer } from '../lib/search';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
+import { chosenYear, defaultYear, overseasRows, regionRows, type MoneyData } from '../lib/money';
+import { arcBounds, arcEndsGeoJSON, arcsGeoJSON, overseasArcs, shadedRegions, type RegionShape } from '../lib/money-map';
+import { UK_BOUNDS } from '../lib/map-config';
 import { companiesNearSite, distanceMiles, isRadius, RADII, ringPolygon, type Radius, type SitesData } from '../lib/sites';
 import type { Company, TallyData } from '../lib/types';
 import { defaultState, fromLink, keywordText, roundPosition, sanitiseClusters, sanitiseSites, sanitiseState, toQuery, type Bbox, type ViewState } from '../lib/url-state';
@@ -142,6 +146,50 @@ export default function Explorer() {
     () => (regions && clustersData && state.clusters ? eventMarkers(upcomingEvents, regions.features, clustersData.clusters) : null),
     [regions, clustersData, upcomingEvents, state.clusters],
   );
+  // Contract money and the region shapes it shades: fetched only when the
+  // Money view first opens, so the other views cost nothing.
+  const [money, setMoney] = useState<MoneyData | null>(null);
+  const [regionShapes, setRegionShapes] = useState<RegionShape[] | null>(null);
+  const [moneyFailed, setMoneyFailed] = useState(false);
+  const [moneyAttempt, setMoneyAttempt] = useState(0);
+  const [overseasShown, setOverseasShown] = useState(false);
+  const moneyOpen = state.view === 'money';
+  useEffect(() => {
+    if (!moneyOpen || money) return;
+    setMoneyFailed(false);
+    fetch('/data/money.json')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: MoneyData) => {
+        // A year the data does not hold, or the default year, is dropped from the address.
+        setState((s) => (s.myear !== null && (!d.years.includes(s.myear) || s.myear === defaultYear(d)) ? { ...s, myear: null } : s));
+        setMoney(d);
+      })
+      .catch(() => setMoneyFailed(true));
+  }, [moneyOpen, money, moneyAttempt]);
+  useEffect(() => {
+    if (!moneyOpen || regionShapes) return;
+    fetch('/maps/uk-regions.json')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: { features: RegionShape[] }) => setRegionShapes(d.features))
+      // The tables carry every figure; without the shapes the map is simply not shaded.
+      .catch(() => setRegionShapes([]));
+  }, [moneyOpen, regionShapes]);
+  const moneyYear = money ? chosenYear(money, state.myear) : null;
+  const moneyMap = useMemo(() => {
+    if (!moneyOpen || !money || moneyYear === null) return null;
+    const arcs = overseasArcs(overseasRows(money, moneyYear));
+    return {
+      year: moneyYear,
+      regions: regionShapes?.length ? shadedRegions(regionShapes, regionRows(money, moneyYear)) : null,
+      arcs: arcsGeoJSON(arcs),
+      ends: arcEndsGeoJSON(arcs),
+      bounds: arcs.length ? arcBounds(arcs, UK_BOUNDS) : null,
+    };
+  }, [moneyOpen, money, moneyYear, regionShapes]);
+  useEffect(() => {
+    if (!moneyMap?.bounds) setOverseasShown(false);
+  }, [moneyMap?.bounds]);
+
   // Layout effect: the address changes in the same frame as the view.
   useLayoutEffect(() => {
     if (!data) return;
@@ -223,7 +271,7 @@ export default function Explorer() {
   // every company before the redesign, and still opens on the results.
   const [browsing, setBrowsing] = useState(() => Boolean(state.month || state.clusters || state.sites || state.onTop || state.map));
   const active = narrows(state) || browsing;
-  const mode: 'landing' | 'results' | 'list' | 'matrix' = state.view !== 'map' ? state.view : active || showList ? 'results' : 'landing';
+  const mode: 'landing' | 'results' | 'list' | 'matrix' | 'money' = state.view !== 'map' ? state.view : active || showList ? 'results' : 'landing';
   const listed = mode !== 'landing';
   // The List and Matrix views take the whole width; the map is out of reach.
   const full = mode === 'list' || mode === 'matrix';
@@ -427,7 +475,7 @@ export default function Explorer() {
     clearAll();
     setShowList(false);
     setPreset({ what: '', near: '' });
-    setState((s) => ({ ...s, view: 'map', matrix: defaultState().matrix }));
+    setState((s) => ({ ...s, view: 'map', matrix: defaultState().matrix, myear: null }));
     requestAnimationFrame(() => document.getElementById('search-what')?.focus());
   };
 
@@ -469,7 +517,9 @@ export default function Explorer() {
     if (view !== 'map') setBrowsing(true);
     // The new view's heading takes focus.
     if (view !== state.view) setFocusPanel((k) => k + 1);
-    update(view === 'map' ? { view, matrix: defaultState().matrix } : { view });
+    // The Money view's year belongs to it; leaving it drops the year.
+    if (view !== 'money') setOverseasShown(false);
+    update(view === 'map' ? { view, matrix: defaultState().matrix, myear: null } : view === 'money' ? { view } : { view, myear: null });
   };
   const compare = (
     <button type="button" class="link" onClick={() => setView('matrix')}>
@@ -590,7 +640,7 @@ export default function Explorer() {
   );
   // The landing page keeps to the four main controls; the map tools join them
   // once there are results, the map has been moved or a layer is on.
-  const showTools = !full && (mode === 'results' || Boolean(state.map) || state.clusters || state.sites);
+  const showTools = !full && mode !== 'money' && (mode === 'results' || Boolean(state.map) || state.clusters || state.sites);
   const mapStyle = (
     <div class="seg" role="group" aria-label="Map style">
       <button type="button" class="btn" aria-pressed={!state.flat} onClick={() => update({ flat: false })}>
@@ -603,7 +653,7 @@ export default function Explorer() {
   );
 
   return (
-    <div class={`find ${mode === 'landing' ? 'landing' : mode === 'matrix' ? 'as-list as-matrix' : mode === 'list' ? 'as-list' : 'with-results'}${layersOpen ? ' layers-open' : ''}`}>
+    <div class={`find ${mode === 'landing' ? 'landing' : mode === 'matrix' ? 'as-list as-matrix' : mode === 'list' ? 'as-list' : mode === 'money' ? 'with-results as-money' : 'with-results'}${layersOpen ? ' layers-open' : ''}`}>
       <p id="result-count" class="vh">
         {countSentence}
       </p>
@@ -677,8 +727,22 @@ export default function Explorer() {
           </>
         ) : (
           <>
-            {!showList && <Chips chips={chips} onClear={clearAll} />}
-            {mode === 'matrix' ? (
+            {!showList && mode !== 'money' && <Chips chips={chips} onClear={clearAll} />}
+            {mode === 'money' ? (
+              <MoneyPanel
+                money={money}
+                failed={moneyFailed}
+                onRetry={() => setMoneyAttempt((k) => k + 1)}
+                year={moneyYear}
+                onYear={(y) => update({ myear: money && y === defaultYear(money) ? null : y })}
+                companies={data?.companies ?? null}
+                taxonomy={data?.taxonomy ?? null}
+                overseas={overseasShown}
+                canShowOverseas={Boolean(moneyMap?.bounds)}
+                onOverseas={setOverseasShown}
+                focus={focusPanel}
+              />
+            ) : mode === 'matrix' ? (
               data ? (
                 <Matrix
                   taxonomy={data.taxonomy}
@@ -748,6 +812,9 @@ export default function Explorer() {
           <button type="button" class="btn" aria-pressed={state.view === 'matrix'} onClick={() => setView('matrix')}>
             Matrix
           </button>
+          <button type="button" class="btn" aria-pressed={state.view === 'money'} onClick={() => setView('money')}>
+            Money
+          </button>
         </div>
         {!full && !phone && mapStyle}
         <button type="button" class={layersOpen ? 'btn is-selected' : 'btn'} aria-haspopup="dialog" aria-expanded={layersOpen} onClick={() => setLayersOpen(!layersOpen)}>
@@ -789,6 +856,8 @@ export default function Explorer() {
         drawing={drawing}
         onDrawing={setDrawing}
         hidden={full}
+        money={moneyMap}
+        overseasBounds={overseasShown ? (moneyMap?.bounds ?? null) : null}
         api={mapApi}
       />
       <div class="fade" aria-hidden="true" />
