@@ -140,6 +140,8 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
 .money-table thead th { font-family: var(--font-mono); font-weight: 500; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1.5px solid var(--ink); }
 .money-table tbody th { font-weight: 600; }
 .money-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.money-table thead th.num { white-space: normal; }
+.money-table tbody th { overflow-wrap: break-word; min-width: 6.5em; }
 .money-table th:last-child, .money-table td:last-child { padding-right: 0; }
 .money-body h3 { margin: 22px 0 6px; font-size: 16px; font-weight: 800; }
 .money-winners { margin: 0; padding: 0 0 0 1.6em; font-size: 13.5px; }
