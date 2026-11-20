@@ -119,6 +119,38 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
 .pager .link:not(:disabled):hover { box-shadow: inset 0 -2px 0 var(--signal); }
 .pager .link:disabled { color: #6f766e; }
 
+/* Money view: contract money beside the map. */
+.find.as-money .panel { width: 460px; }
+.money-body { padding: 0 18px 18px; overflow-x: hidden; }
+.money-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 14px 0 0; }
+.money-totals > div { min-width: 0; }
+.money-totals dt { color: var(--ink-3); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.35; }
+.money-totals dd { margin: 2px 0 0; font-weight: 800; font-size: 22px; letter-spacing: -0.02em; line-height: 1.1; }
+.money-totals dd.money-count { font-weight: 500; font-size: 12px; letter-spacing: 0; color: var(--ink-3); }
+.money-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin: 16px 0 6px; }
+.money-years { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.money-years > .mono { margin-right: 4px; color: var(--ink-3); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+.money-year { display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 9px; border: 1.5px solid var(--ink); background: var(--white); font-weight: 700; font-size: 13px; cursor: pointer; }
+.money-year.is-on { background: var(--ink); color: var(--white); }
+.money-year input { margin: 0; accent-color: var(--signal); }
+.money-year:has(input:focus-visible) { outline: 3px solid var(--signal); outline-offset: 2px; }
+.money-table { width: 100%; border-collapse: collapse; margin: 18px 0 0; font-size: 13.5px; }
+.money-table caption { text-align: left; font-weight: 800; font-size: 16px; padding-bottom: 6px; }
+.money-table th, .money-table td { padding: 6px 6px 6px 0; border-bottom: 1px solid #ecebe3; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.money-table thead th { font-family: var(--font-mono); font-weight: 500; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); border-bottom: 1.5px solid var(--ink); }
+.money-table tbody th { font-weight: 600; }
+.money-table .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.money-table th:last-child, .money-table td:last-child { padding-right: 0; }
+.money-body h3 { margin: 22px 0 6px; font-size: 16px; font-weight: 800; }
+.money-winners { margin: 0; padding: 0 0 0 1.6em; font-size: 13.5px; }
+.money-winners li { padding: 5px 0; border-bottom: 1px solid #ecebe3; }
+.money-winners a { font-weight: 700; overflow-wrap: anywhere; }
+.money-win { display: block; font-variant-numeric: tabular-nums; }
+.money-count { color: var(--ink-3); }
+.money-none, .money-note { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-3); }
+.money-about p { margin: 0 0 8px; font-size: 12.5px; color: var(--ink-2); }
+.legend-arc { display: inline-block; width: 18px; height: 3px; margin: 0 6px 3px 0; vertical-align: middle; background: var(--clay); }
+
 /* Shortlist tools, in the panel under its heading. */
 .shortlist-tools { flex: none; padding: 10px 18px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 8px; }
 .shortlist-tools p { margin: 0; }
@@ -312,6 +344,9 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
   .chips > .link { flex: none; }
   .panel { flex: none; margin-top: auto; width: auto; height: var(--sheet); border-width: 1.5px 0 0; box-shadow: 0 -6px 0 var(--shadow); padding-bottom: 62px; }
   .find.as-list .panel { flex: 1; height: auto; margin-top: 0; }
+  .find.as-money .panel { width: auto; }
+  .money-body { padding: 0 12px 12px; }
+  .money-totals dd { font-size: 18px; }
   .find.as-list .rows { display: block; }
   .find.as-list .row { border-right: 0; }
   .panel-head h2 { font-size: 24px; }
@@ -357,6 +392,10 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
   body:has(.find) .topbar { gap: 8px; padding: 0 10px; }
   body:has(.find) .brand b { font-size: 18px; }
   body:has(.find) .topbar-button { padding-left: 10px; gap: 6px; }
-  .controls { gap: 5px; }
-  .controls .btn { padding: 0 8px; font-size: 13px; }
+  .controls { gap: 4px; }
+  .controls .btn { padding: 0 7px; font-size: 13px; }
+}
+/* The narrowest phones: four views, Filters and Layers still fit one row. */
+@media (max-width: 360px) {
+  .controls .btn { gap: 4px; padding: 0 5px; }
 }

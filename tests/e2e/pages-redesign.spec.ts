@@ -99,6 +99,7 @@ test.describe('company page', () => {
       'What they do',
       'Products and solutions',
       'Capabilities',
+      'Defence contracts',
       'Where they are',
       'Accreditations',
       'Frameworks',

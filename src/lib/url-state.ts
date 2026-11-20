@@ -61,16 +61,18 @@ export interface ViewState {
   q: string;
   /** Whether the map is drawn flat; false means 3D columns, the default. */
   flat: boolean;
-  /** Map and results panel, the results full width, or the capability matrix full width. */
+  /** Map and results panel, the results full width, the capability matrix full width, or contract money over the map. */
   view: View;
+  /** Money view: the year shown; null means the data's default (the latest full year). */
+  myear: number | null;
 }
 
-export type View = 'map' | 'list' | 'matrix';
+export type View = 'map' | 'list' | 'matrix' | 'money';
 
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '', flat: false, view: 'map' };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '', flat: false, view: 'map', myear: null };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -166,7 +168,10 @@ export function fromQuery(query: string): ViewState {
   state.q = keywordText(p.get('q'));
   if (p.get('flat') === '1') state.flat = true;
   const view = p.get('view');
-  if (view === 'list' || view === 'matrix') state.view = view;
+  if (view === 'list' || view === 'matrix' || view === 'money') state.view = view;
+  // The year is checked against the data once the Money view has loaded it.
+  const myear = p.get('myear');
+  if (state.view === 'money' && myear && /^20\d{2}$/.test(myear)) state.myear = Number(myear);
   return state;
 }
 
@@ -201,6 +206,7 @@ export function toQuery(state: ViewState): string {
   if (state.q) add('q', state.q);
   if (state.flat) add('flat', '1');
   if (state.view !== 'map') add('view', state.view);
+  if (state.view === 'money' && state.myear !== null) add('myear', String(state.myear));
   return parts.join('&');
 }
 

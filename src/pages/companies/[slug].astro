@@ -24,7 +24,8 @@ import {
 } from '../../lib/company-page';
 import { correctionMailto } from '../../lib/contact';
 import { isLocated } from '../../lib/filters';
-import { certificationChecks, companyTexts, defenceSites, siteData } from '../../lib/site-data';
+import { companyAwards, formatMoney } from '../../lib/money';
+import { certificationChecks, companyTexts, defenceSites, moneyData, siteData } from '../../lib/site-data';
 import type { Company } from '../../lib/types';
 
 export const getStaticPaths = (() => siteData().companies.map((company) => ({ params: { slug: company.id }, props: { company } }))) satisfies GetStaticPaths;
@@ -46,6 +47,9 @@ const memberships = labelsFor(company, taxonomy.memberships);
 // Each certification with where it came from: stated by the company, or checked against a register.
 const certifications = companyCertifications(company, taxonomy, certificationChecks()[company.id]);
 const check = checkLine(text.verified);
+// Defence contracts this company has won, from public award notices (newest first).
+const money = moneyData();
+const awards = companyAwards(money, company.id);
 const onMap = isLocated(company) ? `/?sel=${company.id}&map=9/${company.lat.toFixed(5)}/${company.lon.toFixed(5)}` : null;
 const correction = correctionMailto(company.name, canonicalUrl(companyPath(company.id)));
 // The headline ends in the signal full stop unless the name already ends in punctuation.
@@ -95,6 +99,22 @@ const stop = !/[.!?)]$/.test(company.name.trim());
           </div>
         )}
       </section>
+      {awards.length > 0 && (
+        <section class="company-contracts" aria-labelledby="contracts-heading">
+          <h2 id="contracts-heading">Defence contracts</h2>
+          <p class="contracts-intro">Contracts awarded by UK defence buyers since {longDate(money.period.from)}, from public award notices. Each value is the whole-contract value when it was awarded.</p>
+          <ul class="contracts">
+            {awards.map((a) => (
+              <li>
+                <span class="contract-meta mono"><time datetime={a.date}>{longDate(a.date)}</time> · {a.buyer}</span>
+                <a href={a.url} rel="noopener nofollow">{a.title}</a>
+                <span class="contract-value">{formatMoney(a.value)}</span>
+              </li>
+            ))}
+          </ul>
+          <p class="contracts-source">{money.attribution}</p>
+        </section>
+      )}
     </div>
 
     <section class="company-where card" aria-labelledby="where-heading">
