@@ -149,3 +149,25 @@
   .week-body { padding: 0 0 40px; }
   .new-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
 }
+
+/* Defence companies formed and closed (D-iyz0k). Colours by class: the CSP allows no style attributes. */
+.trend { margin: 48px 0; }
+.trend-head h2 { margin: 0 0 8px; }
+.trend-intro { margin: 0 0 20px; max-width: 70ch; color: var(--ink-2); }
+.trend-chart { display: block; width: 100%; height: auto; max-width: 900px; }
+.trend-grid { stroke: var(--line); stroke-width: 1; }
+.trend-tick, .trend-label { fill: var(--ink-3); font-family: var(--font-mono); font-size: 11px; }
+.trend-formed { fill: var(--forest); }
+.trend-dissolved { fill: var(--signal); }
+.trend-year.is-partial rect { opacity: 0.55; }
+.trend-key { display: flex; align-items: center; gap: 8px; margin: 8px 0 20px; font-size: 12px; color: var(--ink-2); }
+.trend-key span { display: inline-block; width: 12px; height: 12px; }
+.trend-key .key-formed { background: var(--forest); }
+.trend-key .key-dissolved { background: var(--signal); margin-left: 12px; }
+.trend-table { max-width: 420px; max-height: 360px; overflow: auto; }
+.trend-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.trend-table caption { text-align: left; font-weight: 700; margin-bottom: 8px; }
+.trend-table th, .trend-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+.trend-table td { text-align: right; font-variant-numeric: tabular-nums; }
+.trend-notes { max-width: 70ch; margin-top: 20px; font-size: 14px; color: var(--ink-2); }
+.trend-source { font-size: 12px; }
