@@ -97,6 +97,36 @@ export function recentAdditions(companies: Company[], added: Record<string, stri
   return [...weeks].map(([week, list]) => ({ week, label: `Week of ${dayText(`${week}T00:00:00Z`)}`, entries: list }));
 }
 
+export interface WeekCount {
+  /** The Monday (UTC) that starts the week, YYYY-MM-DD. */
+  week: string;
+  /** "16 Nov" */
+  short: string;
+  /** "16 November 2026" */
+  long: string;
+  count: number;
+}
+
+/**
+ * How many companies were added in each of the WEEKS weeks the list covers,
+ * oldest first, weeks with none included. Empty when nothing is listed.
+ */
+export function weeklyCounts(weeks: NewWeek[]): WeekCount[] {
+  if (!weeks.length) return [];
+  const newest = Date.parse(`${weeks[0].week}T00:00:00Z`);
+  const counts = new Map(weeks.map((w) => [w.week, w.entries.length]));
+  return Array.from({ length: WEEKS }, (_, i) => {
+    const iso = new Date(newest - (WEEKS - 1 - i) * 7 * DAY).toISOString();
+    const week = iso.slice(0, 10);
+    return {
+      week,
+      short: new Date(iso).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'short' }),
+      long: dayText(iso),
+      count: counts.get(week) ?? 0,
+    };
+  });
+}
+
 const XML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
 /** Escapes text for an XML text node or attribute, and drops characters XML 1.0 forbids. */
 export const xmlEscape = (text: string) =>
