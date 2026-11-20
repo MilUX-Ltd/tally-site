@@ -13,7 +13,7 @@ const BASE = 'https://raw.githubusercontent.com/MilUX-Ltd/tally/main';
 const MONEY_REF = 'main';
 const MONEY_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${MONEY_REF}/money.json`;
 // Where companies-house.json is read from: the same rule as money.json.
-const CH_REF = 'feature/companies-house';
+const CH_REF = 'main';
 const CH_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${CH_REF}/companies-house.json`;
 
 // West, south, east, north: the UK map's bounds. Must match UK_BOUNDS in
