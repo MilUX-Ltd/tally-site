@@ -186,25 +186,68 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
 .cluster-map-name { grid-column: 2; grid-row: 1; font-weight: 700; }
 .cluster-map-detail { grid-column: 2; grid-row: 2; font-size: 12.5px; color: var(--ink-2); }
 
-/* List view: the matrix and the overseas companies, under the rows. */
-.matrix, .overseas { padding: 22px 18px 6px; }
-.matrix h2, .overseas h2 { font-size: 22px; }
-.matrix p { margin: 6px 0 10px; font-size: 13.5px; color: var(--ink-2); }
-.matrix-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 600; }
-.matrix-controls select { height: 38px; padding: 0 8px; border: 1.5px solid var(--ink); border-radius: 0; background: var(--white); font-size: 14.5px; font-weight: 600; max-width: 100%; }
-.matrix-scroll { position: relative; overflow: auto; max-width: 100%; max-height: 80vh; border: 1.5px solid var(--ink); background: var(--white); }
+/* Matrix view: the capability matrix in one card, the whole width. Everything
+   in the card but the pager scrolls as one, both ways: the heading and the
+   group choices scroll away, then the header rows hold at the top and the
+   company column at the left. */
+.matrix { --name: 15rem; flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; background: var(--white); border: 1.5px solid var(--ink); box-shadow: var(--shadow-card); }
+.matrix .panel-head, .matrix .shortlist-tools, .matrix-groups, .matrix .empty { position: sticky; left: 0; }
+.matrix .panel-actions { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; gap: 8px 18px; }
+.matrix-groups { flex: none; display: flex; align-items: baseline; gap: 6px 14px; padding: 10px 18px 12px; border-bottom: 1.5px solid var(--ink); }
+.matrix-groups > .mono { flex: none; color: var(--ink-3); }
+.matrix-picks { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.matrix-pick { position: relative; display: inline-flex; flex: none; }
+.matrix-pick input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.matrix-pick span { display: inline-flex; align-items: center; height: 30px; padding: 0 10px; background: var(--white); border: 1.5px solid var(--ink); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.matrix-pick input:hover + span { background: var(--paper); }
+.matrix-pick input:checked + span { background: var(--ink); color: var(--white); }
+.matrix-pick input:focus-visible + span { outline: 3px solid var(--signal); outline-offset: 2px; }
+.matrix-scroll { flex: 1; min-height: 0; position: relative; overflow: auto; overscroll-behavior: contain; }
+.matrix-scroll:focus-visible { outline-offset: -3px; }
 .matrix table { border-collapse: separate; border-spacing: 0; font-size: 13px; }
-.matrix th, .matrix td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 4px; }
-.matrix tbody th { position: sticky; left: 0; background: var(--white); text-align: left; font-weight: 600; min-width: 10rem; max-width: 14rem; z-index: 1; }
-.matrix .company-head { position: sticky; left: 0; background: var(--white); text-align: left; vertical-align: bottom; z-index: 2; }
-.matrix .group-head { text-align: left; background: var(--paper); font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); vertical-align: bottom; }
-.matrix .cap-head { vertical-align: bottom; }
-.matrix .cap-head label { display: flex; flex-direction: column-reverse; align-items: center; gap: 4px; cursor: pointer; }
-.matrix .cap-label { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; font-weight: 600; max-height: 12rem; }
-.matrix .cap-head input { width: 20px; height: 20px; accent-color: var(--forest); }
-.matrix td { text-align: center; min-width: 2rem; }
-.matrix td.tick { color: var(--signal); }
-.matrix .pager { margin: 10px 0 0; font-size: 13px; }
+.matrix th, .matrix td { box-sizing: border-box; padding: 0; border-bottom: 1px solid var(--line); border-left: 1px solid #ecebe3; }
+.matrix thead { position: sticky; top: 0; z-index: 3; }
+.matrix thead th, .matrix thead td { background: var(--white); }
+.matrix thead tr:last-child > * { border-bottom: 1.5px solid var(--ink); }
+.matrix .corner, .matrix .company-head, .matrix tbody th { position: sticky; left: 0; z-index: 1; border-left: 0; }
+.matrix .corner { padding: 8px 12px 6px; text-align: left; vertical-align: bottom; }
+.matrix .company-head { padding: 0 12px 9px; text-align: left; vertical-align: bottom; font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+.matrix .list-head, .matrix .list-cell { position: sticky; left: var(--name); z-index: 1; border-left: 0; }
+.matrix .corner, .matrix .list-head, .matrix .list-cell { box-shadow: 1.5px 0 0 var(--ink); }
+.matrix .group-head { min-width: 8.5rem; padding: 8px 8px 6px; text-align: left; vertical-align: bottom; background: var(--paper); border-left: 1.5px solid var(--ink); font-family: var(--font-mono); font-weight: 500; font-size: 10.5px; line-height: 1.3; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+.matrix .start { border-left: 1.5px solid var(--ink); }
+.matrix .cap-head { vertical-align: bottom; min-width: 34px; }
+.matrix .cap-head label { display: flex; flex-direction: column-reverse; align-items: center; gap: 7px; padding: 10px 4px 8px; cursor: pointer; }
+.matrix .cap-label { writing-mode: vertical-rl; transform: rotate(180deg); max-height: 6.75rem; text-align: left; font-weight: 600; font-size: 12.5px; line-height: 1.2; }
+.matrix .cap-head label:hover .cap-label { text-decoration: underline; }
+.matrix .cap-head input { width: 18px; height: 18px; margin: 0; accent-color: var(--forest); cursor: pointer; }
+.matrix thead .on { background: #fbeed3; }
+.matrix tbody th { width: var(--name); min-width: var(--name); max-width: var(--name); padding: 7px 12px; background: var(--white); text-align: left; font-weight: 700; font-size: 13.5px; line-height: 1.25; overflow-wrap: anywhere; }
+.matrix tbody th a { text-decoration: none; }
+.matrix tbody th a:hover { text-decoration: underline; }
+.matrix td { min-width: 34px; height: 36px; text-align: center; }
+.matrix .list-cell { padding: 0 7px; background: var(--white); }
+.matrix-add { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; background: var(--white); border: 1.5px solid var(--ink); border-radius: 0; color: var(--ink); font-size: 15px; font-weight: 700; line-height: 1; cursor: pointer; }
+.matrix-add:hover { background: var(--paper); }
+.matrix-add.is-selected { background: var(--ink); color: var(--white); }
+.matrix .mark { display: inline-block; width: 11px; height: 11px; background: var(--ink); vertical-align: middle; }
+.matrix td.on { background: #fdf6e6; }
+.matrix td.on .mark { background: var(--ramp-4); }
+.matrix tbody tr:hover > * { background: #fbf7ef; }
+.matrix tbody tr:hover > td.on { background: #f9ecd0; }
+.matrix .panel-foot { border-top: 1.5px solid var(--ink); }
+.matrix .pager { flex: 1; flex-wrap: wrap; gap: 4px 16px; }
+.matrix .pager span:first-child { margin-right: auto; }
+.matrix-key { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-weight: 500; font-size: 10.5px; line-height: 1.3; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.matrix-key .mark { flex: none; }
+@media (min-width: 761px) {
+  .matrix .shortlist-tools { grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: 8px 16px; }
+  .matrix .shortlist-contact { padding-bottom: 6px; }
+}
+
+/* List view: the overseas companies, under the rows. */
+.overseas { padding: 22px 18px 6px; }
+.overseas h2 { font-size: 22px; }
 .overseas { padding-bottom: 22px; }
 .overseas summary { display: flex; align-items: baseline; gap: 12px; cursor: pointer; list-style: none; width: fit-content; }
 .overseas summary::-webkit-details-marker { display: none; }
@@ -272,6 +315,9 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
   .find.as-list .rows { display: block; }
   .find.as-list .row { border-right: 0; }
   .panel-head h2 { font-size: 24px; }
+  .panel-head { flex-wrap: wrap; gap: 8px 12px; }
+  .panel-head > div:first-child { flex: 1 1 100%; }
+  .panel-actions { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 18px; padding-top: 0; }
   .controls { top: auto; bottom: 12px; left: 0; right: 0; justify-content: center; }
   .find.landing .controls { position: relative; z-index: 4; bottom: auto; padding: 0 var(--gutter); }
   .map-credit { position: relative; z-index: 4; margin: 14px var(--gutter) 24px; font-size: 11px; text-align: center; }
@@ -283,7 +329,23 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
   .sheet-modal { inset: 0; width: 100vw; border-width: 0; box-shadow: none; }
   #layers.sheet-modal { inset: auto 0 0; height: auto; max-height: 82vh; max-height: 82dvh; border-width: 1.5px 0 0; box-shadow: 0 -6px 0 var(--shadow); }
   .company-list { grid-template-columns: minmax(0, 1fr); }
-  .matrix, .overseas { padding-left: 12px; padding-right: 12px; }
+  .overseas { padding-left: 12px; padding-right: 12px; }
+  .matrix { --name: 8.25rem; border-width: 1.5px 0 0; box-shadow: 0 -6px 0 var(--shadow); padding-bottom: 62px; }
+  .matrix .panel-head { padding: 10px 16px 8px; }
+  .matrix .panel-head h2 { font-size: 21px; }
+  .matrix .panel-actions { justify-content: flex-start; }
+  .matrix-groups { flex-direction: column; gap: 2px; padding: 8px 0 4px; }
+  .matrix-groups > .mono { padding: 0 16px; }
+  .matrix-picks { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; padding: 5px 16px 6px; }
+  .matrix .list-head, .matrix .list-cell { position: static; box-shadow: none; }
+  .matrix .corner { box-shadow: none; }
+  .matrix .corner, .matrix .company-head, .matrix tbody th { border-right: 1.5px solid var(--ink); }
+  .matrix .corner { padding-left: 16px; }
+  .matrix tbody th { padding: 6px 8px 6px 16px; font-size: 13px; }
+  .matrix .company-head { padding-left: 16px; }
+  .matrix .cap-label { max-height: 5.5rem; font-size: 12px; }
+  .matrix .cap-head label { padding-top: 8px; gap: 6px; }
+  .matrix .panel-foot { padding: 0 16px; }
 }
 /* Short phones: the results sheet starts taller, so more than one company shows. */
 @media (max-width: 760px) and (max-height: 700px) {
@@ -295,6 +357,6 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
   body:has(.find) .topbar { gap: 8px; padding: 0 10px; }
   body:has(.find) .brand b { font-size: 18px; }
   body:has(.find) .topbar-button { padding-left: 10px; gap: 6px; }
-  .controls { gap: 6px; }
-  .controls .btn { padding: 0 11px; }
+  .controls { gap: 5px; }
+  .controls .btn { padding: 0 8px; font-size: 13px; }
 }

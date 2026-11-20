@@ -11,7 +11,7 @@
 - **Cluster area**: the part of the UK a cluster covers, as ONS areas (counties and unitary authorities, English regions or countries) merged into one outline. Areas are approximate and can overlap.
 - **Shortlist**: companies a buyer has picked, held in the URL, exportable as CSV.
 - **Heatmap**: hexagon density of companies matching the current filters.
-- **Matrix**: a table of companies against top-level capabilities, grouped by capability group. A company is ticked under a capability when it has it or a sub-capability.
+- **Matrix**: a table of companies against top-level capabilities, grouped by capability group. A company is ticked under a capability when it has it or a sub-capability. It is the Matrix view of the home page (`view=matrix`), reached from the view switch and from "Compare capabilities" in the results.
 - **Area**: a rectangle taken from the map's current view or drawn on the map; it narrows the area list and the matrix.
 - **Overlap**: places where two or more chosen capabilities coincide. A place is an H3 hexagon at resolution 5 (about 250 square kilometres), fixed so the answer does not change with zoom. A place is an overlap when each chosen capability is found there, in one company or several; overlap mode shows the companies in those places that have at least one chosen capability.
 
@@ -50,7 +50,7 @@ Versioned with the site. A change to any of these is at least a minor bump; a br
    | `cluster` | Chosen cluster; its area is drawn, and companies narrow to its recorded members when Tally records them (`mbr-` tag), otherwise they are not narrowed | cluster id from `clusters.json`, for example `SCRDSC` | none |
    | `q` | Keyword search, set when plain-English search falls back: companies whose name, summary or tag labels contain every word (common words ignored; a word matches the start of a word) | text, up to 300 characters | none |
    | `flat` | Draw the map flat, as hexagons seen from above; left out for 3D columns | `1` | 3D |
-   | `view` | The List view: the results full width with the matrix and the overseas companies, and no map. A link with `mpage` above 1 or an `mgroup`, and no `view`, opens here | `list` | the map with the results beside it |
+   | `view` | The view when it is not the map. `list`: the results full width with the overseas companies, and no map. `matrix`: the capability matrix full width, for the results or, with the shortlist open, the shortlist, and no map. A link with `mpage` above 1 or an `mgroup`, and no `view`, opens the Matrix view. Any other value is dropped | `list` or `matrix` | the map with the results beside it |
 
    Filters combine (a chosen cluster, and a chosen site or place, narrow the companies too). Only one location filter is set at a time: choosing a place clears the site and choosing a site clears the place: a company must match every facet that has values. Only one of `cell`, `sel` and `area` is set at a time; the area list shows the companies that match the filters within it.
 2. **Data contract.** The build (`scripts/fetch-data.mjs`) reads `tally-data.json` and `taxonomy.json` from `MilUX-Ltd/tally` and writes a slimmed `public/data/tally.json` (not committed). Fields the site depends on:

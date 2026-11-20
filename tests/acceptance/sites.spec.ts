@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AXE_TAGS, listView, openLayers, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, matrixView, openLayers, useOfflineMap, waitForMap } from '../support/offline-map';
 
 const fixture = JSON.parse(readFileSync(new URL('../fixtures/tally-data.json', import.meta.url), 'utf8')) as {
   companies: Array<{ name: string; lat: number | null; lon: number | null; country?: string }>;
@@ -77,7 +77,7 @@ test('picking a site and radius filters the companies', async ({ page }) => {
   await expect.poll(() => params(page.url()).get('site')).toBe(abbeyWood.id);
   await expect.poll(() => params(page.url()).get('radius')).toBe('10');
   const ten = near(abbeyWood, 10);
-  await listView(page);
+  await matrixView(page);
   expect(ten.length).toBeGreaterThan(0);
   await expect(page.locator('#result-count')).toContainText(`${ten.length} compan`);
   await expect(page.locator('#result-count')).toContainText(`within 10 miles of ${abbeyWood.name}`);
@@ -97,7 +97,7 @@ test('picking a site and radius filters the companies', async ({ page }) => {
   await page.goto(`/?site=${abbeyWood.id}&radius=10`);
   await waitForMap(page);
   await expect(page.getByLabel('Companies near a site')).toHaveValue(abbeyWood.id);
-  await listView(page);
+  await matrixView(page);
   await expect.poll(() => rowNames(page)).toEqual(ten);
   const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(scrollWidth).toBeLessThanOrEqual(375);

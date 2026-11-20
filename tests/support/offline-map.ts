@@ -66,9 +66,14 @@ export async function openLayers(page: Page): Promise<void> {
   await page.getByRole('dialog', { name: 'Layers' }).waitFor();
 }
 
-/** Chooses the List view, which holds the matrix and the overseas companies. */
+/** Chooses the List view, which holds the results full width and the overseas companies. */
 export async function listView(page: Page): Promise<void> {
   await page.getByRole('group', { name: 'View' }).getByRole('button', { name: 'List', exact: true }).click();
+}
+
+/** Chooses the Matrix view: the capability matrix for the results or the shortlist. */
+export async function matrixView(page: Page): Promise<void> {
+  await page.getByRole('group', { name: 'View' }).getByRole('button', { name: 'Matrix', exact: true }).click();
 }
 
 /** Chooses the Map view. */

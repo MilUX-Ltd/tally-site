@@ -3,7 +3,7 @@
 // join link. Committed failing before the build. Not edited after that commit.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AXE_TAGS, listView, openLayers, useOfflineMap, waitForMap } from '../support/offline-map';
+import { AXE_TAGS, matrixView, openLayers, useOfflineMap, waitForMap } from '../support/offline-map';
 
 const SIGNPOST = "Members' event: join the cluster for details";
 
@@ -55,7 +55,7 @@ test('picking a cluster filters companies to its members', async ({ page }) => {
   const members = ['Example EW Systems', 'Example Harbour Systems', 'Example Human Factors'];
   await expect(page.locator('#result-count')).toContainText('3 companies');
   await expect(page.locator('#result-count')).toContainText('South Central');
-  await listView(page);
+  await matrixView(page);
   await expect.poll(() => rowNames(page)).toEqual(members);
   await expectNoAxeViolations(page);
 
@@ -70,7 +70,7 @@ test('picking a cluster filters companies to its members', async ({ page }) => {
   await page.goto('/?clusters=1&cluster=SCRDSC');
   await waitForMap(page);
   await expect(page.getByLabel('Companies in a cluster')).toHaveValue('SCRDSC');
-  await listView(page);
+  await matrixView(page);
   await expect.poll(() => rowNames(page)).toEqual(members);
   await noSideScroll(page);
   await expectNoAxeViolations(page);
