@@ -6,12 +6,19 @@
 # pull requests deploy a Worker Preview (one per pull request), pushes to main
 # deploy to production. Both are followed by a header and smoke check against
 # the deployed URL.
+#
+# A daily scheduled run rebuilds and redeploys main, so data merged into the data
+# repo (MilUX-Ltd/tally) and date-based content (events, funding deadlines, new
+# this week) reach the live site without a code change. It can also be run by hand.
 name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: '30 5 * * *'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -91,7 +98,12 @@ jobs:
 
   deploy-production:
     name: Production deploy (main)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && contains(fromJSON('["push", "schedule", "workflow_dispatch"]'), github.event_name)
+    # One production deploy at a time, in order, so a scheduled build cannot finish
+    # after a newer push and roll it back.
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
     needs: test
     runs-on: ubuntu-latest
     env:
