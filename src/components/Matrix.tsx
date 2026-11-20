@@ -12,23 +12,25 @@ interface Props {
   selectedCaps: string[];
   group: string | null;
   page: number;
-  inArea: boolean;
+  /** Which companies are compared: the results, a map area or the shortlist. */
+  scope: 'results' | 'area' | 'shortlist';
   onToggleCap: (slug: string, on: boolean) => void;
   onGroup: (group: string | null) => void;
   onPage: (page: number) => void;
 }
 
-export default function Matrix({ taxonomy, companies, selectedCaps, group, page, inArea, onToggleCap, onGroup, onPage }: Props) {
+export default function Matrix({ taxonomy, companies, selectedCaps, group, page, scope: which, onToggleCap, onGroup, onPage }: Props) {
   const groups = useMemo(() => matrixColumns(taxonomy, group), [taxonomy, group]);
   const columns = groups.flatMap((g) => g.columns);
   const { rows, page: current, pages } = matrixPage(companies, page);
   const first = (current - 1) * MATRIX_PAGE_SIZE + 1;
+  const scope = which === 'area' ? ' in the selected area' : which === 'shortlist' ? ' on your shortlist' : '';
   return (
     <section class="matrix" aria-labelledby="matrix-heading">
-      <h2 id="matrix-heading">Capability matrix</h2>
+      <h2 id="matrix-heading">Compare capabilities</h2>
       <p>
         {companies.length === 1 ? '1 company' : `${companies.length} companies`}
-        {inArea ? ' in the selected area' : ''}. Tick a capability to show only companies that offer it; the map redraws to match.
+        {scope}. Tick a capability to show only companies that offer it; the map redraws to match.
       </p>
       <p class="matrix-controls">
         <label for="matrix-group">Capabilities shown</label>
@@ -41,9 +43,9 @@ export default function Matrix({ taxonomy, companies, selectedCaps, group, page,
           ))}
         </select>
       </p>
-      <div class="matrix-scroll" tabIndex={0} role="region" aria-label="Capability matrix table, scrolls sideways">
+      <div class="matrix-scroll" tabIndex={0} role="region" aria-label="Compare capabilities table, scrolls sideways">
         <table>
-          <caption class="vh">Capability matrix: companies by capability</caption>
+          <caption class="vh">Compare capabilities: companies by capability</caption>
           <colgroup />
           {groups.map((g) => (
             <colgroup key={g.group.slug} span={g.columns.length} />
@@ -101,14 +103,14 @@ export default function Matrix({ taxonomy, companies, selectedCaps, group, page,
       </div>
       {pages > 1 && (
         <nav class="pager" aria-label="Matrix rows">
-          <button type="button" class="secondary" disabled={current === 1} onClick={() => onPage(current - 1)}>
-            Earlier rows
+          <button type="button" class="link" disabled={current === 1} onClick={() => onPage(current - 1)}>
+            Previous<span class="vh"> rows</span>
           </button>
           <span>
             Rows {first} to {first + rows.length - 1} of {companies.length}
           </span>
-          <button type="button" class="secondary" disabled={current === pages} onClick={() => onPage(current + 1)}>
-            Later rows
+          <button type="button" class="link" disabled={current === pages} onClick={() => onPage(current + 1)}>
+            Next<span class="vh"> rows</span>
           </button>
         </nav>
       )}

@@ -17,7 +17,7 @@ const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : 
 export default function ClusterMapLegend({ entries, chosen, onTop, onOnTop, onChoose }: Props) {
   return (
     <section class="cluster-map-legend" aria-labelledby="cluster-map-heading">
-      <h2 id="cluster-map-heading">Cluster map</h2>
+      <h3 id="cluster-map-heading">Cluster map</h3>
       <label class="choice">
         <input type="checkbox" checked={onTop} onChange={(e) => onOnTop((e.currentTarget as HTMLInputElement).checked)} /> Show companies on top
       </label>
