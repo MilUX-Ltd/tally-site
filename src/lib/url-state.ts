@@ -59,12 +59,18 @@ export interface ViewState {
   cluster: string | null;
   /** Keyword search text, set when plain-English search falls back; '' for none. */
   q: string;
+  /** Whether the map is drawn flat; false means 3D columns, the default. */
+  flat: boolean;
+  /** Map and results panel, or the results full width with the matrix. */
+  view: View;
 }
+
+export type View = 'map' | 'list';
 
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '' };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '', flat: false, view: 'map' };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -158,6 +164,10 @@ export function fromQuery(query: string): ViewState {
   const cluster = p.get('cluster');
   if (cluster && CLUSTER.test(cluster)) state.cluster = cluster;
   state.q = keywordText(p.get('q'));
+  if (p.get('flat') === '1') state.flat = true;
+  // The matrix lives in the List view, so an older link to a matrix page or
+  // group opens there.
+  if (p.get('view') === 'list' || (p.get('view') === null && (state.matrix.page > 1 || state.matrix.group))) state.view = 'list';
   return state;
 }
 
@@ -190,6 +200,8 @@ export function toQuery(state: ViewState): string {
   if (state.onTop) add('ontop', '1');
   if (state.cluster) add('cluster', state.cluster);
   if (state.q) add('q', state.q);
+  if (state.flat) add('flat', '1');
+  if (state.view === 'list') add('view', 'list');
   return parts.join('&');
 }
 

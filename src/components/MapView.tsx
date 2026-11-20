@@ -1,13 +1,15 @@
-// The heatmap. MapLibre draws OpenFreeMap tiles; companies are binned into H3
-// hexagons in the browser and coloured by count. Above PIN_ZOOM the hexagons
-// give way to clustered pins. H3 loads after the map has started on its
-// tiles, to keep the JavaScript needed before tiles small.
+// The map. MapLibre draws OpenFreeMap tiles, calmed to land, sea, borders and
+// place names; companies are binned into H3 hexagons in the browser and drawn
+// as columns (3D, the default) or flat hexagons, coloured on the data ramp
+// against the busiest area in view. Above PIN_ZOOM the hexagons give way to
+// clustered pins. H3 loads after the map has started on its tiles, to keep the
+// JavaScript needed before tiles small.
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { ExpressionSpecification, GeoJSONSource, Map as MlMap, MapGeoJSONFeature } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { BRAND_SCALE, colourScale, type LegendEntry } from '../lib/colour';
 import { isLocated } from '../lib/filters';
 import { ATTRIBUTION, FONT, STYLE_URL, UK_BOUNDS } from '../lib/map-config';
+import type { HexCollection } from '../lib/binning';
 import type { Site } from '../lib/sites';
 import type { Company } from '../lib/types';
 import type { Bbox, MapPosition } from '../lib/url-state';
@@ -31,15 +33,12 @@ interface Props {
   clusterRegions?: { type: 'FeatureCollection'; features: unknown[] } | null;
   /** One marker per cluster with upcoming events. */
   clusterEvents?: { type: 'FeatureCollection'; features: unknown[] } | null;
-  /** The chosen cluster's bounds, brought into view when the choice changes. */
-  clusterFocus?: { key: string; bounds: [number, number, number, number] } | null;
   /** One name label per cluster, drawn while the cluster map is on. */
   clusterLabels?: { type: 'FeatureCollection'; features: unknown[] } | null;
   /** The cluster map: every area drawn strongly and labelled, companies faded behind. */
   clusterMap?: boolean;
   /** Keep companies at full strength over the cluster map. */
   companiesOnTop?: boolean;
-  onClusterMap?: (on: boolean) => void;
   /** An area on the cluster map was selected. */
   onSelectCluster?: (id: string) => void;
   /** Draw hexagons at this resolution whatever the zoom (capability overlap places). */
@@ -54,6 +53,31 @@ interface Props {
   /** The area taken from or drawn on the map, outlined when set. */
   area?: Bbox | null;
   onArea?: (area: Bbox) => void;
+  /** Columns (3D) or flat hexagons. */
+  three: boolean;
+  /** Room taken by the panels over the map, so the camera frames what is left. */
+  padding: Padding;
+  /** What the camera should frame: bounds, or the whole UK. Null until the page has settled. */
+  focus: { key: string; bounds: Bbox | null } | null;
+  /** Whether a rectangle is being drawn. */
+  drawing: boolean;
+  onDrawing: (drawing: boolean) => void;
+  /** The List view covers the map: it is taken out of reach. */
+  hidden?: boolean;
+  /** Lets the page ask for the area in view ("Search this area"). */
+  api?: { current: MapApi | null };
+}
+
+export interface Padding {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+export interface MapApi {
+  /** The area around the centre of the view, clear of the panels. */
+  viewArea: () => Bbox | null;
 }
 
 const bboxPolygon = ([w, s, e, n]: Bbox) => ({
@@ -68,8 +92,22 @@ const bboxPolygon = ([w, s, e, n]: Bbox) => ({
 });
 const EMPTY = { type: 'FeatureCollection' as const, features: [] };
 const round5 = (n: number) => Number(n.toFixed(5));
-const SITE_COLOUR = '#586F7C';
-const RING_COLOUR = '#A35C17';
+const FOREST = '#113308';
+const PAPER = '#F5F4EF';
+const SITE_COLOUR = FOREST;
+const RING_COLOUR = FOREST;
+/** The data ramp, low to high. */
+export const RAMP = ['#F2D9A6', '#EDA552', '#E2611C', '#8A2B0A'] as const;
+const RAMP_COLOUR: ExpressionSpecification = ['interpolate', ['linear'], ['get', 't'], 0, RAMP[0], 0.3, RAMP[1], 0.6, RAMP[2], 1, RAMP[3]];
+/** Column height in metres for one company, by hexagon resolution; heights grow with the square root of the count. */
+const COLUMN_HEIGHT: Record<number, number> = { 3: 18000, 4: 9000, 5: 4600, 6: 2200, 7: 1000 };
+const COLUMN_OPACITY = 0.92;
+const PITCH = 50;
+const BEARING = -12;
+const UK_CENTRE: [number, number] = [-3.4, 54.7];
+const UK_ZOOM = 5.25;
+
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function sitesGeoJSON(sites: Site[] | null | undefined, chosen: string | null | undefined) {
   return {
@@ -98,8 +136,8 @@ function ringGeoJSON(ring: number[][] | null | undefined) {
   };
 }
 
-const PIN_COLOUR = '#113308';
-const LABEL_TEXT = '#1A1A1A';
+const PIN_COLOUR = FOREST;
+const LABEL_TEXT = '#0C1510';
 const HEX_OPACITY = 0.72;
 const FADED = 0.1;
 
@@ -138,6 +176,7 @@ function companyPaint(faded: boolean): Array<[string, PaintName, number]> {
   const o = faded ? FADED : 1;
   return [
     ['hex-fill', 'fill-opacity', faded ? FADED : HEX_OPACITY],
+    ['hex-3d', 'fill-extrusion-opacity', faded ? FADED : COLUMN_OPACITY],
     ['hex-line', 'line-opacity', o],
     ['clusters', 'circle-opacity', o],
     ['clusters', 'circle-stroke-opacity', o],
@@ -147,7 +186,8 @@ function companyPaint(faded: boolean): Array<[string, PaintName, number]> {
   ];
 }
 const CLUSTER_COLOUR = '#A35C17';
-const SELECTED_COLOUR = '#113308';
+const COMPANY_LAYERS = ['hex-fill', 'hex-3d', 'clusters', 'pins'];
+const SELECTED_COLOUR = FOREST;
 
 function pointsGeoJSON(companies: Company[]) {
   return {
@@ -167,31 +207,88 @@ export default function MapView(props: Props) {
   const propsRef = useRef(props);
   propsRef.current = props;
   const lastResolution = useRef<number>(-1);
-  const [legend, setLegend] = useState<LegendEntry[]>([]);
+  const [legend, setLegend] = useState<'loading' | 'empty' | 'shown'>('loading');
   const [pins, setPins] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [drawing, setDrawing] = useState(false);
   const drawingRef = useRef(false);
-  drawingRef.current = drawing;
+  drawingRef.current = props.drawing;
   const [loaded, setLoaded] = useState(false);
+  // The last hexagons drawn, kept so a move can tell whether the busiest area in view has changed.
+  const drawn = useRef<{ bins: Array<{ count: number; lon: number; lat: number }>; max: number }>({ bins: [], max: 0 });
+
+  /** The largest count among hexagons in view, or among them all when none is. */
+  const busiest = (bins: Array<{ count: number; lon: number; lat: number }>) => {
+    const map = mapRef.current;
+    const all = bins.reduce((m, b) => Math.max(m, b.count), 0);
+    if (!map) return all;
+    const bounds = map.getBounds();
+    const inView = bins.filter((b) => bounds.contains([b.lon, b.lat])).reduce((m, b) => Math.max(m, b.count), 0);
+    return inView || all;
+  };
 
   const draw = () => {
     const map = mapRef.current;
     const binning = binningRef.current;
     const el = container.current;
     if (!map || !binning || !el || !map.getSource('hexes')) return;
-    const { companies } = propsRef.current;
+    const { companies, selectedCell } = propsRef.current;
     const resolution = propsRef.current.fixedResolution ?? binning.resolutionForZoom(map.getZoom());
     lastResolution.current = resolution;
     const bins = binning.binCompanies(companies, resolution);
-    const scale = colourScale(bins.reduce((m, b) => Math.max(m, b.count), 0));
+    const geo: HexCollection = binning.binsToGeoJSON(bins);
+    const centres = geo.features.map((f) => {
+      const ring = f.geometry.coordinates[0].slice(0, -1);
+      return { count: f.properties.count, lon: ring.reduce((n, p) => n + p[0], 0) / ring.length, lat: ring.reduce((n, p) => n + p[1], 0) / ring.length };
+    });
+    const max = Math.max(1, busiest(centres));
+    drawn.current = { bins: centres, max };
+    const unit = COLUMN_HEIGHT[resolution] ?? COLUMN_HEIGHT[7];
     el.dataset.ready = 'false';
-    (map.getSource('hexes') as GeoJSONSource).setData(binning.binsToGeoJSON(bins, scale.colourFor));
+    (map.getSource('hexes') as GeoJSONSource).setData({
+      type: 'FeatureCollection',
+      features: geo.features.map((f) => {
+        const { cell, count } = f.properties;
+        return { ...f, properties: { cell, count, t: Math.min(1, Math.sqrt(count / max)), height: Math.sqrt(count) * unit, on: cell === selectedCell } };
+      }),
+    } as GeoData);
     (map.getSource('points') as GeoJSONSource).setData(pointsGeoJSON(companies));
-    setLegend(bins.length ? scale.legend : []);
+    setLegend(bins.length ? 'shown' : 'empty');
     map.once('idle', () => {
       el.dataset.ready = 'true';
     });
+  };
+
+  /** The camera for the whole UK in the room the panels leave. */
+  const overview = (map: MlMap, padding: Padding) => {
+    let fit: number | undefined;
+    try {
+      fit = map.cameraForBounds(UK_BOUNDS, { padding, bearing: 0 })?.zoom;
+    } catch {
+      fit = undefined;
+    }
+    return { center: UK_CENTRE, zoom: Math.max(3.6, Math.min(UK_ZOOM, (fit ?? 4.2) + 0.35)) };
+  };
+
+  /** Moves the camera to the focus: its bounds, or the UK. Flies unless told not to, or motion is reduced. */
+  const frame = (instant: boolean) => {
+    const map = mapRef.current;
+    if (!map) return;
+    const { focus, padding, three } = propsRef.current;
+    let target = overview(map, padding);
+    if (focus?.bounds) {
+      const [w, s, e, n] = focus.bounds;
+      const room = { top: padding.top + 24, right: padding.right + 24, bottom: padding.bottom + 24, left: padding.left + 24 };
+      let zoom: number | undefined;
+      try {
+        zoom = map.cameraForBounds([w, s, e, n], { padding: room, bearing: 0 })?.zoom;
+      } catch {
+        zoom = undefined;
+      }
+      target = { center: [(w + e) / 2, (s + n) / 2], zoom: Math.min(11, (zoom ?? 7) - (three ? 0.15 : 0)) };
+    }
+    const camera = { ...target, pitch: three ? PITCH : 0, bearing: three ? BEARING : 0, padding };
+    if (instant || reducedMotion()) map.jumpTo(camera);
+    else map.flyTo({ ...camera, duration: 1400 });
   };
 
   useEffect(() => {
@@ -206,54 +303,95 @@ export default function MapView(props: Props) {
         if (cancelled || !container.current) return;
         maplibregl.setWorkerUrl(workerUrl);
         const start = propsRef.current.initialPosition;
+        const three = propsRef.current.three;
         const m = new maplibregl.Map({
           container: container.current,
           style: STYLE_URL,
-          ...(start ? { center: [start.lon, start.lat] as [number, number], zoom: start.zoom } : { bounds: UK_BOUNDS }),
+          center: start ? [start.lon, start.lat] : UK_CENTRE,
+          zoom: start ? start.zoom : UK_ZOOM,
+          pitch: three ? PITCH : 0,
+          bearing: three ? BEARING : 0,
           minZoom: 3,
           maxZoom: 15,
-          dragRotate: false,
-          pitchWithRotate: false,
-          touchPitch: false,
+          maxPitch: 60,
           attributionControl: { compact: false, customAttribution: ATTRIBUTION },
         });
         map = m;
-        m.touchZoomRotate.disableRotation();
-        m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+        m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
         mapRef.current = m;
         // Lets journey tests place clicks on the map; nothing else reads it.
         Object.defineProperty(container.current, 'tallyMap', { value: m, configurable: true });
 
         m.on('load', async () => {
           m.resize();
-          if (!start) m.fitBounds(UK_BOUNDS, { padding: 16, animate: false });
+          // The first view: the position in the link, or the whole UK.
+          if (start) m.jumpTo({ center: [start.lon, start.lat], zoom: start.zoom, padding: propsRef.current.padding });
+          else frame(true);
+
+          // A calm, light base: land, sea, borders and place names only.
+          for (const l of m.getStyle().layers) {
+            if (/road|highway|rail|bridge|tunnel|aeroway|building|poi|housenum|ferry|park|landuse|landcover|waterway/.test(l.id)) m.setLayoutProperty(l.id, 'visibility', 'none');
+            else if (l.type === 'background') m.setPaintProperty(l.id, 'background-color', '#FBFAF6');
+            else if (l.type === 'fill' && /water/.test(l.id)) m.setPaintProperty(l.id, 'fill-color', '#DCE3E2');
+            else if (l.type === 'line' && /boundary/.test(l.id)) m.setPaintProperty(l.id, 'line-color', '#B9B8AE');
+            else if (l.type === 'symbol') {
+              if (/state|suburb|village|other|country_3|water/.test(l.id)) m.setLayoutProperty(l.id, 'visibility', 'none');
+              else {
+                m.setPaintProperty(l.id, 'text-color', '#3F4A42');
+                m.setPaintProperty(l.id, 'text-halo-color', 'rgba(251,250,246,0.9)');
+              }
+            }
+          }
+          // Areas and columns sit under the place names.
+          const under = m.getStyle().layers.find((l) => l.type === 'symbol')?.id;
+          const { PIN_ZOOM } = await import('../lib/binning');
+          if (cancelled) return;
+
           // Cluster areas sit under everything else. Higher-ranked areas
           // (smaller ones, and the chosen one) draw on top where areas overlap.
           const regionStyle = regionPaint(Boolean(propsRef.current.clusterMap));
           m.addSource('cluster-regions', { type: 'geojson', data: (propsRef.current.clusterRegions ?? EMPTY) as GeoData });
-          m.addLayer({
-            id: 'cluster-fill',
-            type: 'fill',
-            source: 'cluster-regions',
-            layout: { 'fill-sort-key': ['get', 'rank'] },
-            paint: { 'fill-color': AREA_COLOUR, 'fill-opacity': regionStyle['fill-opacity'] },
-          });
-          m.addLayer({
-            id: 'cluster-line',
-            type: 'line',
-            source: 'cluster-regions',
-            filter: ['==', LIVE, true],
-            layout: { 'line-sort-key': ['get', 'rank'] },
-            paint: { 'line-color': AREA_COLOUR, 'line-width': regionStyle['line-width'] },
-          });
-          m.addLayer({
-            id: 'cluster-line-not-live',
-            type: 'line',
-            source: 'cluster-regions',
-            filter: ['==', LIVE, false],
-            layout: { 'line-sort-key': ['get', 'rank'] },
-            paint: { 'line-color': AREA_COLOUR, 'line-width': regionStyle['line-width'], 'line-dasharray': [2, 1.5] },
-          });
+          m.addLayer(
+            {
+              id: 'cluster-fill',
+              type: 'fill',
+              source: 'cluster-regions',
+              layout: { 'fill-sort-key': ['get', 'rank'] },
+              paint: { 'fill-color': AREA_COLOUR, 'fill-opacity': regionStyle['fill-opacity'] },
+            },
+            under,
+          );
+          m.addLayer(
+            {
+              id: 'cluster-line',
+              type: 'line',
+              source: 'cluster-regions',
+              filter: ['==', LIVE, true],
+              layout: { 'line-sort-key': ['get', 'rank'] },
+              paint: { 'line-color': AREA_COLOUR, 'line-width': regionStyle['line-width'] },
+            },
+            under,
+          );
+          m.addLayer(
+            {
+              id: 'cluster-line-not-live',
+              type: 'line',
+              source: 'cluster-regions',
+              filter: ['==', LIVE, false],
+              layout: { 'line-sort-key': ['get', 'rank'] },
+              paint: { 'line-color': AREA_COLOUR, 'line-width': regionStyle['line-width'], 'line-dasharray': [2, 1.5] },
+            },
+            under,
+          );
+
+          m.addSource('area', { type: 'geojson', data: propsRef.current.area ? bboxPolygon(propsRef.current.area) : EMPTY });
+          m.addLayer({ id: 'area-fill', type: 'fill', source: 'area', paint: { 'fill-color': FOREST, 'fill-opacity': 0.06 } }, under);
+          m.addLayer({ id: 'area-line', type: 'line', source: 'area', paint: { 'line-color': FOREST, 'line-width': 2, 'line-dasharray': [2, 1] } }, under);
+
+          m.addSource('site-ring', { type: 'geojson', data: ringGeoJSON(propsRef.current.ring) });
+          m.addLayer({ id: 'site-ring-fill', type: 'fill', source: 'site-ring', paint: { 'fill-color': RING_COLOUR, 'fill-opacity': 0.05 } }, under);
+          m.addLayer({ id: 'site-ring-line', type: 'line', source: 'site-ring', paint: { 'line-color': RING_COLOUR, 'line-width': 1.5, 'line-dasharray': [3, 2] } }, under);
+
           m.addSource('hexes', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
           m.addSource('points', {
             type: 'geojson',
@@ -262,29 +400,56 @@ export default function MapView(props: Props) {
             clusterRadius: 40,
             clusterMaxZoom: 14,
           });
-          const { PIN_ZOOM } = await import('../lib/binning');
-          m.addLayer({
-            id: 'hex-fill',
-            type: 'fill',
-            source: 'hexes',
-            maxzoom: PIN_ZOOM,
-            paint: { 'fill-color': ['get', 'colour'], 'fill-opacity': 0.72 },
-          });
-          m.addLayer({
-            id: 'hex-line',
-            type: 'line',
-            source: 'hexes',
-            maxzoom: PIN_ZOOM,
-            paint: { 'line-color': '#F7F6EB', 'line-width': 0.8 },
-          });
-          m.addLayer({
-            id: 'hex-selected',
-            type: 'line',
-            source: 'hexes',
-            maxzoom: PIN_ZOOM,
-            filter: ['==', ['get', 'cell'], propsRef.current.selectedCell ?? ''],
-            paint: { 'line-color': SELECTED_COLOUR, 'line-width': 3 },
-          });
+          const flat = three ? 'none' : 'visible';
+          m.addLayer(
+            {
+              id: 'hex-fill',
+              type: 'fill',
+              source: 'hexes',
+              maxzoom: PIN_ZOOM,
+              layout: { visibility: flat },
+              paint: { 'fill-color': RAMP_COLOUR, 'fill-opacity': HEX_OPACITY },
+            },
+            under,
+          );
+          m.addLayer(
+            {
+              id: 'hex-line',
+              type: 'line',
+              source: 'hexes',
+              maxzoom: PIN_ZOOM,
+              layout: { visibility: flat },
+              paint: { 'line-color': PAPER, 'line-width': 0.8 },
+            },
+            under,
+          );
+          m.addLayer(
+            {
+              id: 'hex-selected',
+              type: 'line',
+              source: 'hexes',
+              maxzoom: PIN_ZOOM,
+              layout: { visibility: flat },
+              filter: ['==', ['get', 'cell'], propsRef.current.selectedCell ?? ''],
+              paint: { 'line-color': SELECTED_COLOUR, 'line-width': 3 },
+            },
+            under,
+          );
+          m.addLayer(
+            {
+              id: 'hex-3d',
+              type: 'fill-extrusion',
+              source: 'hexes',
+              maxzoom: PIN_ZOOM,
+              layout: { visibility: three ? 'visible' : 'none' },
+              paint: {
+                'fill-extrusion-color': ['case', ['get', 'on'], SELECTED_COLOUR, RAMP_COLOUR],
+                'fill-extrusion-height': ['get', 'height'],
+                'fill-extrusion-opacity': COLUMN_OPACITY,
+              },
+            },
+            under,
+          );
           m.addLayer({
             id: 'clusters',
             type: 'circle',
@@ -294,7 +459,7 @@ export default function MapView(props: Props) {
             paint: {
               'circle-color': CLUSTER_COLOUR,
               'circle-radius': ['step', ['get', 'point_count'], 14, 10, 18, 50, 24],
-              'circle-stroke-color': '#F7F6EB',
+              'circle-stroke-color': '#FFFFFF',
               'circle-stroke-width': 2,
             },
           });
@@ -316,24 +481,17 @@ export default function MapView(props: Props) {
             paint: {
               'circle-color': PIN_COLOUR,
               'circle-radius': 7,
-              'circle-stroke-color': '#F7F6EB',
+              'circle-stroke-color': '#FFFFFF',
               'circle-stroke-width': 2,
             },
           });
 
-          m.addSource('area', { type: 'geojson', data: propsRef.current.area ? bboxPolygon(propsRef.current.area) : EMPTY });
-          m.addLayer({ id: 'area-fill', type: 'fill', source: 'area', paint: { 'fill-color': '#586F7C', 'fill-opacity': 0.12 } });
-          m.addLayer({ id: 'area-line', type: 'line', source: 'area', paint: { 'line-color': '#113308', 'line-width': 2, 'line-dasharray': [2, 1] } });
-
-          m.addSource('site-ring', { type: 'geojson', data: ringGeoJSON(propsRef.current.ring) });
-          m.addLayer({ id: 'site-ring-fill', type: 'fill', source: 'site-ring', paint: { 'fill-color': RING_COLOUR, 'fill-opacity': 0.06 } });
-          m.addLayer({ id: 'site-ring-line', type: 'line', source: 'site-ring', paint: { 'line-color': RING_COLOUR, 'line-width': 2.5 } });
           m.addSource('near-place', { type: 'geojson', data: placeGeoJSON(propsRef.current.place) });
           m.addLayer({
             id: 'near-place-point',
             type: 'circle',
             source: 'near-place',
-            paint: { 'circle-color': RING_COLOUR, 'circle-radius': 7, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 2 },
+            paint: { 'circle-color': RING_COLOUR, 'circle-radius': 6, 'circle-stroke-color': '#FFFFFF', 'circle-stroke-width': 2 },
           });
           m.addSource('sites', { type: 'geojson', data: sitesGeoJSON(propsRef.current.sites, propsRef.current.chosenSite) });
           m.addLayer({
@@ -341,11 +499,19 @@ export default function MapView(props: Props) {
             type: 'circle',
             source: 'sites',
             paint: {
-              'circle-color': ['case', ['get', 'chosen'], RING_COLOUR, SITE_COLOUR],
-              'circle-radius': ['case', ['get', 'chosen'], 8, 5],
+              'circle-color': SITE_COLOUR,
+              'circle-radius': ['case', ['get', 'chosen'], 7, 5],
               'circle-stroke-color': '#FFFFFF',
               'circle-stroke-width': 2,
             },
+          });
+          m.addLayer({
+            id: 'site-name',
+            type: 'symbol',
+            source: 'sites',
+            minzoom: 6.5,
+            layout: { 'text-field': ['get', 'name'], 'text-font': FONT, 'text-size': 12, 'text-offset': [0, 1], 'text-anchor': 'top', 'text-max-width': 9 },
+            paint: { 'text-color': SITE_COLOUR, 'text-halo-color': '#FFFFFF', 'text-halo-width': 1.5 },
           });
 
           // Cluster names: dark text on a white halo, centred on the area's
@@ -422,16 +588,18 @@ export default function MapView(props: Props) {
             if (!drawingRef.current || !dragFrom) return;
             const box = rect(dragFrom, [e.lngLat.lng, e.lngLat.lat]);
             dragFrom = null;
-            setDrawing(false);
+            propsRef.current.onDrawing(false);
             if (box[0] < box[2] && box[1] < box[3]) propsRef.current.onArea?.(box);
           });
 
           const first = (features?: MapGeoJSONFeature[]) => features?.[0]?.properties ?? {};
-          m.on('click', 'hex-fill', (e) => {
+          const pickCell = (e: { features?: MapGeoJSONFeature[] }) => {
             if (drawingRef.current || isFaded(propsRef.current)) return;
             const cell = first(e.features).cell;
             if (typeof cell === 'string') propsRef.current.onSelectCell(cell);
-          });
+          };
+          m.on('click', 'hex-fill', pickCell);
+          m.on('click', 'hex-3d', pickCell);
           m.on('click', 'clusters', async (e) => {
             if (isFaded(propsRef.current)) return;
             const clusterId = first(e.features).cluster_id;
@@ -450,12 +618,12 @@ export default function MapView(props: Props) {
           m.on('click', 'cluster-fill', (e) => {
             const p = propsRef.current;
             if (drawingRef.current || !p.clusterMap) return;
-            if (!isFaded(p) && m.queryRenderedFeatures(e.point, { layers: ['hex-fill', 'clusters', 'pins'].filter((l) => m.getLayer(l)) }).length) return;
+            if (!isFaded(p) && m.queryRenderedFeatures(e.point, { layers: COMPANY_LAYERS.filter((l) => m.getLayer(l)) }).length) return;
             const top = [...(e.features ?? [])].sort((a, b) => Number(b.properties?.rank ?? 0) - Number(a.properties?.rank ?? 0))[0];
             const id = top?.properties?.id;
             if (typeof id === 'string') p.onSelectCluster?.(id);
           });
-          for (const layer of ['hex-fill', 'clusters', 'pins', 'cluster-fill']) {
+          for (const layer of [...COMPANY_LAYERS, 'cluster-fill']) {
             m.on('mouseenter', layer, () => {
               const p = propsRef.current;
               const clickable = layer === 'cluster-fill' ? Boolean(p.clusterMap) : !isFaded(p);
@@ -473,6 +641,8 @@ export default function MapView(props: Props) {
           m.on('moveend', () => {
             const c = m.getCenter();
             propsRef.current.onMove?.({ zoom: m.getZoom(), lat: c.lat, lon: c.lng });
+            // The ramp is scaled to the busiest area in view.
+            if (Math.max(1, busiest(drawn.current.bins)) !== drawn.current.max) draw();
           });
           setPins(m.getZoom() >= PIN_ZOOM);
           setLoaded(true);
@@ -498,7 +668,7 @@ export default function MapView(props: Props) {
 
   useEffect(() => {
     draw();
-  }, [props.companies, props.fixedResolution]);
+  }, [props.companies, props.fixedResolution, props.selectedCell]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -508,10 +678,46 @@ export default function MapView(props: Props) {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !loaded) return;
-    if (drawing) map.dragPan.disable();
+    if (props.drawing) map.dragPan.disable();
     else map.dragPan.enable();
-    container.current?.classList.toggle('drawing', drawing);
-  }, [drawing, loaded]);
+    container.current?.classList.toggle('drawing', props.drawing);
+  }, [props.drawing, loaded]);
+
+  // 3D or Flat: the columns or the flat hexagons, and the camera tilted or straight down.
+  const lastThree = useRef(props.three);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded || !map.getLayer('hex-3d')) return;
+    map.setLayoutProperty('hex-3d', 'visibility', props.three ? 'visible' : 'none');
+    for (const layer of ['hex-fill', 'hex-line', 'hex-selected']) map.setLayoutProperty(layer, 'visibility', props.three ? 'none' : 'visible');
+    if (props.three) {
+      map.dragRotate.enable();
+      map.touchZoomRotate.enableRotation();
+    } else {
+      map.dragRotate.disable();
+      map.touchZoomRotate.disableRotation();
+    }
+    if (lastThree.current === props.three) return;
+    lastThree.current = props.three;
+    const camera = { pitch: props.three ? PITCH : 0, bearing: props.three ? BEARING : 0 };
+    if (reducedMotion()) map.jumpTo(camera);
+    else map.easeTo({ ...camera, duration: 700 });
+  }, [props.three, loaded]);
+
+  // The panels over the map change with the layout; keep the camera's centre in the room they leave.
+  const paddingKey = `${props.padding.top},${props.padding.right},${props.padding.bottom},${props.padding.left}`;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !loaded) return;
+    const now = map.getPadding();
+    const want = props.padding;
+    if (now.top !== want.top || now.right !== want.right || now.bottom !== want.bottom || now.left !== want.left) map.setPadding(want);
+  }, [paddingKey, loaded]);
+
+  // The List view covers the map; when it comes back its box may have changed.
+  useEffect(() => {
+    if (!props.hidden) mapRef.current?.resize();
+  }, [props.hidden]);
 
   useEffect(() => {
     const source = mapRef.current?.getSource('area') as GeoJSONSource | undefined;
@@ -555,95 +761,77 @@ export default function MapView(props: Props) {
     if (loaded && source) source.setData((props.clusterEvents ?? EMPTY) as GeoData);
   }, [props.clusterEvents, loaded]);
 
-  // Bring a newly chosen cluster into view.
-  const focusKey = props.clusterFocus?.key ?? '';
-  const lastFocusKey = useRef<string | null>(null);
+  // Draw the distance ring.
+  const ringKey = props.ring ? `${props.chosenSite}:${props.ring[0].join(',')}:${props.ring.length}:${props.ring[24]?.join(',')}` : '';
   useEffect(() => {
-    const map = mapRef.current;
-    if (!loaded || !map) return;
-    if (lastFocusKey.current === focusKey) return;
-    lastFocusKey.current = focusKey;
-    const focus = propsRef.current.clusterFocus;
-    if (focus) map.fitBounds(focus.bounds, { padding: 24, animate: false });
-  }, [focusKey, loaded]);
-
-  // Draw the ring, and bring it into view when the site or radius changes.
-  const ringKey = props.ring ? `${props.chosenSite}:${props.ring[0].join(',')}` : '';
-  const lastRingKey = useRef<string | null>(null);
-  useEffect(() => {
-    const map = mapRef.current;
-    const source = map?.getSource('site-ring') as GeoJSONSource | undefined;
-    if (!loaded || !map || !source) return;
-    source.setData(ringGeoJSON(props.ring));
-    const first = lastRingKey.current === null;
-    lastRingKey.current = ringKey;
-    if (props.ring && !(first && propsRef.current.initialPosition)) {
-      const lons = props.ring.map((p) => p[0]);
-      const lats = props.ring.map((p) => p[1]);
-      map.fitBounds([Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)], { padding: 24, animate: false });
-    }
+    const source = mapRef.current?.getSource('site-ring') as GeoJSONSource | undefined;
+    if (loaded && source) source.setData(ringGeoJSON(props.ring));
   }, [ringKey, loaded]);
 
-  const useCurrentView = () => {
-    const map = mapRef.current;
-    if (!map) return;
-    const b = map.getBounds();
-    const clampLat = (n: number) => Math.max(-85, Math.min(85, n));
-    const clampLon = (n: number) => Math.max(-180, Math.min(180, n));
-    props.onArea?.([round5(clampLon(b.getWest())), round5(clampLat(b.getSouth())), round5(clampLon(b.getEast())), round5(clampLat(b.getNorth()))]);
-  };
+  // Move the camera when what it should frame changes: a place and its ring,
+  // a chosen cluster, or back to the UK. The view a link opens with is kept:
+  // the first focus only moves the camera when the link gave no position.
+  const focusKey = props.focus?.key ?? null;
+  const lastFocusKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (!loaded || focusKey === null || lastFocusKey.current === focusKey) return;
+    const first = lastFocusKey.current === null;
+    lastFocusKey.current = focusKey;
+    if (first) {
+      if (!propsRef.current.initialPosition && focusKey !== 'uk') frame(true);
+    } else frame(false);
+  }, [focusKey, loaded]);
 
+  if (props.api) {
+    props.api.current = {
+      viewArea: () => {
+        const map = mapRef.current;
+        const el = container.current;
+        if (!map || !el) return null;
+        // The two near corners of the room the panels leave, and the same
+        // two mirrored through the centre: in a tilted view this is the
+        // ground around the centre, not everything out to the horizon.
+        const { padding } = propsRef.current;
+        const centre = map.getCenter();
+        const y = el.clientHeight - padding.bottom;
+        const near = [map.unproject([padding.left, y]), map.unproject([el.clientWidth - padding.right, y])];
+        const points = near.flatMap((p) => [
+          [p.lng, p.lat],
+          [2 * centre.lng - p.lng, 2 * centre.lat - p.lat],
+        ]);
+        const clampLat = (n: number) => Math.max(-85, Math.min(85, n));
+        const clampLon = (n: number) => Math.max(-180, Math.min(180, n));
+        const lons = points.map((p) => clampLon(p[0]));
+        const lats = points.map((p) => clampLat(p[1]));
+        const box: Bbox = [round5(Math.min(...lons)), round5(Math.min(...lats)), round5(Math.max(...lons)), round5(Math.max(...lats))];
+        return box[0] < box[2] && box[1] < box[3] ? box : null;
+      },
+    };
+  }
+
+  const overlap = props.fixedResolution != null;
   return (
-    <div class="map-wrap">
-      {props.onArea && (
-        <div class="map-tools">
-          <button type="button" class="secondary" disabled={!loaded} onClick={useCurrentView}>
-            Use the map's current view
-          </button>
-          <button
-            type="button"
-            class="secondary"
-            disabled={!loaded}
-            aria-pressed={drawing}
-            onClick={() => setDrawing(!drawing)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') setDrawing(false);
-            }}
-          >
-            Draw an area
-          </button>
-          {props.onClusterMap && (
-            <button type="button" class="secondary" aria-pressed={Boolean(props.clusterMap)} onClick={() => props.onClusterMap?.(!props.clusterMap)}>
-              Cluster map
-            </button>
-          )}
-          {drawing && <span role="status">Press and drag on the map to draw a rectangle.</span>}
-        </div>
-      )}
+    <div class="map-wrap" inert={props.hidden}>
       <div id="tally-map" class="map" ref={container} role="region" aria-label="Map of the companies that match the filters">
-        {failed && (
-          <p class="map-failed">The map cannot be shown in this browser. Every company is in the list below.</p>
-        )}
+        {failed && <p class="map-failed">The map cannot be shown in this browser. Every company is in the list.</p>}
       </div>
-      <div class="legend">
-        <h2 id="legend-heading">{props.fixedResolution != null ? 'Companies in places where all chosen capabilities overlap' : 'Companies per hexagon'}</h2>
-        {legend.length > 0 ? (
-          <ul aria-labelledby="legend-heading">
-            {legend.map((entry) => (
-              <li key={entry.label}>
-                <span class={`swatch swatch-${BRAND_SCALE.indexOf(entry.colour)}`} aria-hidden="true" />
-                {entry.label}
-              </li>
-            ))}
-          </ul>
+      <div class="map-legend">
+        <h2 id="legend-heading" class="mono">
+          {overlap ? 'Companies in places where all chosen capabilities overlap' : 'Companies per hexagon'}
+        </h2>
+        {legend === 'loading' && !failed ? (
+          <p>Loading the map.</p>
+        ) : legend === 'empty' ? (
+          <p>No companies with a location match.</p>
         ) : (
-          <p>No companies with a location match these filters.</p>
+          <div class="ramp" aria-hidden="true">
+            <div class="r1">Fewest</div>
+            <div class="r2" />
+            <div class="r3" />
+            <div class="r4">Most</div>
+          </div>
         )}
-        <p class="legend-note">
-          {pins
-            ? 'Zoomed in: each pin is a company, and numbered circles group companies close together.'
-            : 'Zoom in to see individual companies. Select a hexagon to list its companies.'}
-        </p>
+        {legend === 'shown' && <p class="legend-note">{pins ? 'Each pin is a company; numbered circles group those close together.' : `Select ${props.three ? 'a column' : 'a hexagon'} to list its companies.`}</p>}
       </div>
     </div>
   );
