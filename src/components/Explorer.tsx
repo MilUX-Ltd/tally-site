@@ -481,7 +481,8 @@ export default function Explorer() {
 
   // The room the panels take over the map, so the camera frames what is left.
   const padding = useMemo<Padding>(() => {
-    if (phone) return mode === 'landing' ? { top: 120, right: 0, bottom: 0, left: 0 } : { top: 170, right: 0, bottom: Math.round(window.innerHeight * (window.innerHeight < 700 ? 0.6 : 0.46)), left: 0 };
+    // On a phone the map is its own block in the page, with nothing over it.
+    if (phone) return { top: 12, right: 0, bottom: 12, left: 0 };
     return { top: 60, right: 0, bottom: 0, left: Math.min(mode === 'landing' ? 592 : 480, Math.round(window.innerWidth * 0.45)) };
   }, [phone, mode === 'landing']);
   // What the camera frames, once everything a link may name has loaded.

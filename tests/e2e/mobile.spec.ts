@@ -50,8 +50,13 @@ test('2. after a search the results follow the map in the page, with no scrollin
 test('3. the list view drops the map, and every company on the page is reached by scrolling the page', async ({ page }) => {
   await page.goto('/?view=list');
   await expect(page.locator('.rows > li').first()).toBeVisible();
-  await expect(page.locator('.map-wrap')).toBeHidden();
+  // The map is out of sight (still drawn, so Map opens at once) and takes no room: the results follow the search.
+  expect(await page.locator('.map-wrap').evaluate((e) => getComputedStyle(e).opacity)).toBe('0');
+  const search = (await box(page, '.search-form'))!;
+  const panel = (await box(page, '.panel'))!;
+  expect(panel.y).toBeLessThan(search.y + search.height + 40);
   const rows = page.locator('.rows > li');
+  await expect(rows).toHaveCount(20);
   await rows.last().scrollIntoViewIfNeeded();
   await expect(rows.last()).toBeInViewport();
   const inner = await page.locator('.panel-body').evaluate((e) => e.scrollHeight - e.clientHeight);
