@@ -5,6 +5,7 @@ import SiteHeader from '../components/SiteHeader.astro';
 import type { NavId } from '../lib/nav';
 import { canonicalUrl } from '../lib/company-page';
 import { FEED_PATH } from '../lib/new-companies';
+import { beaconConfig } from '../lib/analytics';
 interface Props {
   title: string;
   description: string;
@@ -15,12 +16,15 @@ interface Props {
   feed?: boolean;
   /** The navigation item to mark as current; worked out from the address when left out. */
   current?: NavId | null;
+  /** Whether the page loads the visitor counter. False on the script-free pages (D-z6mw4). */
+  counted?: boolean;
 }
-const { title, description, wide = false, canonical = true, feed = false, current } = Astro.props;
+const { title, description, wide = false, canonical = true, feed = false, current, counted = true } = Astro.props;
 // Slots: the default slot is the page; "actions" sits at the right of the top
 // bar (the shortlist button); "credits" is the page's own data credit lines
 // at the top of the footer.
 // Canonical addresses are on tally.milux.co.uk and end in a slash, as served.
+const beacon = counted ? beaconConfig() : null;
 const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
 ---
 <!doctype html>
@@ -34,6 +38,7 @@ const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.ur
     <link rel="preload" href="/fonts/manrope-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/manrope-800.woff2" as="font" type="font/woff2" crossorigin />
     {feed && <link rel="alternate" type="application/rss+xml" title="New companies in Tally" href={FEED_PATH} />}
+    {beacon && <script is:inline type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={beacon}></script>}
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>

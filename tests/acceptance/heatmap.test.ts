@@ -146,7 +146,7 @@ describe('content security policy', () => {
     const directive = (name: string) => csp.split(';').map((d) => d.trim()).find((d) => d.startsWith(`${name} `)) ?? '';
     expect(directive('connect-src')).toContain('https://tiles.openfreemap.org');
     expect(directive('img-src')).toContain('https://tiles.openfreemap.org');
-    expect(directive('script-src')).toBe("script-src 'self'");
+    expect(directive('script-src')).toBe("script-src 'self' https://static.cloudflareinsights.com");
     expect(directive('style-src')).toBe("style-src 'self'");
     expect(csp).not.toContain('unsafe-inline');
     expect(csp).not.toContain('unsafe-eval');
