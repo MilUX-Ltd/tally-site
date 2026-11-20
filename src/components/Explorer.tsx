@@ -601,6 +601,8 @@ export default function Explorer() {
                   disabled={searching || !data}
                   onClick={() => {
                     setPreset({ what: example.what, near: example.near });
+                    // Examples with a place look a little wider than the default distance.
+                    if (example.near && !site && state.within < 50) update({ within: 50 });
                     void submit(example);
                   }}
                 >
