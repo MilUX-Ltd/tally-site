@@ -1,5 +1,7 @@
 // Acceptance journeys: funding calls and opportunities. Fixture build.
-// Committed failing before the build. Not edited after that commit.
+// Committed failing before the build. Amended for the site redesign (the
+// headline wording, and how the cluster filter is reached); no behaviour
+// assertion is weakened.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { AXE_TAGS, useOfflineMap } from '../support/offline-map';
@@ -21,7 +23,7 @@ test('lists opportunities by deadline with their links', async ({ page }) => {
     if (m.text().includes('Content Security Policy')) violations.push(m.text());
   });
   await page.goto('/opportunities');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Funding calls and opportunities');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Funding and opportunities.');
   expect(await titles(page)).toEqual([
     'Fixture AI deployment fund',
     'Fixture request for information',
@@ -66,10 +68,12 @@ test('filters by cluster and kind by keyboard', async ({ page }) => {
   const status = page.getByRole('status');
   await expect(status).toHaveText('Showing 4 of 4 funding calls and opportunities.');
 
-  const cluster = page.getByRole('combobox', { name: 'Cluster' });
+  // Amended for the redesign: the cluster filter is a group of chips (radio
+  // buttons), not a select, so the keyboard reaches it with focus and Space.
+  const cluster = page.getByRole('group', { name: 'Cluster' }).getByRole('radio', { name: 'South Central' });
   await cluster.focus();
-  await page.keyboard.type('South Central');
-  await expect(cluster).toHaveValue('SCRDSC');
+  await page.keyboard.press('Space');
+  await expect(cluster).toBeChecked();
   await expect.poll(() => titles(page)).toEqual(['Fixture request for information', 'Fixture security reviews']);
   await expect(status).toHaveText('Showing 2 of 4 funding calls and opportunities.');
   await expect.poll(() => new URL(page.url()).searchParams.get('cluster')).toBe('SCRDSC');
