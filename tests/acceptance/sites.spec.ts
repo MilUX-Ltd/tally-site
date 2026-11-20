@@ -51,8 +51,13 @@ test('the sites overlay shows every site with attribution', async ({ page }) => 
   await openLayers(page);
   const panel = page.getByRole('group', { name: 'Defence sites' });
   await expect(panel).toBeVisible();
-  await expect(panel).toContainText('Wikipedia');
-  await expect(panel.getByRole('link', { name: 'CC BY-SA 4.0' })).toBeVisible();
+  // The attribution moved to About, linked from the panel.
+  await expect(panel.getByRole('link', { name: 'Data sources and licences' })).toHaveAttribute('href', '/about#licences');
+  const about = await page.context().newPage();
+  await about.goto('/about');
+  await expect(about.locator('#licences')).toContainText('Wikipedia');
+  await expect(about.locator('#licences').getByRole('link', { name: 'CC BY-SA 4.0' })).toBeVisible();
+  await about.close();
   const toggle = panel.getByRole('checkbox', { name: 'Show defence sites on the map' });
   await toggle.focus();
   await page.keyboard.press('Space');

@@ -1,13 +1,10 @@
 // What the Layers control holds: the cluster areas and the defence sites,
 // each with its switch for the map and a way to narrow the companies without
-// using the map. The licence credits are one line each here; the full text is
-// on the About page.
+// using the map. The licence text is on the About page, linked from here.
 import type { ComponentChildren } from 'preact';
 import ClusterMapLegend from './ClusterMapLegend';
 import { STATUS_LABELS, type Cluster, type ClustersData, type LegendEntry } from '../lib/clusters';
 import { KIND_LABELS, type Site, type SitesData } from '../lib/sites';
-
-const OGL = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/';
 
 interface Props {
   clusters: ClustersData | null;
@@ -18,7 +15,6 @@ interface Props {
   memberCount: number | null;
   legend: LegendEntry[] | null;
   onTop: boolean;
-  licenceUrl?: string;
   onShowClusters: (show: boolean) => void;
   onCluster: (id: string | null) => void;
   onOnTop: (onTop: boolean) => void;
@@ -74,11 +70,7 @@ export default function LayersPanel(p: Props) {
               <a href="/events">See all upcoming cluster events</a>
             </p>
             <p class="layer-credit">
-              Cluster areas: Office for National Statistics boundaries,{' '}
-              <a href={p.licenceUrl ?? OGL} rel="noopener noreferrer">
-                Open Government Licence v3.0
-              </a>
-              . Contains OS data © Crown copyright and database right 2025. Areas are approximate.
+              Areas are approximate. <a href="/about#licences">Data sources and licences</a>
             </p>
           </fieldset>
         )
@@ -119,11 +111,7 @@ export default function LayersPanel(p: Props) {
               </p>
             )}
             <p class="layer-credit">
-              {p.sites.sites.length} widely published sites, each checked against its source. Locations from Wikipedia contributors,{' '}
-              <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="noopener noreferrer">
-                CC BY-SA 4.0
-              </a>
-              .
+              {p.sites.sites.length} widely published sites, each checked against its source. <a href="/about#licences">Data sources and licences</a>
             </p>
           </fieldset>
         )

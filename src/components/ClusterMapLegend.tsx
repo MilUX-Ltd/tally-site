@@ -2,7 +2,6 @@
 // (where Tally records them) and its upcoming events. Each entry is a button
 // that chooses the cluster, so the map is never the only way to pick one.
 import { STATUS_LABELS, type LegendEntry } from '../lib/clusters';
-import { Swatch } from './ClustersPanel';
 
 interface Props {
   entries: LegendEntry[];
@@ -10,6 +9,19 @@ interface Props {
   onTop: boolean;
   onOnTop: (onTop: boolean) => void;
   onChoose: (id: string) => void;
+}
+
+/** A cluster's map colour: filled for a live cluster, a dashed outline for one not yet live. */
+function Swatch({ colour, outline = false }: { colour: string; outline?: boolean }) {
+  return (
+    <svg class="cluster-swatch" width="20" height="14" viewBox="0 0 20 14" aria-hidden="true" focusable="false">
+      {outline ? (
+        <rect x="1" y="1" width="18" height="12" fill="none" stroke={colour} stroke-width="2" stroke-dasharray="4 2" />
+      ) : (
+        <rect x="1" y="1" width="18" height="12" fill={colour} fill-opacity="0.4" stroke={colour} stroke-width="2" />
+      )}
+    </svg>
+  );
 }
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;

@@ -33,8 +33,13 @@ test('picking a cluster filters companies to its members', async ({ page }) => {
   await openLayers(page);
   const panel = page.getByRole('group', { name: 'Clusters' });
   await expect(panel).toBeVisible();
-  await expect(panel).toContainText('Office for National Statistics');
-  await expect(panel.getByRole('link', { name: /Open Government Licence/ })).toBeVisible();
+  // The attribution moved to About, linked from the panel.
+  await expect(panel.getByRole('link', { name: 'Data sources and licences' })).toHaveAttribute('href', '/about#licences');
+  const about = await page.context().newPage();
+  await about.goto('/about');
+  await expect(about.locator('#licences')).toContainText('Office for National Statistics');
+  await expect(about.locator('#licences').getByRole('link', { name: /Open Government Licence/ }).first()).toBeVisible();
+  await about.close();
   const toggle = panel.getByRole('checkbox', { name: 'Show cluster areas on the map' });
   await toggle.focus();
   await page.keyboard.press('Space');

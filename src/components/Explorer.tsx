@@ -793,7 +793,6 @@ export default function Explorer() {
           memberCount={memberCount}
           legend={legend}
           onTop={state.onTop}
-          licenceUrl={regions?.licence_url}
           onShowClusters={(clusters) => update({ clusters })}
           onCluster={(id) => {
             setShowList(false);
