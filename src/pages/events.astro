@@ -1,26 +1,56 @@
 ---
-// Upcoming cluster events: a calendar and a list, built at build time from
-// public/data/events.json and clusters.json (scripts/fetch-data.mjs). Past
-// events are dropped at build. Members-only events show only the signpost
-// and a link to join the cluster. No script runs on this page.
+// Clusters and events: the UK's regional defence and security clusters on one
+// flat map with their upcoming events pinned, a "Next up" timeline, a card
+// for each cluster, then the calendar and the full list. Built at build time
+// from public/data/events.json and clusters.json (scripts/fetch-data.mjs) and
+// the cluster outlines; past events are dropped at build. Members-only events
+// are signposts wherever they appear: the cluster, the date, the fixed line
+// and the cluster's public website. No script runs on this page.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
+import ClusterAtlas from '../components/ClusterAtlas.astro';
 import '../styles/events.css';
-import { longDate, type ClusterEvent, type ClustersData, type EventsData } from '../lib/clusters';
+import { atlasFrame, rampStep, regionBox } from '../lib/cluster-atlas';
+import { STATUS_LABELS, clusterMembers, longDate, rankedRegions, shortDate, type ClusterEvent, type ClustersData, type EventsData, type RegionsData } from '../lib/clusters';
+import { siteData } from '../lib/site-data';
 
-const read = (name: string) => JSON.parse(readFileSync(join(process.cwd(), 'public', 'data', name), 'utf8'));
-const clusters = (read('clusters.json') as ClustersData).clusters;
+const read = (...path: string[]) => JSON.parse(readFileSync(join(process.cwd(), 'public', ...path), 'utf8'));
+const clustersData = read('data', 'clusters.json') as ClustersData;
+const clusters = clustersData.clusters;
 const byId = new Map(clusters.map((c) => [c.id, c]));
 const todayUtc = new Date().toISOString().slice(0, 10);
-const events = (read('events.json') as EventsData).events.filter((e) => e.date >= todayUtc);
+const eventsData = read('data', 'events.json') as EventsData;
+const events = eventsData.events.filter((e) => e.date >= todayUtc);
+const regionsData = read('clusters', 'cluster-regions.geojson') as RegionsData;
+const regions = rankedRegions(regionsData.features, null, clusters).features.sort((a, b) => a.properties.rank - b.properties.rank);
+const frame = atlasFrame(regions);
+const boxes = new Map(regions.map((f) => [f.properties.id, regionBox(frame, f)]));
+const companies = siteData().companies;
 
-// Group by day, then by month for the calendar.
+// Events by day, then by month for the calendar.
 const days = new Map<string, ClusterEvent[]>();
 for (const e of events) days.set(e.date, [...(days.get(e.date) ?? []), e]);
 const months = [...new Set(events.map((e) => e.date.slice(0, 7)))];
+const NEXT_UP_DAYS = 6;
+const nextUp = [...days].slice(0, NEXT_UP_DAYS);
 
-const monthName = (ym: string) => new Date(`${ym}-01T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', month: 'long', year: 'numeric' });
+const counts = new Map<string, number>();
+const nextFor = new Map<string, ClusterEvent>();
+for (const e of events) {
+  counts.set(e.cluster, (counts.get(e.cluster) ?? 0) + 1);
+  if (!nextFor.has(e.cluster)) nextFor.set(e.cluster, e);
+}
+const most = Math.max(0, ...counts.values());
+// Live clusters first, then those on the way; by name within each.
+const cards = [...clusters]
+  .sort((a, b) => Number(a.status !== 'live') - Number(b.status !== 'live') || a.name.localeCompare(b.name, 'en-GB'))
+  .map((c) => ({ cluster: c, members: clusterMembers(companies, c)?.length ?? null, events: counts.get(c.id) ?? 0, next: nextFor.get(c.id) ?? null, box: boxes.get(c.id) ?? null }));
+const live = clusters.filter((c) => c.status === 'live').length;
+const asOf = [clustersData.as_of, eventsData.as_of].sort().pop() ?? todayUtc;
+
+const utc = (date: string, options: Intl.DateTimeFormatOptions) => new Date(`${date}T00:00:00Z`).toLocaleDateString('en-GB', { timeZone: 'UTC', ...options });
+const monthName = (ym: string) => utc(`${ym}-01`, { month: 'long', year: 'numeric' });
 const WEEKDAYS = [
   ['Mon', 'Monday'],
   ['Tue', 'Tuesday'],
@@ -42,81 +72,206 @@ function weeks(ym: string): Array<Array<number | null>> {
 const pad = (n: number) => String(n).padStart(2, '0');
 const clusterName = (id: string) => byId.get(id)?.name ?? id;
 const publicCount = events.filter((e) => e.audience === 'public').length;
+const number = (n: number) => n.toLocaleString('en-GB');
 ---
-<Base title="Upcoming cluster events: Tally" description="Upcoming events from the UK's regional defence and security clusters." wide>
-  <header class="site-header">
-    <p><a href="/">Back to the Tally map</a> · <a href="/opportunities">Funding calls and opportunities</a></p>
-    <h1>Upcoming cluster events</h1>
-    <p>Events from the UK's regional defence and security clusters, from their public websites and pages. Public events are listed in full. Members-only events are shown only as a date: join the cluster for details.</p>
-  </header>
+<Base title="Clusters and events: Tally" description="The UK's regional defence and security clusters: where each one works, its upcoming events and the companies in it." wide>
+  <div class="events-page">
+    <div class="events-top">
+      <header class="page-hero events-hero">
+        <p class="mono kicker">Clusters and events · Public sources</p>
+        <h1>Regional defence clusters<span class="stop">.</span></h1>
+        <p class="lede">Where each of the UK's regional defence and security clusters works, what it has coming up, and how to find the companies in it.</p>
+        <p class="hero-jumps">
+          <a class="btn btn-primary" href="#next-up">See what is next</a>
+          <a class="btn" href="#clusters">All {clusters.length} clusters</a>
+          <a class="btn" href="#all-events">Calendar</a>
+        </p>
+        <dl class="facts">
+          <div><dd>{clusters.length}</dd><dt class="mono">Clusters</dt></div>
+          <div><dd>{live}</dd><dt class="mono">Live</dt></div>
+          <div><dd>{events.length}</dd><dt class="mono">Upcoming events</dt></div>
+          <div><dd>{events.length ? shortDate(events[0].date) : 'None listed'}</dd><dt class="mono">Next event</dt></div>
+        </dl>
+      </header>
+      <ClusterAtlas regions={regions} clusters={clusters} events={events} asOf={asOf} />
+    </div>
 
-  {events.length === 0 ? (
-    <p>No upcoming cluster events are listed at the moment.</p>
-  ) : (
-    <>
-      <p class="events-count">{events.length} upcoming {events.length === 1 ? 'event' : 'events'}: {publicCount} public, {events.length - publicCount} for members only.</p>
-      <section class="events-calendar" aria-labelledby="calendar-heading">
-        <h2 id="calendar-heading">Calendar</h2>
-        <div class="months">
-          {months.map((ym) => (
-            <table class="month">
-              <caption>{monthName(ym)}</caption>
-              <thead>
-                <tr>{WEEKDAYS.map(([short, long]) => <th scope="col"><abbr title={long}>{short}</abbr></th>)}</tr>
-              </thead>
-              <tbody>
-                {weeks(ym).map((week) => (
-                  <tr>
-                    {week.map((d) => {
-                      if (d == null) return <td />;
-                      const date = `${ym}-${pad(d)}`;
-                      const n = days.get(date)?.length ?? 0;
-                      return n ? (
-                        <td class="has-events">
-                          <a href={`#d-${date}`}>{d}<span class="vh"> {monthName(ym)}, {n} {n === 1 ? 'event' : 'events'}</span></a>
-                        </td>
-                      ) : (
-                        <td>{d}</td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <section class="next-section" id="next-up" aria-labelledby="next-heading">
+      <div class="section-head">
+        <h2 id="next-heading">Next up</h2>
+        {events.length > 0 && <p>The next days with cluster events, soonest first. <a href="#all-events">All {events.length} upcoming events</a></p>}
+      </div>
+      {events.length === 0 ? (
+        <p>No upcoming cluster events are listed at the moment.</p>
+      ) : (
+        <ol class="next-up">
+          {nextUp.map(([date, list]) => (
+            <li>
+              <time class="next-date" datetime={date}>
+                <span class="next-day">{Number(date.slice(8))}</span>
+                <span class="next-when"><span class="mono next-month">{utc(date, { month: 'short', year: 'numeric' })}</span> <span class="mono next-weekday">{utc(date, { weekday: 'long' })}</span></span>
+              </time>
+              <ul class="next-events">
+                {list.map((e) =>
+                  e.audience === 'public' ? (
+                    <li class="next-event" data-audience="public">
+                      <p class="mono next-cluster">{clusterName(e.cluster)}</p>
+                      <p class="next-title">{e.link ? <a href={e.link} rel="noopener noreferrer">{e.title}</a> : e.title}</p>
+                      {(e.time || e.where) && <p class="next-meta">{[e.time, e.where].filter(Boolean).join(' · ')}</p>}
+                    </li>
+                  ) : (
+                    <li class="next-event is-members" data-audience="members">
+                      <p class="mono next-cluster">{clusterName(e.cluster)}</p>
+                      <p class="next-signpost">{e.text}</p>
+                      <p class="next-meta"><a href={e.link} rel="noopener noreferrer">Join the cluster</a></p>
+                    </li>
+                  ),
+                )}
+              </ul>
+            </li>
           ))}
-        </div>
-      </section>
+        </ol>
+      )}
+      <p class="next-funding">Looking for money as well as meetings? <a href="/opportunities">Funding calls and opportunities</a></p>
+    </section>
 
-      <section class="events-list" aria-labelledby="list-heading">
-        <h2 id="list-heading">All upcoming events</h2>
-        {[...days].map(([date, list]) => (
-          <div class="event-day">
-            <h3 id={`d-${date}`} tabindex="-1">{longDate(date)}</h3>
-            <ul>
-              {list.map((e) =>
-                e.audience === 'public' ? (
-                  <li class="event public">
-                    <h4>{e.link ? <a href={e.link} rel="noopener noreferrer">{e.title}</a> : e.title}</h4>
-                    <p class="meta">{[clusterName(e.cluster), e.time, e.where].filter(Boolean).join(' · ')}</p>
-                    {e.summary && <p>{e.summary}</p>}
-                    {e.link ? null : byId.get(e.cluster)?.web ? (
-                      <p><a href={byId.get(e.cluster)?.web} rel="noopener noreferrer">{clusterName(e.cluster)} cluster website</a></p>
-                    ) : null}
-                  </li>
-                ) : (
-                  <li class="event members">
-                    <h4>{clusterName(e.cluster)}</h4>
-                    <p>{e.text}</p>
-                    <p><a href={e.link} rel="noopener noreferrer">Join the cluster</a></p>
-                  </li>
-                ),
+    <section class="clusters-section" id="clusters" aria-labelledby="clusters-heading">
+      <div class="section-head">
+        <h2 id="clusters-heading">The clusters</h2>
+        <p>{live} live and {clusters.length - live} on the way. Tally records the members of a cluster where the cluster publishes them.</p>
+      </div>
+      <div class="cluster-grid">
+        {cards.map(({ cluster: c, members, events: n, next, box }) => (
+          <article class:list={['card', 'cluster-card', { 'is-pending': c.status !== 'live' }]} id={`c-${c.id}`}>
+            <header class="cluster-head">
+              <div>
+                <p class="mono cluster-code">{c.id}</p>
+                <h3>{c.name}</h3>
+              </div>
+              {box && (
+                <svg class="cluster-shape" viewBox={`${box[0] - 12} ${box[1] - 12} ${box[2] + 36} ${box[3] + 36}`} aria-hidden="true" focusable="false">
+                  <use href={`#atlas-r-${c.id}`} class="cluster-shape-shadow" transform={`translate(${Math.round(Math.max(box[2], box[3]) / 14)} ${Math.round(Math.max(box[2], box[3]) / 14)})`} />
+                  <use href={`#atlas-r-${c.id}`} class:list={['atlas-region', c.status === 'live' ? `r${rampStep(n, most)}` : 'is-pending shape-pending']} />
+                </svg>
               )}
-            </ul>
-          </div>
+            </header>
+            <p class="cluster-area">{c.region}</p>
+            <dl class="cluster-facts">
+              <div><dt class="mono">Status</dt><dd class="cluster-status">{STATUS_LABELS[c.status]}</dd></div>
+              <div><dt class="mono">Members recorded</dt><dd class:list={['cluster-members', { 'is-none': members == null }]}>{members == null ? 'Not recorded' : number(members)}</dd></div>
+              <div><dt class="mono">Upcoming events</dt><dd>{n}</dd></div>
+            </dl>
+            {next == null ? (
+              <div class="cluster-next">
+                <p class="mono">Next event</p>
+                <p>No upcoming events listed.</p>
+              </div>
+            ) : next.audience === 'public' ? (
+              <div class="cluster-next" data-audience="public">
+                <p class="mono">Next event</p>
+                <p><a href={`#d-${next.date}`}>{shortDate(next.date)}</a>: {next.title}</p>
+              </div>
+            ) : (
+              <div class="cluster-next" data-audience="members">
+                <p class="mono">Next event</p>
+                <p>{shortDate(next.date)}: {next.text}</p>
+              </div>
+            )}
+            <footer class="cluster-links">
+              {c.web && <a href={c.web} rel="noopener noreferrer"><span class="vh">{c.name} cluster </span>Website</a>}
+              {c.linkedin && <a href={c.linkedin} rel="noopener noreferrer"><span class="vh">{c.name} cluster on </span>LinkedIn</a>}
+              <a class="link cluster-find" href={`/?cluster=${encodeURIComponent(c.id)}`}>
+                {members ? <>See the {number(members)} <span class="vh">{c.name} </span>{members === 1 ? 'member' : 'members'} on Find</> : <>Open <span class="vh">{c.name} </span>on Find</>}
+              </a>
+            </footer>
+          </article>
         ))}
-      </section>
-    </>
-  )}
+      </div>
+    </section>
+
+    <section class="events-section" id="all-events" aria-labelledby="list-heading">
+      <div class="section-head">
+        <h2 id="list-heading">All upcoming events</h2>
+        <p>From the clusters' public websites and pages. Public events are listed in full. Members-only events are shown only as a date: join the cluster for details.</p>
+      </div>
+      {events.length === 0 ? (
+        <p>No upcoming cluster events are listed at the moment.</p>
+      ) : (
+        <div class="events-layout">
+          <div class="events-calendar">
+            <h3 id="calendar-heading">Calendar</h3>
+            <p class="events-count">{events.length} upcoming {events.length === 1 ? 'event' : 'events'}: {publicCount} public, {events.length - publicCount} for members only.</p>
+            <p class="calendar-download"><a class="btn" href="/events.ics" download="tally-cluster-events.ics">Download as a calendar file (.ics)</a></p>
+            <div class="months">
+              {months.map((ym) => (
+                <table class="month">
+                  <caption>{monthName(ym)}</caption>
+                  <thead>
+                    <tr>{WEEKDAYS.map(([short, long]) => <th scope="col"><abbr title={long}>{short}</abbr></th>)}</tr>
+                  </thead>
+                  <tbody>
+                    {weeks(ym).map((week) => (
+                      <tr>
+                        {week.map((d) => {
+                          if (d == null) return <td />;
+                          const date = `${ym}-${pad(d)}`;
+                          const n = days.get(date)?.length ?? 0;
+                          return n ? (
+                            <td class="has-events">
+                              <a href={`#d-${date}`}>{d}<span class="vh"> {monthName(ym)}, {n} {n === 1 ? 'event' : 'events'}</span></a>
+                            </td>
+                          ) : (
+                            <td>{d}</td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ))}
+            </div>
+          </div>
+
+          <div class="events-list">
+            {[...days].map(([date, list]) => (
+              <div class="event-day">
+                <h3 id={`d-${date}`} tabindex="-1">
+                  <span class="event-day-number" aria-hidden="true">{Number(date.slice(8))}</span>
+                  <span class="vh">{longDate(date)}</span>
+                  <span class="mono event-day-when" aria-hidden="true"><span>{utc(date, { month: 'short', year: 'numeric' })}</span> <span>{utc(date, { weekday: 'long' })}</span></span>
+                </h3>
+                <ul>
+                  {list.map((e) =>
+                    e.audience === 'public' ? (
+                      <li class="event public" data-audience="public">
+                        <h4>{e.link ? <a href={e.link} rel="noopener noreferrer">{e.title}</a> : e.title}</h4>
+                        <p class="meta">{[clusterName(e.cluster), e.time, e.where].filter(Boolean).join(' · ')}</p>
+                        {e.summary && <p>{e.summary}</p>}
+                        {e.link ? null : byId.get(e.cluster)?.web ? (
+                          <p><a href={byId.get(e.cluster)?.web} rel="noopener noreferrer">{clusterName(e.cluster)} cluster website</a></p>
+                        ) : null}
+                      </li>
+                    ) : (
+                      <li class="event members" data-audience="members">
+                        <h4>{clusterName(e.cluster)}</h4>
+                        <p>{e.text}</p>
+                        <p><a href={e.link} rel="noopener noreferrer">Join the cluster</a></p>
+                      </li>
+                    ),
+                  )}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+
+    <div class="area-notes">
+      <p class="mono">Notes on the map</p>
+      <p>Areas are approximate and some overlap: Greater Lincolnshire shares ground with East Midlands and Yorkshire, so smaller areas are drawn on top. Some places, such as Berkshire, Milton Keynes and North Somerset, have no cluster. Map colours show upcoming events and are not the clusters' own brand colours. Boundaries: Office for National Statistics, licensed under the <a href={regionsData.licence_url} rel="noopener noreferrer">Open Government Licence v3.0</a>. Contains OS data © Crown copyright and database right 2025.</p>
+    </div>
+  </div>
 
   <Fragment slot="credits">
     <p>Cluster and event data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from the clusters' public websites and pages. Dates and details can change; check with the organiser before you travel.</p>

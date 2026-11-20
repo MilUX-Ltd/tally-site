@@ -83,10 +83,12 @@ test('events appear on the map by cluster', async ({ page }) => {
 
 test('lists upcoming events and a calendar', async ({ page }) => {
   await page.goto('/events');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Upcoming cluster events');
-  await expect(page.getByText('Fixture maritime showcase')).toBeVisible();
-  await expect(page.getByText('Fixture supplier day')).toBeVisible();
-  await expect(page.getByText('Fixture innovation briefing')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Regional defence clusters.');
+  // The redesigned page also names events in Next up and on the cluster cards; the full list is its own section.
+  const list = page.getByRole('region', { name: 'All upcoming events' });
+  await expect(list.getByText('Fixture maritime showcase')).toBeVisible();
+  await expect(list.getByText('Fixture supplier day')).toBeVisible();
+  await expect(list.getByText('Fixture innovation briefing')).toBeVisible();
   await expect(page.getByText('Fixture past showcase')).toHaveCount(0);
   const maritime = page.locator('.event', { hasText: 'Fixture maritime showcase' });
   await expect(maritime).toContainText('10:00 to 16:00');
