@@ -83,18 +83,21 @@ test('Next up is a timeline with large date numerals, soonest first', async ({ p
   await page.goto('/events');
   const section = page.getByRole('region', { name: 'Next up' });
   await expect(section.getByRole('heading', { level: 2, name: 'Next up' })).toBeVisible();
-  const items = section.locator('ol.next-up > li');
-  await expect(items).toHaveCount(5);
-  expect(await items.locator('time').evaluateAll((els) => els.map((el) => el.getAttribute('datetime')))).toEqual(['2099-03-10', '2099-03-18', '2099-04-02', '2099-04-20', '2099-04-20']);
-  const first = items.first();
+  // One entry per day, each with that day's events.
+  const days = section.locator('ol.next-up > li');
+  await expect(days).toHaveCount(4);
+  expect(await days.locator('time').evaluateAll((els) => els.map((el) => el.getAttribute('datetime')))).toEqual(['2099-03-10', '2099-03-18', '2099-04-02', '2099-04-20']);
+  const first = days.first();
   await expect(first.locator('.next-day')).toHaveText('10');
   await expect(first.locator('.next-month')).toContainText(/Mar 2099/i);
   const size = await first.locator('.next-day').evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
   expect(size).toBeGreaterThanOrEqual(48);
   await expect(first).toContainText('Fixture maritime showcase');
   await expect(first).toContainText('South Central');
+  await expect(days.nth(3).locator('.next-event')).toHaveCount(2);
   // A members-only event is a signpost here too: cluster, date, the fixed line and the cluster's public site.
-  const members = items.nth(1);
+  const members = days.nth(1).locator('.next-event');
+  await expect(members).toHaveCount(1);
   await expect(members).toContainText('South Central');
   await expect(members).toContainText(SIGNPOST);
   await expect(members.getByRole('link')).toHaveCount(1);
