@@ -126,6 +126,15 @@ jobs:
       - name: Check headers and smoke on the production URL
         if: env.CLOUDFLARE_API_TOKEN != '' && steps.deploy.outputs.production-url != ''
         run: node scripts/check-deploy.mjs "${{ steps.deploy.outputs.production-url }}"
+      - name: Check the custom domain
+        if: env.CLOUDFLARE_API_TOKEN != '' && steps.deploy.outputs.production-url != ''
+        # A newly bound domain needs a few minutes for its certificate; wait up to ten.
+        run: |
+          for i in $(seq 1 60); do
+            curl -sfo /dev/null https://tally.milux.co.uk/ && break
+            sleep 10
+          done
+          node scripts/check-deploy.mjs https://tally.milux.co.uk
       - name: Note when deploy is not configured
         if: env.CLOUDFLARE_API_TOKEN == ''
         run: echo "CLOUDFLARE_API_TOKEN secret not set; skipping production deploy." >> "$GITHUB_STEP_SUMMARY"

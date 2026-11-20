@@ -1,8 +1,8 @@
 // Cloudflare Workers static assets (docs/adr/0001) with one Worker route,
 // /api/search (docs/adr/0004), plus the read-only Ask Tally connector at /mcp.
 // Pages and data are served straight from assets; only /api/* and /mcp run the Worker. Deploys run from CI only.
-// The custom domain is bound at go-live; until then the workers.dev URL is the
-// preview and verification surface.
+// Production is served at tally.milux.co.uk (custom domain, bound at go-live,
+// 0.3.0). The workers.dev URL stays on as a verification surface.
 //
 // The search key is the Worker secret ANTHROPIC_API_KEY, never in this file.
 // Without it, search answers {"fallback": true} and the browser runs a keyword
@@ -12,6 +12,7 @@
   "name": "tally-site",
   "compatibility_date": "2026-11-01",
   "workers_dev": true,
+  "routes": [{ "pattern": "tally.milux.co.uk", "custom_domain": true }],
   "main": "./worker/index.ts",
   "assets": {
     "directory": "./dist",
