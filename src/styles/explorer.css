@@ -204,7 +204,7 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
 .matrix-pick input:focus-visible + span { outline: 3px solid var(--signal); outline-offset: 2px; }
 .matrix-scroll { flex: 1; min-height: 0; position: relative; overflow: auto; overscroll-behavior: contain; }
 .matrix-scroll:focus-visible { outline-offset: -3px; }
-.matrix table { border-collapse: separate; border-spacing: 0; font-size: 13px; }
+.matrix table { border-collapse: separate; border-spacing: 0; font-size: 12px; }
 .matrix th, .matrix td { box-sizing: border-box; padding: 0; border-bottom: 1px solid var(--line); border-left: 1px solid #ecebe3; }
 .matrix thead { position: sticky; top: 0; z-index: 3; }
 .matrix thead th, .matrix thead td { background: var(--white); }
@@ -216,16 +216,16 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
 .matrix .corner, .matrix .list-head, .matrix .list-cell { box-shadow: 1.5px 0 0 var(--ink); }
 .matrix .group-head { min-width: 8.5rem; padding: 8px 8px 6px; text-align: left; vertical-align: bottom; background: var(--paper); border-left: 1.5px solid var(--ink); font-family: var(--font-mono); font-weight: 500; font-size: 10.5px; line-height: 1.3; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
 .matrix .start { border-left: 1.5px solid var(--ink); }
-.matrix .cap-head { vertical-align: bottom; min-width: 34px; }
+.matrix .cap-head { vertical-align: bottom; min-width: 30px; }
 .matrix .cap-head label { display: flex; flex-direction: column-reverse; align-items: center; gap: 7px; padding: 10px 4px 8px; cursor: pointer; }
-.matrix .cap-label { writing-mode: vertical-rl; transform: rotate(180deg); max-height: 6.75rem; text-align: left; font-weight: 600; font-size: 12.5px; line-height: 1.2; }
+.matrix .cap-label { writing-mode: vertical-rl; transform: rotate(180deg); max-height: 6.75rem; text-align: left; font-weight: 600; font-size: 11.5px; line-height: 1.2; }
 .matrix .cap-head label:hover .cap-label { text-decoration: underline; }
 .matrix .cap-head input { width: 18px; height: 18px; margin: 0; accent-color: var(--forest); cursor: pointer; }
 .matrix thead .on { background: #fbeed3; }
-.matrix tbody th { width: var(--name); min-width: var(--name); max-width: var(--name); padding: 7px 12px; background: var(--white); text-align: left; font-weight: 700; font-size: 13.5px; line-height: 1.25; overflow-wrap: anywhere; }
+.matrix tbody th { width: var(--name); min-width: var(--name); max-width: var(--name); padding: 5px 12px; background: var(--white); text-align: left; font-weight: 700; font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; }
 .matrix tbody th a { text-decoration: none; }
 .matrix tbody th a:hover { text-decoration: underline; }
-.matrix td { min-width: 34px; height: 36px; text-align: center; }
+.matrix td { min-width: 30px; height: 30px; text-align: center; }
 .matrix .list-cell { padding: 0 7px; background: var(--white); }
 .matrix-add { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; background: var(--white); border: 1.5px solid var(--ink); border-radius: 0; color: var(--ink); font-size: 15px; font-weight: 700; line-height: 1; cursor: pointer; }
 .matrix-add:hover { background: var(--paper); }
