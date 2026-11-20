@@ -1,0 +1,14 @@
+{
+ "generated": "2026-11-20",
+ "checked": {"websites": 57, "ok": 50, "gone": 4, "uncertain": 3},
+ "dead": [
+  {"name": "Example Depot Services", "url": "https://example.com/example-depot-services", "reason": "no-such-host", "since": "2026-11-13"},
+  {"name": "Example Spares Supply", "url": "https://old.example.com/spares", "reason": "not-found", "since": "2026-11-13"}
+ ],
+ "moved": [
+  {"name": "Example Moorland Consulting", "url": "https://example.com/example-moorland-consulting", "home": "https://example.com/", "since": "2026-11-13"}
+ ],
+ "pending": [
+  {"name": "Example Range Services", "url": "https://example.com/example-range-services", "result": "dead", "reason": "refused", "since": "2026-11-20"}
+ ]
+}
