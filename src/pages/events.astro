@@ -74,7 +74,7 @@ const clusterName = (id: string) => byId.get(id)?.name ?? id;
 const publicCount = events.filter((e) => e.audience === 'public').length;
 const number = (n: number) => n.toLocaleString('en-GB');
 ---
-<Base title="Clusters and events: Tally" description="The UK's regional defence and security clusters: where each one works, its upcoming events and the companies in it." wide>
+<Base title="Clusters and events: Tally" description="The UK's regional defence and security clusters: where each one works, its upcoming events and the companies in it." wide counted={false}>
   <div class="events-page">
     <div class="events-top">
       <header class="page-hero events-hero">

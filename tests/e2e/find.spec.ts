@@ -628,7 +628,7 @@ test('10. Floors: axe passes in every state, the map is never the only route, th
 
   // The CSP is the one in public/_headers, and that has not changed.
   const csp =
-    "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob: https://tiles.openfreemap.org; font-src 'self'; connect-src 'self' https://tiles.openfreemap.org https://api.postcodes.io; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+    "default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self'; img-src 'self' data: blob: https://tiles.openfreemap.org; font-src 'self'; connect-src 'self' https://tiles.openfreemap.org https://api.postcodes.io https://cloudflareinsights.com; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
   expect(headers).toContain(`Content-Security-Policy: ${csp}`);
   const violations: string[] = [];
   page.on('console', (m) => {

@@ -16,13 +16,15 @@ interface Props {
   feed?: boolean;
   /** The navigation item to mark as current; worked out from the address when left out. */
   current?: NavId | null;
+  /** Whether the page loads the visitor counter. False on the script-free pages (D-z6mw4). */
+  counted?: boolean;
 }
-const { title, description, wide = false, canonical = true, feed = false, current } = Astro.props;
+const { title, description, wide = false, canonical = true, feed = false, current, counted = true } = Astro.props;
 // Slots: the default slot is the page; "actions" sits at the right of the top
 // bar (the shortlist button); "credits" is the page's own data credit lines
 // at the top of the footer.
 // Canonical addresses are on tally.milux.co.uk and end in a slash, as served.
-const beacon = beaconConfig();
+const beacon = counted ? beaconConfig() : null;
 const path = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
 ---
 <!doctype html>
