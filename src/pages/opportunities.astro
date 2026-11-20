@@ -1,68 +1,137 @@
 ---
-// Funding calls and opportunities shared by the clusters, soonest deadline
-// first, built at build time from public/data/opportunities.json and
-// clusters.json (scripts/fetch-data.mjs). Past items are dropped at build.
-// Members-only items are never published. One bundled module adds the
-// cluster and kind filter; without it the full list shows.
+// Funding: open funding calls and opportunities shared by the clusters, as a
+// deadline board, soonest first, built at build time from
+// public/data/opportunities.json and clusters.json (scripts/fetch-data.mjs).
+// Past items are dropped at build. Members-only items are never published.
+// One bundled module counts the days to each deadline in the browser (the
+// site is static, so a count made at build would go stale) and adds the
+// filter chips; without it the dates and the full list show.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import Base from '../layouts/Base.astro';
-import '../styles/events.css';
 import '../styles/opportunities.css';
-import { longDate, type ClustersData } from '../lib/clusters';
-import { countText, KIND_LABELS, type OpportunitiesData } from '../lib/opportunities';
+import { shortDate, type ClustersData } from '../lib/clusters';
+import { closingDate, closingDay, closingMonth, countText, HORIZON_DAYS, KIND_LABELS, SOON_DAYS, type Opportunity, type OpportunitiesData } from '../lib/opportunities';
 
 const read = (name: string) => JSON.parse(readFileSync(join(process.cwd(), 'public', 'data', name), 'utf8'));
 const clusters = (read('clusters.json') as ClustersData).clusters;
 const byId = new Map(clusters.map((c) => [c.id, c]));
 const todayUtc = new Date().toISOString().slice(0, 10);
-const items = (read('opportunities.json') as OpportunitiesData).opportunities.filter((o) => o.deadline === null || o.deadline >= todayUtc);
+const data = read('opportunities.json') as OpportunitiesData;
+const items = data.opportunities.filter((o) => o.deadline === null || o.deadline >= todayUtc);
+const dated = items.filter((o) => o.deadline !== null);
+const openEnded = items.filter((o) => o.deadline === null);
 const clusterName = (id: string) => byId.get(id)?.name ?? id;
 const used = [...new Set(items.map((o) => o.cluster))].sort((a, b) => clusterName(a).localeCompare(clusterName(b), 'en-GB'));
+const soonBy = new Date(Date.parse(`${todayUtc}T00:00:00Z`) + SOON_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+const soon = dated.filter((o) => (o.deadline as string) <= soonBy).length;
+const next = dated[0];
+const groups: Array<{ id: string; heading: string; note: string | null; list: Opportunity[] }> = [
+  { id: 'board', heading: 'Deadline board', note: `Each bar fills over the ${HORIZON_DAYS} days before a deadline.`, list: dated },
+  { id: 'open-ended', heading: 'No closing date', note: null, list: openEnded },
+].filter((g) => g.list.length > 0);
 ---
-<Base title="Funding calls and opportunities: Tally" description="Open funding calls and opportunities shared by the UK's regional defence and security clusters." wide>
-  <header class="site-header">
-    <p><a href="/">Back to the Tally map</a> · <a href="/events">Upcoming cluster events</a></p>
-    <h1>Funding calls and opportunities</h1>
-    <p>Open funding calls and opportunities shared by the UK's regional defence and security clusters, from their public websites and pages. Soonest deadline first. Members-only items are not listed: join a cluster for those.</p>
-  </header>
-
-  {items.length === 0 ? (
-    <p>No open funding calls or opportunities are listed at the moment.</p>
-  ) : (
-    <>
-      <form class="opp-filter" id="opp-filter" action="/opportunities" method="get" hidden>
-        <div class="field">
-          <label for="opp-cluster">Cluster</label>
-          <select id="opp-cluster" name="cluster">
-            <option value="">All clusters</option>
-            {used.map((id) => <option value={id}>{clusterName(id)}</option>)}
-          </select>
+<Base title="Funding and opportunities: Tally" description="Open funding calls and opportunities shared by the UK's regional defence and security clusters, soonest deadline first." wide>
+  <div class="fund">
+    <div class="fund-top">
+      <header class="page-hero">
+        <p class="mono kicker">Open calls · From the clusters · Soonest first</p>
+        <h1>Funding and opportunities<span class="stop">.</span></h1>
+        <p class="lede">Open funding calls and opportunities shared by the UK's regional defence and security clusters, from their public websites and pages.</p>
+        <dl class="facts">
+          <div><dd>{items.length}</dd><dt class="mono">Open calls</dt></div>
+          <div><dd id="fact-soon">{soon}</dd><dt class="mono">Closing in {SOON_DAYS} days</dt></div>
+          <div><dd>{used.length}</dd><dt class="mono">{used.length === 1 ? 'Cluster' : 'Clusters'}</dt></div>
+          <div><dd>{shortDate(data.as_of)}</dd><dt class="mono">Last updated</dt></div>
+        </dl>
+      </header>
+      {next && next.deadline && (
+        <div class="next-up" id="next-up">
+          <p class="mono next-label">Next to close</p>
+          <p class="next-count" data-deadline={next.deadline}>
+            <b class="n">{closingDay(next.deadline)}</b>
+            <span class="u">{closingMonth(next.deadline)}</span>
+          </p>
+          <p class="next-title"><a href={next.link} rel="noopener noreferrer">{next.title}</a></p>
+          <p class="mono next-meta">{KIND_LABELS[next.kind]} · {clusterName(next.cluster)} cluster · <span class="next-date">Closes {closingDate(next.deadline)}{next.time ? `, ${next.time}` : ''}</span></p>
         </div>
-        <fieldset>
-          <legend>Kind</legend>
-          <label><input type="radio" name="kind" value="" checked /> All</label>
-          <label><input type="radio" name="kind" value="funding" /> Funding calls</label>
-          <label><input type="radio" name="kind" value="opportunity" /> Opportunities</label>
-        </fieldset>
-      </form>
-      <p class="events-count" id="opp-count" role="status">{countText(items.length, items.length)}</p>
-      <p class="opp-none" id="opp-none" hidden>No funding calls or opportunities match this filter.</p>
-      <section aria-labelledby="opp-heading">
-        <h2 id="opp-heading" class="vh">All open funding calls and opportunities</h2>
-        <ul class="opp-list" id="opp-list">
-          {items.map((o) => (
-            <li class="opportunity" data-cluster={o.cluster} data-kind={o.kind}>
-              <h3><a href={o.link} rel="noopener noreferrer">{o.title}</a></h3>
-              <p class="meta">{KIND_LABELS[o.kind]} · {clusterName(o.cluster)} cluster</p>
-              <p class="deadline">{o.deadline ? <>Closes {longDate(o.deadline)}{o.time ? `, ${o.time}` : ''}</> : 'No closing date'}</p>
-              {o.summary && <p>{o.summary}</p>}
-            </li>
+      )}
+    </div>
+
+    {items.length === 0 ? (
+      <p class="fund-empty">No open funding calls or opportunities are listed at the moment.</p>
+    ) : (
+      <div class="fund-body">
+        <div class="fund-main">
+          <form class="opp-filter" id="opp-filter" action="/opportunities" method="get" hidden>
+            <fieldset>
+              <legend class="mono">Kind</legend>
+              <label class="chip"><input type="radio" name="kind" value="" checked /><span>All</span></label>
+              <label class="chip"><input type="radio" name="kind" value="funding" /><span>Funding calls</span></label>
+              <label class="chip"><input type="radio" name="kind" value="opportunity" /><span>Opportunities</span></label>
+            </fieldset>
+            <fieldset>
+              <legend class="mono">Cluster</legend>
+              <label class="chip"><input type="radio" name="cluster" value="" checked /><span>All clusters</span></label>
+              {used.map((id) => <label class="chip"><input type="radio" name="cluster" value={id} /><span>{clusterName(id)}</span></label>)}
+            </fieldset>
+          </form>
+          <p class="mono opp-count" id="opp-count" role="status">{countText(items.length, items.length)}</p>
+          <p class="opp-none card card-pad" id="opp-none" hidden>No funding calls or opportunities match this filter.</p>
+          {groups.map((g) => (
+            <section class="board card" aria-labelledby={`${g.id}-heading`}>
+              <div class="card-head board-head">
+                <h2 id={`${g.id}-heading`}>{g.heading}</h2>
+                {g.note && (
+                  <p class="board-note">
+                    Soonest first.
+                    <span class="bar-note" hidden>
+                      {g.note}
+                      <span class="ramp-key" aria-hidden="true"><i class="k1"></i><i class="k2"></i><i class="k3"></i><i class="k4"></i></span>
+                    </span>
+                  </p>
+                )}
+              </div>
+              <ul class="opp-list">
+                {g.list.map((o) => (
+                  <li class="opportunity" data-cluster={o.cluster} data-kind={o.kind} data-deadline={o.deadline}>
+                    {o.deadline ? (
+                      <p class="countdown"><b class="n">{closingDay(o.deadline)}</b> <span class="mono u">{closingMonth(o.deadline)}</span></p>
+                    ) : (
+                      <p class="countdown"><b class="n">Open</b> <span class="mono u">No deadline</span></p>
+                    )}
+                    <div class="what">
+                      <p class="meta"><span class="tag">{KIND_LABELS[o.kind]}</span> <span class="mono">{clusterName(o.cluster)} cluster</span></p>
+                      <h3><a href={o.link} rel="noopener noreferrer">{o.title}</a></h3>
+                      {o.summary && <p class="summary">{o.summary}</p>}
+                    </div>
+                    <div class="when">
+                      <p class="mono deadline">{o.deadline ? <>Closes {closingDate(o.deadline)}{o.time ? `, ${o.time}` : ''}</> : 'No closing date'}</p>
+                      {o.deadline && (
+                        <div class="bar-wrap" hidden>
+                          <svg class="deadline-bar" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                            <rect class="fill" x="0" y="0" width="0" height="8" />
+                          </svg>
+                        </div>
+                      )}
+                      {o.deadline && <p class="flag" hidden></p>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
-      </section>
-    </>
-  )}
+        </div>
+        <aside class="fund-aside card" aria-labelledby="apply-heading">
+          <h2 id="apply-heading">Before you apply</h2>
+          <p class="aside-lead">Check with the funder before you apply.</p>
+          <p>Deadlines and details can change after a cluster shares them. The funder's own page is the authority: each title links to it.</p>
+          <p>Members-only items are not listed. Join a cluster for those.</p>
+          <p><a class="link" href="/events">Clusters and events</a></p>
+        </aside>
+      </div>
+    )}
+  </div>
 
   <Fragment slot="credits">
     <p>Opportunity data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from the clusters' public websites and pages. Deadlines and details can change; check with the funder before you apply.</p>
