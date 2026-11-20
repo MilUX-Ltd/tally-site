@@ -192,6 +192,12 @@ export default function Explorer() {
     }
     setSwitched((n) => n + 1);
   };
+  // A pick on the map (a hexagon, pin or area) shows its companies: from
+  // Clusters or Growth it opens Companies as a view link does, so Back returns.
+  // Compare stays, because its matrix narrows to the pick.
+  const showPick = () => {
+    if (state.view === 'clusters' || state.view === 'growth') switchView('companies');
+  };
   // Back and Forward change only the view; filters and shortlist stay as they are.
   useEffect(() => {
     const onPop = () => {
@@ -446,10 +452,12 @@ export default function Explorer() {
               onSelectCell={(cell) => {
                 setPicked(true);
                 update({ cell, sel: [], area: null });
+                showPick();
               }}
               onSelectIds={(ids) => {
                 setPicked(true);
                 update({ cell: null, sel: ids, area: null });
+                showPick();
               }}
               onMove={(position) => update({ map: roundPosition(position) })}
               onBinning={(b) => setBinning(() => b)}
@@ -457,6 +465,7 @@ export default function Explorer() {
               onArea={(area) => {
                 setPicked(true);
                 update({ area, cell: null, sel: [], matrix: { ...state.matrix, page: 1 } });
+                showPick();
               }}
             />
             {legend && (
