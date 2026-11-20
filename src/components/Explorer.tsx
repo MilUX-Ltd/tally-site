@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/ho
 import AreaPanel from './AreaPanel';
 import Filters from './Filters';
 import MapView, { type Binning } from './MapView';
-import ResultsList from './ResultsList';
+import ResultsList, { PAGE_SIZE } from './ResultsList';
 import { emptyFilters, filterCompanies, isLocated, type Facet } from '../lib/filters';
 import { companiesInBbox } from '../lib/matrix';
 import type { TallyData } from '../lib/types';
@@ -254,6 +254,17 @@ export default function Explorer() {
   // or when the link was to a later page of it.
   const noUk = useMemo(() => !filtered.some((c) => !isOverseas(c)), [filtered]);
   const openedOnOverseasPage = useRef(state.opage > 1).current;
+
+  // A page past the end of a list shows its last page, and the address is
+  // corrected to match (replaced, not added to the history).
+  const overseasCount = useMemo(() => facetFiltered.filter(isOverseas).length, [facetFiltered]);
+  useEffect(() => {
+    if (!data || overlapPending) return;
+    const last = (n: number) => Math.max(1, Math.ceil(n / PAGE_SIZE));
+    const page = Math.min(state.page, last(filtered.length));
+    const opage = Math.min(state.opage, last(overseasCount));
+    if (page !== state.page || opage !== state.opage) update({ page, opage });
+  }, [data, overlapPending, filtered.length, overseasCount, state.page, state.opage]);
   const inCluster = cluster?.membership ? ` in the ${cluster.name} cluster` : '';
   const within = `${inCluster}${location ? ` within ${location.miles} miles of ${location.name}` : ''}`;
   const places = useMemo(
