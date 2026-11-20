@@ -10,7 +10,7 @@ import ResultsList, { PAGE_SIZE } from './ResultsList';
 import { emptyFilters, filterCompanies, isLocated, type Facet } from '../lib/filters';
 import { companiesInBbox } from '../lib/matrix';
 import type { TallyData } from '../lib/types';
-import { DEFAULT_VIEW, fromQuery, isView, keywordText, roundPosition, sanitiseClusters, sanitiseSites, sanitiseState, toQuery, VIEWS, type View, type ViewState } from '../lib/url-state';
+import { addressFor, DEFAULT_VIEW, fromQuery, keywordText, resolveView, roundPosition, sanitiseClusters, sanitiseSites, sanitiseState, VIEWS, type View, type ViewState } from '../lib/url-state';
 import SearchBox from './SearchBox';
 import { askSearch, keywordSearch, readSearchAnswer } from '../lib/search';
 import Matrix from './Matrix';
@@ -33,27 +33,8 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 
 const VIEW_LABELS: Record<View, string> = { companies: 'Companies', compare: 'Compare', clusters: 'Clusters', growth: 'Growth' };
 
-// Links made before the views open where their parameters were used: a matrix
-// page or group in Compare, a month in Growth. A view named in the link wins.
-// Resolved here rather than in fromQuery, so the URL state stays a plain round trip.
-function resolveView(query: string, state: ViewState): View {
-  if (isView(new URLSearchParams(query).get('view'))) return state.view;
-  if (state.matrix.group || state.matrix.page > 1) return 'compare';
-  if (state.month) return 'growth';
-  return DEFAULT_VIEW;
-}
-
-// The address for a state. The default view is left out, unless the address
-// also holds a matrix page or group or a month, which on their own open
-// Compare or Growth.
-function address(state: ViewState): string {
-  const query = toQuery(state);
-  const named = state.view === DEFAULT_VIEW && (state.matrix.group || state.matrix.page > 1 || state.month);
-  return named ? `${query}&view=${DEFAULT_VIEW}` : query;
-}
-
 const href = (state: ViewState) => {
-  const query = address(state);
+  const query = addressFor(state);
   return `${window.location.pathname}${query ? `?${query}` : ''}`;
 };
 
@@ -168,7 +149,7 @@ export default function Explorer() {
   const pushNext = useRef(false);
   useLayoutEffect(() => {
     if (!data) return;
-    const query = address(state);
+    const query = addressFor(state);
     const url = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
     if (pushNext.current) {
       pushNext.current = false;

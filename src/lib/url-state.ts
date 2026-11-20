@@ -208,6 +208,26 @@ export function toQuery(state: ViewState): string {
   return parts.join('&');
 }
 
+// Links made before the views open where their parameters were used: a matrix
+// page or group in Compare, a month in Growth. A view named in the link wins.
+// Kept apart from fromQuery, so the URL state stays a plain round trip; the
+// explorer calls it on load and on Back.
+export function resolveView(query: string, state: ViewState): View {
+  if (isView(new URLSearchParams(query).get('view'))) return state.view;
+  if (state.matrix.group || state.matrix.page > 1) return 'compare';
+  if (state.month) return 'growth';
+  return DEFAULT_VIEW;
+}
+
+// The address for a state. The default view is left out, unless the address
+// also holds a matrix page or group or a month, which on their own open
+// Compare or Growth.
+export function addressFor(state: ViewState): string {
+  const query = toQuery(state);
+  const named = state.view === DEFAULT_VIEW && (state.matrix.group || state.matrix.page > 1 || state.month);
+  return named ? `${query}&view=${DEFAULT_VIEW}` : query;
+}
+
 /** Rounds positions the way the URL does, so state and URL agree. */
 export function roundPosition(position: MapPosition): MapPosition {
   return { zoom: round(position.zoom, 2), lat: round(position.lat, 5), lon: round(position.lon, 5) };
