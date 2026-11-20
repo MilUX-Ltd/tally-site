@@ -165,9 +165,7 @@ export function fromQuery(query: string): ViewState {
   if (cluster && CLUSTER.test(cluster)) state.cluster = cluster;
   state.q = keywordText(p.get('q'));
   if (p.get('flat') === '1') state.flat = true;
-  // The matrix lives in the List view, so an older link to a matrix page or
-  // group opens there.
-  if (p.get('view') === 'list' || (p.get('view') === null && (state.matrix.page > 1 || state.matrix.group))) state.view = 'list';
+  if (p.get('view') === 'list') state.view = 'list';
   return state;
 }
 
@@ -203,6 +201,16 @@ export function toQuery(state: ViewState): string {
   if (state.flat) add('flat', '1');
   if (state.view === 'list') add('view', 'list');
   return parts.join('&');
+}
+
+/**
+ * The state a link opens with. The matrix lives in the List view, so a link
+ * from before there was one, naming a matrix page or group, opens there.
+ */
+export function fromLink(query: string): ViewState {
+  const state = fromQuery(query);
+  const named = new URLSearchParams(query.startsWith('?') ? query.slice(1) : query).has('view');
+  return !named && (state.matrix.page > 1 || state.matrix.group) ? { ...state, view: 'list' } : state;
 }
 
 /** Rounds positions the way the URL does, so state and URL agree. */

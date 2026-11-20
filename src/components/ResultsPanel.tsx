@@ -132,7 +132,7 @@ export default function ResultsPanel(p: Props) {
         ) : n === 0 ? (
           <div class="empty">{p.empty}</div>
         ) : (
-          <ul class="rows" aria-label="Results">
+          <ul class={p.kind === 'area' ? 'rows results area' : 'rows results'} aria-label="Results">
             {shown.map((hit) => (
               <Row key={hit.company.id} hit={hit} labels={p.labels} on={p.shortlisted(hit.company.id)} remove={p.kind === 'shortlist'} onShortlist={p.onShortlist} />
             ))}

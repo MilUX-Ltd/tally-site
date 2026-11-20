@@ -8,15 +8,15 @@ interface Props {
   taxonomy: Taxonomy;
   filters: FilterState;
   onToggle: (facet: Facet, value: string, on: boolean) => void;
-  /** Goes up by one each time a search sets the filters or the panel opens. */
+  /** Goes up by one each time a search sets the filters. */
   reveal: number;
 }
 
 function Choices({ facet, title, options, filters, onToggle, reveal }: { facet: Facet; title: string; options: Option[] } & Pick<Props, 'filters' | 'onToggle' | 'reveal'>) {
   const selected = filters[facet];
   const count = options.filter((o) => selected.includes(o.slug)).length;
-  // After a search sets the filters, and when the panel opens, groups holding
-  // a chosen value open so the choices are visible. They never close on their own.
+  // After a search sets the filters, groups holding a chosen value open so
+  // the choices are visible. They never close on their own.
   const details = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     if (reveal > 0 && count > 0 && details.current) details.current.open = true;

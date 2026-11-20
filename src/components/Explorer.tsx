@@ -24,7 +24,7 @@ import { askSearch, keywordSearch, readSearchAnswer } from '../lib/search';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
 import { companiesNearSite, distanceMiles, isRadius, RADII, ringPolygon, type Radius, type SitesData } from '../lib/sites';
 import type { Company, TallyData } from '../lib/types';
-import { defaultState, fromQuery, keywordText, roundPosition, sanitiseClusters, sanitiseSites, sanitiseState, toQuery, type Bbox, type ViewState } from '../lib/url-state';
+import { defaultState, fromLink, keywordText, roundPosition, sanitiseClusters, sanitiseSites, sanitiseState, toQuery, type Bbox, type ViewState } from '../lib/url-state';
 
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString('en-GB')} ${n === 1 ? one : many}`;
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
@@ -58,7 +58,7 @@ function usePhone(): boolean {
 export default function Explorer() {
   const [data, setData] = useState<TallyData | null>(null);
   const [failed, setFailed] = useState(false);
-  const [state, setState] = useState<ViewState>(() => fromQuery(window.location.search));
+  const [state, setState] = useState<ViewState>(() => fromLink(window.location.search));
   const [binning, setBinning] = useState<Binning | null>(null);
   // Goes up when the panel's heading should take focus: a pick on the map, the shortlist opening.
   const [focusPanel, setFocusPanel] = useState(0);
@@ -527,7 +527,15 @@ export default function Explorer() {
       <button type="button" class="btn btn-sm" onClick={searchArea}>
         Search this area
       </button>
-      <button type="button" class="btn btn-sm" aria-pressed={drawing} onClick={() => setDrawing(!drawing)}>
+      <button
+        type="button"
+        class="btn btn-sm"
+        aria-pressed={drawing}
+        onClick={() => {
+          if (!drawing) say('Press and drag on the map to draw a rectangle. Escape stops.');
+          setDrawing(!drawing);
+        }}
+      >
         Draw an area
       </button>
       <button type="button" class="btn btn-sm" aria-pressed={state.clusters} onClick={() => update({ clusters: !state.clusters })}>
@@ -547,7 +555,7 @@ export default function Explorer() {
   );
 
   return (
-    <div class={`find ${mode}${showList ? ' shortlisting' : ''}${layersOpen ? ' layers-open' : ''}`}>
+    <div class={`find ${mode === 'landing' ? 'landing' : mode === 'list' ? 'as-list' : 'with-results'}${layersOpen ? ' layers-open' : ''}`}>
       <p id="result-count" class="vh">
         {countSentence}
       </p>
@@ -696,7 +704,7 @@ export default function Explorer() {
           </button>
         </div>
         {mode !== 'list' && !phone && mapStyle}
-        <button type="button" class="btn" aria-haspopup="dialog" aria-expanded={layersOpen} onClick={() => setLayersOpen(!layersOpen)}>
+        <button type="button" class={layersOpen ? 'btn is-selected' : 'btn'} aria-haspopup="dialog" aria-expanded={layersOpen} onClick={() => setLayersOpen(!layersOpen)}>
           Layers
         </button>
       </div>
@@ -765,7 +773,7 @@ export default function Explorer() {
             <Filters
               taxonomy={data.taxonomy}
               filters={state.filters}
-              reveal={reveal + (filtersOpen ? 1 : 0)}
+              reveal={reveal}
               onToggle={(facet, value, on) => {
                 searchedFor.current = '';
                 toggle(facet, value, on);
