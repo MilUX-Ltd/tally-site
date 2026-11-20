@@ -1,4 +1,4 @@
-/* New companies page. Brand colours only (see base.css). */
+/* New companies page. Not yet redesigned; colours come from the tokens in base.css. */
 .new-week h2 { margin: 2rem 0 0.25rem; font-size: 1.25rem; }
 .new-week ul { list-style: none; padding: 0; margin: 0; }
 .new-company { padding: 0.75rem 1rem; margin: 0.5rem 0; background: #fff; border-left: 4px solid var(--gold); max-width: 50rem; }

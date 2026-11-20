@@ -30,7 +30,7 @@ test('get listed is site-wide', async ({ page }) => {
     const link = page.locator('footer.site-footer').getByRole('link', { name: 'Get listed' });
     await expect(link, path).toBeVisible();
     expect(await subjectOf(link)).toBe('Tally: please list my company');
-    await expect(page.locator('footer.site-footer').getByRole('link', { name: /about tally/i })).toHaveAttribute('href', '/about');
+    await expect(page.locator('footer.site-footer').getByRole('link', { name: 'About', exact: true })).toHaveAttribute('href', '/about');
   }
   await page.goto('/');
   await waitForMap(page);

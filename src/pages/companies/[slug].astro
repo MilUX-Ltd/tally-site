@@ -5,7 +5,6 @@
 import type { GetStaticPaths } from 'astro';
 import Base from '../../layouts/Base.astro';
 import Markdown from '../../components/Markdown.astro';
-import SiteFooter from '../../components/SiteFooter.astro';
 import '../../styles/company.css';
 import {
   canonicalUrl,
@@ -175,9 +174,9 @@ const correction = correctionMailto(company.name, canonicalUrl(companyPath(compa
     </aside>
   </div>
 
-  <SiteFooter>
+  <Fragment slot="credits">
     <p>Company data: <a href="https://github.com/MilUX-Ltd/tally">the Tally directory</a>, from public sources, under CC BY 4.0. Map outline: Office for National Statistics, Open Government Licence v3.0; contains OS data © Crown copyright and database right 2025.</p>
-  </SiteFooter>
+  </Fragment>
 </Base>
 <script>
   import '../../scripts/company';

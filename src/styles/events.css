@@ -1,4 +1,4 @@
-/* Upcoming cluster events page. Brand colours only (see base.css). */
+/* Upcoming cluster events page. Not yet redesigned; colours come from the tokens in base.css. */
 .vh {
   position: absolute !important;
   width: 1px;
@@ -16,10 +16,10 @@
 .month abbr { text-decoration: none; }
 .month td.has-events { background: var(--green); }
 .month td.has-events a { display: flex; align-items: center; justify-content: center; min-height: 2.5rem; color: #fff; font-weight: 700; }
-.month td.has-events a:focus-visible { outline: 3px solid var(--orange); outline-offset: -3px; }
+.month td.has-events a:focus-visible { outline: 3px solid var(--signal); outline-offset: -3px; }
 .events-list ul { list-style: none; padding: 0; margin: 0; }
 .event-day h3 { margin: 1.5rem 0 0.25rem; font-size: 1.15rem; }
-.event-day h3:focus { outline: 3px solid var(--orange); outline-offset: 2px; }
+.event-day h3:focus { outline: 3px solid var(--signal); outline-offset: 2px; }
 .event { padding: 0.75rem 1rem; margin: 0.5rem 0; background: #fff; border-left: 4px solid var(--gold); max-width: 50rem; }
 .event.members { border-left-color: var(--blue-grey); }
 .event h4 { margin: 0; font-size: 1.05rem; }

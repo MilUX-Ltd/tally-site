@@ -76,9 +76,9 @@ test('new companies page lists additions by week', async ({ page }) => {
   await vehicles.getByRole('link', { name: 'Example Vehicles' }).click();
   await expect(page).toHaveURL(/\/companies\/example-vehicles\/$/);
 
-  // Linked from the explorer header, which also advertises the feed.
+  // Linked from the shared top bar on the home page, which also advertises the feed.
   await page.goto('/');
-  await expect(page.locator('.site-header').getByRole('link', { name: /new companies/i })).toHaveAttribute('href', '/new');
+  await expect(page.locator('header.topbar .topbar-nav').getByRole('link', { name: /new companies/i })).toHaveAttribute('href', '/new');
   await expect(page.locator('head link[rel="alternate"][type="application/rss+xml"]')).toHaveAttribute('href', '/new/feed.xml');
 });
 

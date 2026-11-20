@@ -1,35 +1,86 @@
-/* Brand tokens (MilUX brand kit). */
+/* Tally design language: tokens, type and the shared components every page
+   uses. The source of truth is specs/Tally Redesign (the design language).
+   A light, hard-edged instrument: paper, ink and one signal colour. Square
+   corners, flat offset shadows, no gradients. */
+
+/* Fonts: self-hosted WOFF2 (SIL OFL 1.1, see public/fonts/OFL.txt). */
+@font-face { font-family: Manrope; font-weight: 400; font-style: normal; font-display: swap; src: url('/fonts/manrope-400.woff2') format('woff2'); }
+@font-face { font-family: Manrope; font-weight: 600; font-style: normal; font-display: swap; src: url('/fonts/manrope-600.woff2') format('woff2'); }
+@font-face { font-family: Manrope; font-weight: 700; font-style: normal; font-display: swap; src: url('/fonts/manrope-700.woff2') format('woff2'); }
+@font-face { font-family: Manrope; font-weight: 800; font-style: normal; font-display: swap; src: url('/fonts/manrope-800.woff2') format('woff2'); }
+@font-face { font-family: 'Roboto Mono'; font-weight: 500; font-style: normal; font-display: swap; src: url('/fonts/roboto-mono-500.woff2') format('woff2'); }
+
+/* Tokens */
 :root {
-  --green: #113308;
-  --gold: #b5b171;
-  --blue-grey: #586f7c;
-  --orange: #a35c17;
-  --neutral: #f7f6eb;
-  --beige: #d2c78d;
+  --paper: #f5f4ef; /* page background */
+  --white: #fff; /* cards, bars, inputs */
+  --ink: #0c1510; /* text, borders, dark buttons */
+  --ink-2: #3f4a42; /* body copy on paper or white */
+  --ink-3: #5f6a62; /* labels and meta; never below 4.5:1 */
+  --line: #d9d8ce; /* hairlines inside cards */
+  --forest: #113308; /* primary action */
+  --forest-dark: #0a2204; /* primary action, hover */
+  --clay: #a35c17; /* accent text: kickers, distances */
+  --signal: #e2611c; /* graphic accent only: underlines, dots, focus ring, counts */
+  --shadow: rgb(12 21 16 / 12%);
+  --shadow-card: 6px 6px 0 var(--shadow);
+  --shadow-search: 8px 8px 0 var(--shadow);
+
+  /* Data ramp, low to high: every chart and map. */
+  --ramp-1: #f2d9a6;
+  --ramp-2: #eda552;
+  --ramp-3: #e2611c;
+  --ramp-4: #8a2b0a;
+  --font: Manrope, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Roboto Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --bar-height: 60px;
+  --gutter: 32px;
+
+  /* Names from before the redesign, kept so pages not yet redesigned still
+     draw. Do not use in new work; each page slice removes its own uses. */
+  --green: var(--forest);
+  --gold: var(--ink);
+  --blue-grey: var(--ink-3);
+  --orange: var(--clay);
+  --neutral: var(--paper);
+  --beige: var(--line);
   color-scheme: light;
 }
+@media (max-width: 760px) {
+  :root { --gutter: 16px; }
+}
+
+/* Base */
 * { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  background: var(--neutral);
-  color: var(--green);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font);
+  font-size: 16px;
   line-height: 1.5;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
 }
-main { max-width: 72rem; margin: 0 auto; padding: 2rem 1rem; }
-a { color: var(--green); }
-a:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
-.skip-link { position: absolute; left: -999px; }
-.skip-link:focus { left: 1rem; top: 1rem; background: #fff; padding: 0.5rem; }
-main.wide { max-width: none; padding: 1rem; }
-@media (min-width: 60rem) { main.wide { padding: 1rem 2rem; } }
-.site-header h1 { margin: 0; }
-.site-header p { margin: 0.25rem 0 1rem; max-width: 60rem; }
-.header-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 2rem; }
-.site-nav ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; }
-.site-nav a { display: inline-block; padding: 0.25rem 0; }
-.site-footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--beige); }
-/* Shared by every page. */
+main { flex: 1 0 auto; width: 100%; max-width: 72rem; margin: 0 auto; padding: 40px var(--gutter) 56px; }
+main.wide { max-width: none; padding-top: 20px; }
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 3px solid var(--signal); outline-offset: 2px; }
+[hidden] { display: none !important; }
+h1, h2, h3, h4, h5 { font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+h2 { font-size: 26px; line-height: 1.05; margin: 40px 0 12px; }
+h3 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+h4, h5 { font-size: 16px; font-weight: 700; letter-spacing: 0; }
+p, li, dd { color: var(--ink-2); }
+strong, b { font-weight: 700; }
+code { font-family: var(--font-mono); font-weight: 500; font-size: 0.9em; }
+input::placeholder { color: #747b73; font-weight: 400; }
+.skip-link { position: absolute; left: -999px; z-index: 10; }
+.skip-link:focus { left: 16px; top: 12px; background: var(--white); border: 1.5px solid var(--ink); padding: 8px 12px; font-weight: 700; }
 .vh {
   position: absolute !important;
   width: 1px;
@@ -38,6 +89,141 @@ main.wide { max-width: none; padding: 1rem; }
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
-.button-link { display: inline-block; padding: 0.5rem 0.9rem; border: 2px solid var(--green); border-radius: 4px; color: var(--green); background: #fff; text-decoration: none; font-weight: 600; }
-.button-link:hover { background: var(--neutral); }
-.footer-links { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; }
+
+/* Mono label: data labels, field labels, kickers. */
+.mono { font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* Top bar (SiteHeader.astro) */
+.topbar { position: relative; z-index: 6; flex: none; height: var(--bar-height); display: flex; align-items: center; gap: 28px; padding: 0 var(--gutter); background: var(--white); border-bottom: 1px solid var(--ink); }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+.brand b { font-weight: 800; font-size: 21px; letter-spacing: 0.06em; }
+.topbar-nav { display: flex; gap: 2px; margin-left: 10px; align-self: stretch; }
+.topbar-nav a { display: flex; align-items: center; padding: 8px 13px; text-decoration: none; font-weight: 600; font-size: 14.5px; color: var(--ink-2); white-space: nowrap; }
+.topbar-nav a:hover { color: var(--ink); }
+.topbar-nav a[aria-current] { color: var(--ink); box-shadow: inset 0 -3px 0 var(--signal); }
+.topbar-space { flex: 1; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.topbar-actions:empty { display: none; }
+
+/* The shortlist button in the bar: label and a count. Add .has when the
+   count is above nought. */
+.topbar-button { display: flex; align-items: center; gap: 10px; height: 38px; min-height: 0; padding: 0 6px 0 14px; background: var(--white); color: var(--ink); border: 1.5px solid var(--ink); border-radius: 0; font: inherit; font-weight: 700; font-size: 14px; text-decoration: none; cursor: pointer; }
+.topbar-button .count { font-style: normal; background: var(--ink); color: var(--white); min-width: 26px; height: 26px; display: grid; place-items: center; font-family: var(--font-mono); font-weight: 500; font-size: 12.5px; }
+.topbar-button.has .count { background: var(--signal); color: var(--ink); }
+
+/* Phone menu: details and summary, so it works without JavaScript. */
+.topbar-menu { display: none; }
+.topbar-menu summary { display: flex; align-items: center; height: 38px; padding: 0 14px; background: var(--white); border: 1.5px solid var(--ink); font-weight: 700; font-size: 14px; cursor: pointer; list-style: none; user-select: none; }
+.topbar-menu summary::-webkit-details-marker { display: none; }
+.topbar-menu[open] summary { background: var(--ink); color: var(--white); }
+.topbar-menu nav { position: absolute; top: calc(var(--bar-height) - 1px); left: 0; right: 0; display: flex; flex-direction: column; background: var(--white); border-top: 1px solid var(--ink); border-bottom: 1.5px solid var(--ink); box-shadow: 0 6px 0 var(--shadow); }
+.topbar-menu nav a { display: flex; align-items: center; min-height: 48px; padding: 0 var(--gutter); text-decoration: none; font-weight: 600; font-size: 16px; color: var(--ink-2); border-bottom: 1px solid var(--line); }
+.topbar-menu nav a:last-child { border-bottom: 0; }
+.topbar-menu nav a[aria-current] { color: var(--ink); box-shadow: inset 3px 0 0 var(--signal); }
+@media (max-width: 900px) {
+  .topbar { gap: 12px; }
+  .topbar-nav { display: none; }
+  .topbar-menu { display: block; }
+}
+
+/* Page hero: kicker, headline ending in a signal full stop, one purpose
+   sentence.
+   <header class="page-hero">
+     <p class="mono kicker">Kicker</p>
+     <h1>Headline<span class="stop">.</span></h1>
+     <p class="lede">One sentence.</p>
+   </header> */
+.page-hero { margin: 16px 0 40px; max-width: 60rem; }
+.kicker { color: var(--clay); display: flex; align-items: center; gap: 10px; margin: 0; }
+.kicker::before { content: ''; flex: none; width: 26px; height: 2px; background: var(--signal); }
+.page-hero h1, .display { font-weight: 800; font-size: clamp(40px, 5.3vw, 76px); line-height: 0.96; letter-spacing: -0.04em; margin: 16px 0 18px; color: var(--ink); }
+.stop { color: var(--signal); font-style: normal; }
+.lede { margin: 0 0 24px; font-size: 18px; color: var(--ink-2); max-width: 31em; }
+@media (max-width: 760px) {
+  .lede { font-size: 16px; }
+}
+
+/* Card: white, ink border, flat offset shadow. Rows inside divide with a
+   hairline. */
+.card { background: var(--white); border: 1.5px solid var(--ink); box-shadow: var(--shadow-card); }
+.card-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--line); }
+.card-head h2, .card-head h3 { margin: 0; font-weight: 800; font-size: 26px; letter-spacing: -0.02em; line-height: 1.05; }
+.card-row { padding: 13px 18px; border-bottom: 1px solid var(--line); }
+.card-row:last-child { border-bottom: 0; }
+.card-pad { padding: 18px; }
+
+/* Buttons: primary forest, secondary white with an ink border; pressed or
+   selected is ink. 38px high; .btn-lg is the 56px search button. Works on
+   a button or a link. */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 38px; min-height: 0; padding: 0 14px; border: 1.5px solid var(--ink); border-radius: 0; background: var(--white); color: var(--ink); font: inherit; font-weight: 700; font-size: 13.5px; line-height: 1; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.btn:hover { background: var(--paper); }
+.btn-primary { background: var(--forest); border-color: var(--forest); color: var(--white); }
+.btn-primary:hover { background: var(--forest-dark); border-color: var(--forest-dark); }
+.btn-lg { height: 56px; padding: 0 24px; font-size: 17px; }
+.btn-sm { height: 30px; padding: 0 10px; font-size: 12.5px; }
+.btn[aria-pressed='true'], .btn[aria-current], .btn.is-selected { background: var(--ink); border-color: var(--ink); color: var(--white); }
+.btn:disabled, .btn[aria-disabled='true'] { background: var(--paper); border-color: var(--ink-3); color: var(--ink-3); cursor: not-allowed; }
+
+/* Segmented control: a group of buttons in one border. */
+.seg { display: inline-flex; border: 1.5px solid var(--ink); }
+.seg .btn { border: 0; height: 35px; }
+
+/* Text button or link with a signal underline. */
+.link { background: none; border: 0; border-radius: 0; min-height: 0; padding: 0; color: var(--ink); font: inherit; font-weight: 700; font-size: 13px; text-decoration: none; box-shadow: inset 0 -2px 0 var(--signal); white-space: nowrap; cursor: pointer; }
+.link:disabled { color: var(--ink-3); box-shadow: none; cursor: default; }
+
+/* Field: mono label above, 600 weight value, a signal underline on focus
+   within.
+   <label class="field"><span class="mono">Near</span><input /></label>
+   Put fields in a .card (or .fields) so they share its border. */
+.field { display: block; padding: 11px 18px 10px; background: var(--white); border-bottom: 1px solid var(--line); }
+.field > span, .field > .mono { display: block; color: var(--ink-3); }
+.field input, .field select, .field textarea { display: block; width: 100%; border: 0; border-radius: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 600; font-size: 18px; padding: 3px 0 0; }
+.field:focus-within { box-shadow: inset 0 -3px 0 var(--signal); }
+.fields { background: var(--white); border: 2px solid var(--ink); box-shadow: var(--shadow-search); }
+.fields .field:last-child { border-bottom: 0; }
+
+/* Tag */
+.tags { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+.tag { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 7px; background: var(--paper); border: 1px solid var(--line); color: var(--ink-2); }
+
+/* Fact strip: a big numeral over a mono label, in a row.
+   <dl class="facts"><div><dd>1,204</dd><dt class="mono">Companies</dt></div></dl> */
+.facts { display: flex; flex-wrap: wrap; gap: 26px; margin: 24px 0 0; }
+.facts div { display: flex; flex-direction: column; }
+.facts dd { margin: 0; color: var(--ink); font-weight: 800; font-size: 26px; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.facts dt { color: var(--ink-3); }
+@media (max-width: 760px) {
+  .facts { gap: 18px; }
+  .facts dd { font-size: 21px; }
+}
+
+/* Footer (SiteFooter.astro) */
+.site-footer { flex: none; background: var(--white); border-top: 1px solid var(--ink); padding: 28px var(--gutter) 32px; }
+.site-footer p { margin: 0; }
+.footer-credits { max-width: 60rem; margin-bottom: 20px; font-size: 13.5px; color: var(--ink-2); }
+.footer-credits p + p { margin-top: 6px; }
+.footer-links { display: flex; flex-wrap: wrap; gap: 4px 22px; list-style: none; margin: 0 0 18px; padding: 0; }
+.footer-links a { display: inline-block; padding: 4px 0; font-weight: 600; font-size: 14.5px; color: var(--ink); text-decoration: none; }
+.footer-links a:hover { box-shadow: inset 0 -2px 0 var(--signal); }
+.footer-built { color: var(--ink-3); font-size: 13px; }
+.footer-built a { display: inline-block; padding: 4px 0; color: var(--ink); }
+
+/* Pages not yet redesigned: the old page heading block and link button, set
+   in the new type. Each page slice replaces these with .page-hero and .btn. */
+.site-header { margin: 0 0 24px; }
+.site-header h1 { margin: 0; font-size: clamp(30px, 3.6vw, 46px); line-height: 1.02; letter-spacing: -0.035em; }
+.site-header p { margin: 6px 0 14px; max-width: 60rem; }
+.site-header > p:first-child { font-size: 14px; font-weight: 600; }
+/* The home page keeps its heading and introduction on one short row: height
+   above the map moves the map's journey-test click points off screen. */
+.home-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 24px; margin-bottom: 12px; }
+.home-header h1 { font-size: 30px; }
+.home-header p { flex: 1 1 30rem; margin: 0; font-size: 14.5px; line-height: 1.4; max-width: none; }
+main.wide:has(.home-header) { padding-top: 8px; }
+.button-link { display: inline-block; height: 38px; line-height: 35px; padding: 0 14px; border: 1.5px solid var(--ink); background: var(--white); color: var(--ink); text-decoration: none; font-weight: 700; font-size: 13.5px; }
+.button-link:hover { background: var(--paper); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
