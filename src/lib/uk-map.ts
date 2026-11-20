@@ -13,6 +13,7 @@ type Ring = Array<[number, number]>;
 interface Regions {
   regions: Array<{ code: string; name: string; rings: Ring[] }>;
   outline: Ring[];
+  attribution: string;
 }
 
 let regions: Regions | null = null;
@@ -109,4 +110,17 @@ export function regionSvg(name: string): string | null {
     `${open}<defs><pattern id="h" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="3" fill="#f2d9a6"/><rect width="1.1" height="3" fill="#e2611c"/></pattern></defs>` +
     `<path d="${d}" fill="url(#h)" stroke="#0c1510" stroke-width="0.9" stroke-linejoin="round"/></svg>\n`
   );
+}
+
+/** /maps/uk-regions.json: the 12 region shapes as GeoJSON, for the Money view's shading (fetched only when it opens). */
+export function ukRegionsGeoJSON(): string {
+  return JSON.stringify({
+    type: 'FeatureCollection',
+    attribution: ukRegions().attribution,
+    features: ukRegions().regions.map((r) => ({
+      type: 'Feature',
+      properties: { name: r.name },
+      geometry: { type: 'MultiPolygon', coordinates: r.rings.map((ring) => [ring]) },
+    })),
+  });
 }
