@@ -1,7 +1,151 @@
-/* New companies page. Not yet redesigned; colours come from the tokens in base.css. */
-.new-week h2 { margin: 2rem 0 0.25rem; font-size: 1.25rem; }
-.new-week ul { list-style: none; padding: 0; margin: 0; }
-.new-company { padding: 0.75rem 1rem; margin: 0.5rem 0; background: #fff; border-left: 4px solid var(--gold); max-width: 50rem; }
-.new-company h3 { margin: 0; font-size: 1.05rem; }
-.new-company p { margin: 0.25rem 0; overflow-wrap: anywhere; }
-.new-company .meta { color: var(--blue-grey); }
+/* New companies (/new): the growth chart, the weekly strip and the weeks on
+   a date rail. Tokens and shared components come from base.css. Sizes that
+   follow the data are SVG attributes; the CSP allows no style attributes. */
+.newp { max-width: 1440px; margin: 0 auto; }
+.newp .page-hero { max-width: none; margin: 28px 0 40px; }
+.hero-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 20px 48px; }
+.hero-row .lede { margin-bottom: 14px; }
+.hero-row p { margin: 0; }
+.hero-row .facts { margin: 0; }
+.new-empty { font-size: 18px; }
+
+/* Shared: bars on the data ramp, by step. */
+[data-step='1'] .bar rect { fill: var(--ramp-1); }
+[data-step='2'] .bar rect { fill: var(--ramp-2); }
+[data-step='3'] .bar rect { fill: var(--ramp-3); }
+[data-step='4'] .bar rect { fill: var(--ramp-4); }
+.bar { display: block; width: 100%; }
+
+/* Growth over time */
+.growth { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px 56px; align-items: end; padding-top: 28px; border-top: 1.5px solid var(--ink); }
+.growth-stage { min-width: 0; }
+.growth h2 { display: flex; align-items: center; gap: 10px; margin: 0; font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.1em; line-height: 1.5; text-transform: uppercase; color: var(--clay); }
+.growth h2::before { content: ''; flex: none; width: 26px; height: 2px; background: var(--signal); }
+.growth-total { margin: 14px 0 0; color: var(--ink); }
+.growth-total output { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 12px; font-weight: 800; font-size: 24px; letter-spacing: -0.02em; line-height: 1.1; }
+#growth-label { flex-basis: 100%; color: var(--ink-3); margin-bottom: 4px; }
+#growth-count { font-size: clamp(56px, 6.4vw, 92px); line-height: 0.9; letter-spacing: -0.05em; font-variant-numeric: tabular-nums; }
+.growth-carried { flex-basis: 100%; margin-top: 6px; font-weight: 400; font-size: 14px; letter-spacing: 0; color: var(--ink-2); min-height: 1.4em; }
+.growth-chart { display: block; width: 100%; height: auto; margin-top: 4px; overflow: visible; }
+.growth-chart .ground { stroke: var(--line); stroke-width: 1; }
+.growth-chart .shadow { fill: var(--shadow); }
+.growth-chart .column { cursor: pointer; }
+.growth-chart .column polygon:not(.shadow) { stroke: var(--ink); stroke-width: 0; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.growth-chart .column.is-current polygon:not(.shadow) { stroke-width: 1.5px; }
+.growth-axis { display: flex; list-style: none; margin: 8px 0 0; padding: 0; }
+.growth-axis li { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; padding-top: 10px; border-top: 3px solid transparent; color: var(--ink-3); }
+.growth-axis b { color: var(--ink-2); font-weight: 800; font-size: 17px; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.growth-axis .mono { white-space: nowrap; }
+.growth-axis .is-current { border-top-color: var(--signal); }
+.growth-axis .is-current b, .growth-axis .is-current .mono { color: var(--ink); }
+.growth-controls { display: flex; align-items: center; gap: 14px; margin-top: 18px; padding: 8px 8px 8px 14px; background: var(--white); border: 1.5px solid var(--ink); box-shadow: var(--shadow-card); }
+.growth-controls label { color: var(--ink-3); }
+.growth-controls input { flex: 1; min-width: 0; height: 38px; margin: 0; background: transparent; appearance: none; cursor: pointer; }
+.growth-controls input::-webkit-slider-runnable-track { height: 4px; background: var(--ink); }
+.growth-controls input::-webkit-slider-thumb { appearance: none; width: 22px; height: 22px; margin-top: -9px; background: var(--signal); border: 1.5px solid var(--ink); border-radius: 0; }
+.growth-controls input::-moz-range-track { height: 4px; background: var(--ink); }
+.growth-controls input::-moz-range-thumb { width: 19px; height: 19px; background: var(--signal); border: 1.5px solid var(--ink); border-radius: 0; }
+.growth-play { min-width: 76px; }
+@media (prefers-reduced-motion: reduce) {
+  .growth-play { display: none; }
+}
+
+.growth-side { min-width: 0; }
+.growth-groups { width: 100%; border-collapse: collapse; }
+.growth-groups th, .growth-groups td { padding: 9px 0 9px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.growth-groups tbody tr:last-child th, .growth-groups tbody tr:last-child td { border-bottom: 0; }
+.growth-groups thead th, .growth-groups thead td { padding-top: 12px; padding-bottom: 10px; color: var(--ink-3); font-weight: 500; border-bottom: 1.5px solid var(--ink); }
+.growth-groups tbody th { font-weight: 600; font-size: 14.5px; line-height: 1.25; color: var(--ink); }
+.growth-groups .num { text-align: right; font-weight: 800; font-size: 16px; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+.growth-groups thead .num { font-weight: 500; font-size: 11px; }
+.growth-groups .bar-cell { width: 34%; padding-right: 16px; }
+.growth-groups .bar { height: 12px; background: var(--paper); }
+
+.growth-notes { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px 40px; }
+.growth-notes p { flex: 1 1 30rem; margin: 0; max-width: 62rem; font-size: 13.5px; color: var(--ink-3); }
+.growth-data { flex: 0 1 auto; max-width: 100%; }
+.growth-data[open] { flex-basis: 100%; }
+.growth-data summary { display: inline-block; padding: 4px 0; list-style: none; cursor: pointer; }
+.growth-data summary::-webkit-details-marker { display: none; }
+.table-scroll { margin-top: 14px; overflow-x: auto; background: var(--white); border: 1.5px solid var(--ink); }
+.table-scroll table { width: 100%; min-width: 60rem; border-collapse: collapse; font-size: 13px; }
+.table-scroll th, .table-scroll td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: right; vertical-align: bottom; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.table-scroll th { font-weight: 700; color: var(--ink); line-height: 1.25; }
+.table-scroll th:first-child { text-align: left; white-space: nowrap; }
+.table-scroll tbody tr:last-child th, .table-scroll tbody tr:last-child td { border-bottom: 0; }
+
+/* Added each week */
+.pulse { margin-top: 64px; }
+.pulse-head, .weeks-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 24px; margin-bottom: 18px; }
+.pulse-head h2 { margin: 0; font-size: 30px; letter-spacing: -0.03em; }
+.pulse-head p { margin: 0; color: var(--ink-3); }
+.week-strip { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 10px; list-style: none; margin: 0; padding: 18px 18px 14px; background: var(--white); border: 1.5px solid var(--ink); box-shadow: var(--shadow-card); }
+.week-strip li { min-width: 0; }
+.week-strip a, .week-strip .cell { display: flex; flex-direction: column; align-items: stretch; gap: 6px; text-align: center; text-decoration: none; color: var(--ink-3); }
+.week-strip b { font-weight: 800; font-size: 20px; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.week-strip a b { color: var(--ink); }
+.week-strip .bar { height: 88px; border-bottom: 1.5px solid var(--ink); }
+.week-strip .mono { white-space: nowrap; }
+.week-strip a .mono { color: var(--ink); }
+.week-strip a:hover .mono { box-shadow: inset 0 -2px 0 var(--signal); }
+
+/* The weeks, on a date rail */
+.weeks { margin-top: 64px; }
+.new-week { display: grid; grid-template-columns: 148px minmax(0, 1fr); }
+.rail { position: relative; margin: 0; padding: 0 28px 0 0; border-right: 1.5px solid var(--ink); text-align: right; color: var(--ink); }
+.rail::after { content: ''; position: absolute; top: 14px; right: -7px; width: 12px; height: 12px; background: var(--signal); border: 1.5px solid var(--ink); }
+.rail-date { position: sticky; top: 16px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.rail b { font-weight: 800; font-size: 64px; line-height: 0.86; letter-spacing: -0.05em; font-variant-numeric: tabular-nums; }
+.rail .mono { color: var(--ink-3); white-space: nowrap; }
+.week-body { min-width: 0; padding: 0 0 56px 36px; }
+.week-body > summary { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; padding: 4px 46px 4px 0; list-style: none; cursor: pointer; }
+.week-body > summary::-webkit-details-marker { display: none; }
+.week-body > summary h2 { margin: 0; font-size: 30px; letter-spacing: -0.03em; }
+.week-count { color: var(--clay); }
+.week-body > summary::after { content: '+'; position: absolute; top: 6px; right: 0; display: grid; place-items: center; width: 30px; height: 30px; background: var(--white); border: 1.5px solid var(--ink); font-weight: 700; font-size: 18px; line-height: 1; color: var(--ink); }
+.week-body[open] > summary::after { content: '\2212'; background: var(--ink); color: var(--white); }
+.new-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(264px, 1fr)); gap: 16px; list-style: none; margin: 20px 0 0; padding: 0; }
+.new-company { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 14px 16px 12px; background: var(--white); border: 1.5px solid var(--ink); box-shadow: var(--shadow-card); }
+.new-company:hover { background: #fbf7ef; }
+.new-company p { margin: 0; overflow-wrap: anywhere; }
+.new-company .where { color: var(--clay); }
+.new-company h3 { margin: 6px 0 10px; font-size: 18px; font-weight: 800; line-height: 1.2; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.new-company h3 a { text-decoration: none; }
+.new-company h3 a::after { content: ''; position: absolute; inset: 0; }
+.new-company:hover h3 a { box-shadow: inset 0 -2px 0 var(--signal); }
+.new-company h3 a:focus-visible { outline: 0; }
+.new-company:focus-within { outline: 3px solid var(--signal); outline-offset: 2px; }
+.new-company .tags { margin-bottom: 12px; }
+.new-company .added { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--line); color: var(--ink-3); }
+.week-more { margin-top: 22px; }
+.week-more > summary { display: inline-block; list-style: none; cursor: pointer; }
+.week-more > summary::-webkit-details-marker { display: none; }
+.week-more[open] > summary { display: none; }
+
+@media (max-width: 1000px) {
+  .growth { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+}
+@media (max-width: 760px) {
+  .newp .page-hero { margin: 16px 0 32px; }
+  .growth-total output { font-size: 20px; }
+  .growth-axis b { font-size: 13px; }
+  .growth-axis .mono { font-size: 9.5px; letter-spacing: 0.04em; }
+  .growth-axis.many li:not(.is-current) b { visibility: hidden; }
+  .growth-groups th, .growth-groups td { padding-left: 12px; }
+  .growth-groups .bar-cell { width: 26%; padding-right: 12px; }
+  .pulse, .weeks { margin-top: 48px; }
+  .pulse-head h2, .week-body > summary h2 { font-size: 24px; }
+  .week-strip { gap: 4px; padding: 14px 10px 12px; }
+  .week-strip b { font-size: 13px; }
+  .week-strip .bar { height: 64px; }
+  .week-strip .mono { font-size: 9.5px; letter-spacing: 0.02em; visibility: hidden; }
+  .week-strip li:nth-child(3n) .mono { visibility: visible; align-self: center; }
+  .week-strip li:last-child .mono { align-self: flex-end; }
+  .new-week { grid-template-columns: minmax(0, 1fr); }
+  .rail { padding: 14px 0 6px; border-right: 0; border-top: 1.5px solid var(--ink); text-align: left; }
+  .rail::after { top: -7px; right: auto; left: 0; }
+  .rail-date { position: static; flex-direction: row; align-items: baseline; gap: 10px; }
+  .rail b { font-size: 44px; }
+  .week-body { padding: 0 0 40px; }
+  .new-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+}
