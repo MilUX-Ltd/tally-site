@@ -20,6 +20,11 @@ describe('slimWebsites', () => {
     expect(web.moved).toEqual({ 'example-moorland-consulting': { url: 'https://example.com/example-moorland-consulting', home: 'https://example.com/' } });
     expect(web).not.toHaveProperty('pending');
   });
+  it('accepts a moved page on a host written in capitals, with the home in lower case as the data repo writes it', () => {
+    const doc = copy();
+    doc.moved[0].url = 'https://Example.COM/example-moorland-consulting';
+    expect(() => slimWebsites(doc, ids)).not.toThrow();
+  });
   it('refuses a malformed file', () => {
     const bad = [
       (d: typeof rawWeb) => { d.extra = 1; },
