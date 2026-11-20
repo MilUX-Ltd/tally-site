@@ -4,7 +4,7 @@
 // money; every figure on the map is also in these tables.
 import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { companyPath, longDate } from '../lib/company-page';
-import { capabilityRows, formatMoney, overseasRows, regionRows, sharePercent, tallyWinners, yearTotals, type MoneyData } from '../lib/money';
+import { capabilityRows, formatMoney, overseasRows, regionRows, regionSmeShare, sharePercent, smeTotals, tallyWinners, yearTotals, type MoneyData } from '../lib/money';
 import type { Company, Taxonomy } from '../lib/types';
 
 interface Props {
@@ -40,6 +40,7 @@ export default function MoneyPanel(p: Props) {
     const winners = p.companies ? tallyWinners(money, year, p.companies) : [];
     return {
       totals: yearTotals(money, year),
+      sme: smeTotals(money, year),
       regions: regionRows(money, year),
       overseas: overseasRows(money, year),
       winners,
@@ -87,6 +88,14 @@ export default function MoneyPanel(p: Props) {
               </div>
             </dl>
 
+            {figures.sme && figures.sme.sme + figures.sme.large > 0 && (
+              <p class="money-sme">
+                Small and medium-sized firms won {sharePercent(figures.sme.sme, figures.sme.sme + figures.sme.large)} ({formatMoney(figures.sme.sme)}) of UK regional contract money where the
+                supplier’s size is known.
+                {figures.sme.unknown >= 1 ? ` Size is not known for ${formatMoney(figures.sme.unknown)}.` : ''}
+              </p>
+            )}
+
             <div class="money-controls">
               <div class="money-years" role="radiogroup" aria-labelledby="money-year-label">
                 <span id="money-year-label" class="mono">
@@ -120,6 +129,11 @@ export default function MoneyPanel(p: Props) {
                   <th scope="col" class="num">
                     Share to Tally companies
                   </th>
+                  {figures.sme && (
+                    <th scope="col" class="num">
+                      Share to SMEs
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -129,6 +143,7 @@ export default function MoneyPanel(p: Props) {
                     <td class="num">{formatMoney(r.value)}</td>
                     <td class="num">{r.count.toLocaleString('en-GB')}</td>
                     <td class="num">{sharePercent(r.tally_value, r.value)}</td>
+                    {figures.sme && <td class="num">{regionSmeShare(r)}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -220,6 +235,12 @@ export default function MoneyPanel(p: Props) {
               </p>
               <p>Government-to-government purchases, such as US Foreign Military Sales, are not published as UK award notices and do not appear here.</p>
               <p>UK suppliers are placed in a region by postcode. Tally companies are matched by Companies House number, or by name.</p>
+              {figures.sme && (
+                <p>
+                  SME means a small or medium-sized firm. Supplier size is as the supplier declared it on {andList(money.sources)}; it is not checked, and a UK firm owned by a larger
+                  group may declare itself an SME. The SME share leaves out overseas suppliers and money with no known size.
+                </p>
+              )}
               <p>{money.attribution}</p>
             </div>
           </>

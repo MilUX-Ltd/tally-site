@@ -148,6 +148,7 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
 .money-win { display: block; font-variant-numeric: tabular-nums; }
 .money-count { color: var(--ink-3); }
 .money-none, .money-note { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-3); }
+.money-sme { margin: 12px 0 0; font-size: 13.5px; line-height: 1.45; }
 .money-about p { margin: 0 0 8px; font-size: 12.5px; color: var(--ink-2); }
 .legend-arc { display: inline-block; width: 18px; height: 3px; margin: 0 6px 3px 0; vertical-align: middle; background: var(--clay); }
 
