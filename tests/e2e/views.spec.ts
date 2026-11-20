@@ -165,6 +165,8 @@ test('the default view is short and overseas is paged', async ({ page }) => {
   await withManyOverseas(page, 25);
   await page.goto('/');
   await waitForMap(page);
+  // Amended (approved by Matt): the overseas list is closed by default; open it before using it.
+  await overseas(page).locator('summary').click();
   const items = overseas(page).locator('.company');
   await expect(items.first()).toBeVisible();
   expect(await items.count()).toBeLessThanOrEqual(20);

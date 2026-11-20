@@ -57,6 +57,8 @@ test('overseas companies are listed by country and follow the filters', async ({
   await expect(page.locator('#result-count')).toContainText('35 companies');
   await expect(page.locator('#result-count')).toContainText('30 on the map');
   await expect(section(page)).toBeVisible();
+  // Amended (approved by Matt): the overseas list is closed by default; open it before using it.
+  await section(page).locator('summary').click();
   expect(await section(page).locator('h3').allInnerTexts()).toEqual(['Europe', 'Rest of the world']);
   expect(await section(page).locator('h4').allInnerTexts()).toEqual(['Estonia', 'Germany', 'Norway', 'United States']);
   await expect(section(page)).toContainText('Example Nordic Defence');
@@ -67,6 +69,8 @@ test('overseas companies are listed by country and follow the filters', async ({
   await page.goto('/?cap=cyber');
   await waitForMap(page);
   await expect(page.locator('#result-count')).toContainText('4 on the map');
+  // Amended (approved by Matt): the overseas list is closed by default; open it before using it.
+  await section(page).locator('summary').click();
   expect(await section(page).locator('h4').allInnerTexts()).toEqual(['Norway', 'United States']);
   await expect(section(page)).not.toContainText('Example Baltic Radar');
 

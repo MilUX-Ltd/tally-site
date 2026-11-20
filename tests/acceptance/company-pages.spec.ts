@@ -115,6 +115,8 @@ test('company names link to their pages', async ({ page }) => {
     '/companies/example-avionics/',
   );
   await openView(page, 'Companies');
+  // Amended (approved by Matt): the overseas list is closed by default; open it before using it.
+  await page.locator('.overseas summary').click();
   await expect(page.locator('.overseas').getByRole('link', { name: 'Example Nordic Defence', exact: true })).toHaveAttribute(
     'href',
     '/companies/example-nordic-defence/',
