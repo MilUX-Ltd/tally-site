@@ -15,6 +15,9 @@ const MONEY_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${MONEY_REF
 // Where companies-house.json is read from: the same rule as money.json.
 const CH_REF = 'main';
 const CH_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${CH_REF}/companies-house.json`;
+// Where websites.json is read from: the same rule.
+const WEB_REF = 'main';
+const WEB_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${WEB_REF}/websites.json`;
 
 // West, south, east, north: the UK map's bounds. Must match UK_BOUNDS in
 // src/lib/map-config.ts (a unit test checks they agree).
@@ -577,6 +580,76 @@ export function withoutClosed(data, ch) {
   return { open: { ...data, count: open.length, companies: open }, closed };
 }
 
+// ---------------------------------------------------------------------------
+// The website link check (D-kzifn): dead websites lose their link; a page that
+// has moved links to the company's home page. Checked against the contract in
+// the data repo's docs/websites-data.md.
+// ---------------------------------------------------------------------------
+
+const WEB_KEYS = ['checked', 'dead', 'generated', 'moved', 'pending'];
+const WEB_REASONS = ['no-such-host', 'not-found', 'refused'];
+export const WEB_LIMITS = { rows: 5000 };
+
+function webFail(message) {
+  throw new Error(`websites.json: ${message}; refusing to build`);
+}
+function webKeys(v, keys, where) {
+  if (!isObject(v)) webFail(`${where} is not an object`);
+  for (const k of Object.keys(v)) if (!keys.includes(k)) webFail(`${where} carries a field outside the contract (${JSON.stringify(k)})`);
+  for (const k of keys) if (!(k in v)) webFail(`${where} has no ${k}`);
+}
+function webUrl(v, where) {
+  const url = safeLink(v);
+  if (!url || url !== v || hasControl(url)) webFail(`${where} is not an http or https link`);
+  return url;
+}
+function webRows(list, where, keys, check) {
+  if (!Array.isArray(list)) webFail(`${where} is not a list`);
+  if (list.length > WEB_LIMITS.rows) webFail(`${where} has more than ${WEB_LIMITS.rows} rows`);
+  for (const row of list) {
+    webKeys(row, keys, `a ${where} row`);
+    if (typeof row.name !== 'string' || !row.name.trim() || row.name.length > 200 || hasControl(row.name)) webFail(`${where} has a row with a bad name`);
+    if (!validDate(str(row.since))) webFail(`${where} ${row.name} has a bad date`);
+    webUrl(row.url, `${where} ${row.name} url`);
+    check(row);
+  }
+}
+
+/**
+ * Checks websites.json and keys its dead and moved websites by Tally id (`ids`,
+ * as for money.json). A moved page's home must be the root of the same site.
+ */
+export function slimWebsites(raw, ids) {
+  webKeys(raw, WEB_KEYS, 'the file');
+  if (!validDate(str(raw.generated))) webFail('generated is not a date');
+  const dead = {};
+  webRows(raw.dead, 'dead', ['name', 'reason', 'since', 'url'], (row) => {
+    if (!WEB_REASONS.includes(row.reason)) webFail(`dead ${row.name} has a bad reason`);
+    const id = ids.get(str(row.name));
+    if (id) dead[id] = row.url;
+  });
+  const moved = {};
+  webRows(raw.moved, 'moved', ['home', 'name', 'since', 'url'], (row) => {
+    const home = webUrl(row.home, `moved ${row.name} home`);
+    if (home !== `${new URL(row.url).origin}/`) webFail(`moved ${row.name} home is not the root of the same site`);
+    const id = ids.get(str(row.name));
+    if (id) moved[id] = { url: row.url, home };
+  });
+  if (!Array.isArray(raw.pending)) webFail('pending is not a list');
+  return { generated: str(raw.generated), dead, moved };
+}
+
+/** The directory with dead websites dropped and moved pages pointed at their home page. Matches the exact URL, so a corrected URL is left alone. */
+export function applyWebsites(data, web) {
+  const companies = data.companies.map((c) => {
+    if (web.dead[c.id] && web.dead[c.id] === c.website) return { ...c, website: '' };
+    const m = web.moved[c.id];
+    if (m && m.url === c.website) return { ...c, website: m.home };
+    return c;
+  });
+  return { ...data, companies };
+}
+
 /**
  * Stops a build from main that would read a data file from anywhere but main.
  * Fixture builds (tests) read no data repo, so they are not stopped.
@@ -597,6 +670,7 @@ async function main() {
   // Production never builds from a data branch; checked before anything is fetched.
   assertMoneyRef(MONEY_REF, process.env.GITHUB_REF, fixture);
   assertDataRef('companies-house.json', CH_REF, process.env.GITHUB_REF, fixture);
+  assertDataRef('websites.json', WEB_REF, process.env.GITHUB_REF, fixture);
   const read = (name) => JSON.parse(readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8'));
   const names = ['tally-data.json', 'taxonomy.json', 'clusters.json', 'events.json', 'opportunities.json'];
   const [raw, taxonomy, rawClusters, rawEvents, rawOpportunities] = fixture
@@ -607,7 +681,11 @@ async function main() {
   if (fixture) raw.companies = [...raw.companies, ...read('tally-data-closed.json').companies];
   const ch = slimCompaniesHouse(fixture ? read('companies-house.json') : await fetchJson(CH_URL), moneyIds(raw));
   // Closed companies leave the directory (D-iyz0k); their pages are built from .tally/closed.json.
-  const { open: data, closed: closedCompanies } = withoutClosed(slimData(raw, taxonomy), ch);
+  const { open, closed: closedCompanies } = withoutClosed(slimData(raw, taxonomy), ch);
+  // Dead websites lose their link; moved pages link to the home page (D-kzifn).
+  const web = slimWebsites(fixture ? read('websites.json') : await fetchJson(WEB_URL), moneyIds(raw));
+  const data = applyWebsites(open, web);
+  console.log(`Applied websites.json: ${Object.keys(web.dead).length} dead websites, ${Object.keys(web.moved).length} moved pages.`);
   if (data.companies.length === 0) throw new Error('no companies; refusing to build an empty site');
   const dir = new URL('../public/data/', import.meta.url);
   mkdirSync(dir, { recursive: true });
