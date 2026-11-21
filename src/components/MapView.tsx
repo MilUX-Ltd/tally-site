@@ -344,6 +344,8 @@ export default function MapView(props: Props) {
           maxZoom: 15,
           maxPitch: 60,
           attributionControl: { compact: false, customAttribution: ATTRIBUTION },
+          // On a touch screen one finger scrolls the page past the map; two fingers move the map.
+          cooperativeGestures: window.matchMedia('(pointer: coarse)').matches,
         });
         map = m;
         m.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
