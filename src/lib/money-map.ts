@@ -106,8 +106,8 @@ export function greatCircle(from: Point, to: Point, steps = 48): Point[] {
   return out;
 }
 
-const MIN_WIDTH = 1.5;
-const MAX_WIDTH = 10;
+const MIN_WIDTH = 1;
+const MAX_WIDTH = 4;
 
 export interface Arc {
   country: string;
