@@ -1,0 +1,330 @@
+{
+ "generated": "2026-11-22",
+ "attribution": "Contains public sector information licensed under the Open Government Licence v3.0.",
+ "source": {
+  "title": "MOD regional expenditure with industry 2025/26",
+  "url": "https://www.gov.uk/government/statistics/mod-regional-expenditure-statistics-with-industry-202526",
+  "published": "2026-09-24"
+ },
+ "years": [
+  "2020/21",
+  "2021/22",
+  "2022/23",
+  "2023/24",
+  "2024/25",
+  "2025/26"
+ ],
+ "breaks": [
+  "2020/21"
+ ],
+ "uk": {
+  "2020/21": 25595000000,
+  "2021/22": 27303000000,
+  "2022/23": 29007000000,
+  "2023/24": 30715000000,
+  "2024/25": 39131000000,
+  "2025/26": 34128000000
+ },
+ "regions": {
+  "2020/21": {
+   "East of England": {
+    "value": 1594000000,
+    "per_person": 240
+   },
+   "East Midlands": {
+    "value": 1477000000,
+    "per_person": 290
+   },
+   "London": {
+    "value": 1808000000,
+    "per_person": 200
+   },
+   "North East": {
+    "value": 148000000,
+    "per_person": 50
+   },
+   "North West": {
+    "value": 4065000000,
+    "per_person": 520
+   },
+   "South East": {
+    "value": 6338000000,
+    "per_person": 650
+   },
+   "South West": {
+    "value": 4996000000,
+    "per_person": 850
+   },
+   "West Midlands": {
+    "value": 1363000000,
+    "per_person": 220
+   },
+   "Yorkshire and The Humber": {
+    "value": 810000000,
+    "per_person": 140
+   },
+   "Northern Ireland": {
+    "value": 348000000,
+    "per_person": 180
+   },
+   "Scotland": {
+    "value": 1900000000,
+    "per_person": 340
+   },
+   "Wales": {
+    "value": 748000000,
+    "per_person": 230
+   }
+  },
+  "2021/22": {
+   "East of England": {
+    "value": 1700000000,
+    "per_person": 260
+   },
+   "East Midlands": {
+    "value": 1575000000,
+    "per_person": 310
+   },
+   "London": {
+    "value": 1929000000,
+    "per_person": 210
+   },
+   "North East": {
+    "value": 158000000,
+    "per_person": 60
+   },
+   "North West": {
+    "value": 4336000000,
+    "per_person": 560
+   },
+   "South East": {
+    "value": 6761000000,
+    "per_person": 700
+   },
+   "South West": {
+    "value": 5330000000,
+    "per_person": 900
+   },
+   "West Midlands": {
+    "value": 1454000000,
+    "per_person": 230
+   },
+   "Yorkshire and The Humber": {
+    "value": 864000000,
+    "per_person": 150
+   },
+   "Northern Ireland": {
+    "value": 371000000,
+    "per_person": 190
+   },
+   "Scotland": {
+    "value": 2027000000,
+    "per_person": 370
+   },
+   "Wales": {
+    "value": 798000000,
+    "per_person": 250
+   }
+  },
+  "2022/23": {
+   "East of England": {
+    "value": 1806000000,
+    "per_person": 270
+   },
+   "East Midlands": {
+    "value": 1674000000,
+    "per_person": 330
+   },
+   "London": {
+    "value": 2049000000,
+    "per_person": 220
+   },
+   "North East": {
+    "value": 168000000,
+    "per_person": 60
+   },
+   "North West": {
+    "value": 4607000000,
+    "per_person": 600
+   },
+   "South East": {
+    "value": 7183000000,
+    "per_person": 740
+   },
+   "South West": {
+    "value": 5663000000,
+    "per_person": 960
+   },
+   "West Midlands": {
+    "value": 1544000000,
+    "per_person": 250
+   },
+   "Yorkshire and The Humber": {
+    "value": 918000000,
+    "per_person": 160
+   },
+   "Northern Ireland": {
+    "value": 394000000,
+    "per_person": 200
+   },
+   "Scotland": {
+    "value": 2154000000,
+    "per_person": 390
+   },
+   "Wales": {
+    "value": 847000000,
+    "per_person": 260
+   }
+  },
+  "2023/24": {
+   "East of England": {
+    "value": 1912000000,
+    "per_person": 290
+   },
+   "East Midlands": {
+    "value": 1772000000,
+    "per_person": 350
+   },
+   "London": {
+    "value": 2170000000,
+    "per_person": 230
+   },
+   "North East": {
+    "value": 178000000,
+    "per_person": 60
+   },
+   "North West": {
+    "value": 4878000000,
+    "per_person": 630
+   },
+   "South East": {
+    "value": 7606000000,
+    "per_person": 780
+   },
+   "South West": {
+    "value": 5996000000,
+    "per_person": 1020
+   },
+   "West Midlands": {
+    "value": 1635000000,
+    "per_person": 260
+   },
+   "Yorkshire and The Humber": {
+    "value": 972000000,
+    "per_person": 170
+   },
+   "Northern Ireland": {
+    "value": 418000000,
+    "per_person": 220
+   },
+   "Scotland": {
+    "value": 2281000000,
+    "per_person": 410
+   },
+   "Wales": {
+    "value": 897000000,
+    "per_person": 280
+   }
+  },
+  "2024/25": {
+   "East of England": {
+    "value": 2019000000,
+    "per_person": 300
+   },
+   "East Midlands": {
+    "value": 1871000000,
+    "per_person": 370
+   },
+   "London": {
+    "value": 9000000000,
+    "per_person": 250
+   },
+   "North East": {
+    "value": 188000000,
+    "per_person": 70
+   },
+   "North West": {
+    "value": 5149000000,
+    "per_person": 660
+   },
+   "South East": {
+    "value": 8028000000,
+    "per_person": 830
+   },
+   "South West": {
+    "value": 6329000000,
+    "per_person": 1070
+   },
+   "West Midlands": {
+    "value": 1726000000,
+    "per_person": 280
+   },
+   "Yorkshire and The Humber": {
+    "value": 1026000000,
+    "per_person": 180
+   },
+   "Northern Ireland": {
+    "value": 441000000,
+    "per_person": 230
+   },
+   "Scotland": {
+    "value": 2407000000,
+    "per_person": 440
+   },
+   "Wales": {
+    "value": 947000000,
+    "per_person": 290
+   }
+  },
+  "2025/26": {
+   "East of England": {
+    "value": 2125000000,
+    "per_person": 320
+   },
+   "East Midlands": {
+    "value": 1969000000,
+    "per_person": 390
+   },
+   "London": {
+    "value": 2411000000,
+    "per_person": 260
+   },
+   "North East": {
+    "value": 198000000,
+    "per_person": 70
+   },
+   "North West": {
+    "value": 5420000000,
+    "per_person": 700
+   },
+   "South East": {
+    "value": 8451000000,
+    "per_person": 870
+   },
+   "South West": {
+    "value": 6662000000,
+    "per_person": 1130
+   },
+   "West Midlands": {
+    "value": 1817000000,
+    "per_person": 290
+   },
+   "Yorkshire and The Humber": {
+    "value": 1080000000,
+    "per_person": 190
+   },
+   "Northern Ireland": {
+    "value": 464000000,
+    "per_person": 240
+   },
+   "Scotland": {
+    "value": 2534000000,
+    "per_person": 460
+   },
+   "Wales": {
+    "value": 997000000,
+    "per_person": 310
+   }
+  }
+ }
+}
