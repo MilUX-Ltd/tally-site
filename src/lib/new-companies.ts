@@ -10,6 +10,8 @@ import type { Company, Taxonomy } from './types';
 export const WEEKS = 12;
 /** Top capabilities shown for each company. */
 export const TOP_CAPABILITIES = 3;
+/** The most items the RSS feed carries, newest first; the page keeps the full window. */
+export const FEED_ITEMS = 50;
 export const NEW_PATH = '/new';
 export const FEED_PATH = '/new/feed.xml';
 
@@ -145,9 +147,9 @@ function describe(e: NewEntry): string {
   return [head && `${head}.`, e.summary.trim()].filter(Boolean).join(' ');
 }
 
-/** The RSS 2.0 feed of the recent additions, newest first, with absolute links on the site. */
+/** The RSS 2.0 feed of the newest FEED_ITEMS recent additions, newest first, with absolute links on the site. */
 export function feedXml(weeks: NewWeek[]): string {
-  const entries = weeks.flatMap((w) => w.entries);
+  const entries = weeks.flatMap((w) => w.entries).slice(0, FEED_ITEMS);
   const newest = entries[0]?.added;
   const tag = (name: string, text: string) => `<${name}>${xmlEscape(text)}</${name}>`;
   const lines = [
@@ -156,7 +158,7 @@ export function feedXml(weeks: NewWeek[]): string {
     '<channel>',
     tag('title', 'New companies in Tally'),
     tag('link', canonicalUrl(`${NEW_PATH}/`)),
-    tag('description', `Companies added to Tally, the open directory of UK defence capability, in the ${WEEKS} weeks to the latest addition. Public information only.`),
+    tag('description', `The newest ${FEED_ITEMS} companies added to Tally, the open directory of UK defence capability. Public information only.`),
     tag('language', 'en-gb'),
     `<atom:link href="${xmlEscape(canonicalUrl(FEED_PATH))}" rel="self" type="application/rss+xml"/>`,
     ...(newest ? [tag('pubDate', rfc822(newest)), tag('lastBuildDate', rfc822(newest))] : []),
