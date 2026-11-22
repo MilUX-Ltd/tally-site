@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { addedDates, addedFromFixture } from '../../scripts/build-history.mjs';
 import { slimData } from '../../scripts/fetch-data.mjs';
-import { feedXml, recentAdditions, regionText, weekStart } from '../../src/lib/new-companies';
+import { FEED_ITEMS, feedXml, recentAdditions, regionText, weekStart } from '../../src/lib/new-companies';
 import type { Company, TallyData } from '../../src/lib/types';
 
 const raw = JSON.parse(readFileSync(new URL('../fixtures/tally-data.json', import.meta.url), 'utf8'));
@@ -174,5 +174,24 @@ describe('feed', () => {
     expect(items[1]).toContain('<category>Mechanical Engineering</category>');
     expect(items[1]).toContain('West Midlands');
     expect(xml).toContain('<lastBuildDate>Thu, 19 Nov 2026 16:32:14 GMT</lastBuildDate>');
+  });
+});
+
+describe('feed size', () => {
+  // Amended under Matt's decision D-smde1 (22 November 2026): the feed carries
+  // only the newest 50 companies; the page keeps the full 12-week list.
+  it('feed carries only the newest 50 additions, newest first', () => {
+    expect(FEED_ITEMS).toBe(50);
+    const base = data.companies[0];
+    const many = Array.from({ length: 60 }, (_, i) => ({ ...base, id: `example-co-${String(i).padStart(2, '0')}`, name: `Example Co ${String(i).padStart(2, '0')}` }));
+    const added = Object.fromEntries(many.map((c, i) => [c.id, new Date(Date.UTC(2026, 10, 19, 0, 60 - i)).toISOString().replace('.000', '')]));
+    const weeks = recentAdditions(many, added, data.taxonomy);
+    expect(weeks.flatMap((w) => w.entries)).toHaveLength(60);
+    const xml = feedXml(weeks);
+    const titles = [...xml.matchAll(/<item><title>([^<]*)<\/title>/g)].map((m) => m[1]);
+    expect(titles).toHaveLength(50);
+    expect(titles[0]).toBe('Example Co 00');
+    expect(titles[49]).toBe('Example Co 49');
+    expect(xml).toContain('The newest 50 companies added to Tally');
   });
 });
