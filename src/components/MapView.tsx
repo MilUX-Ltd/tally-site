@@ -73,7 +73,10 @@ interface Props {
 }
 
 export interface MoneyOverlay {
-  year: number;
+  /** The year shown: a calendar year for contract awards, a financial year ("2025/26") for MOD spend. */
+  year: string;
+  /** Contract awards, or MOD's official spend with industry. */
+  measure: 'awards' | 'spend';
   regions: unknown | null;
   arcs: unknown;
   ends: unknown;
@@ -902,13 +905,13 @@ export default function MapView(props: Props) {
   const overlap = props.fixedResolution != null;
   return (
     <div class="map-wrap" inert={props.hidden}>
-      <div id="tally-map" class="map" ref={container} role="region" aria-label={props.money ? 'Map of defence contract money by region' : 'Map of the companies that match the filters'}>
+      <div id="tally-map" class="map" ref={container} role="region" aria-label={props.money ? (props.money.measure === 'spend' ? 'Map of MOD spend with UK industry by region' : 'Map of defence contract money by region') : 'Map of the companies that match the filters'}>
         {failed && <p class="map-failed">The map cannot be shown in this browser. Every company is in the list.</p>}
       </div>
       {props.money ? (
         <div class="map-legend">
           <h2 id="legend-heading" class="mono">
-            Contract value by region, {props.money.year}
+            {props.money.measure === 'spend' ? `MOD spend with UK industry by region, ${props.money.year}` : `Contract value by region, ${props.money.year}`}
           </h2>
           <div class="ramp" aria-hidden="true">
             <div class="r1">Least</div>
@@ -916,10 +919,14 @@ export default function MapView(props: Props) {
             <div class="r3" />
             <div class="r4">Most</div>
           </div>
-          <p class="legend-note">
-            <span class="legend-arc" aria-hidden="true" />
-            Regions with no contract money are left unshaded. Lines run to the countries of overseas suppliers, thicker for more money. Every figure is in the tables.
-          </p>
+          {props.money.measure === 'spend' ? (
+            <p class="legend-note">Official statistics from the Ministry of Defence. Every figure is in the table.</p>
+          ) : (
+            <p class="legend-note">
+              <span class="legend-arc" aria-hidden="true" />
+              Regions with no contract money are left unshaded. Lines run to the countries of overseas suppliers, thicker for more money. Every figure is in the tables.
+            </p>
+          )}
         </div>
       ) : (
         <div class="map-legend">

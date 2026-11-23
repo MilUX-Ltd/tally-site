@@ -24,6 +24,7 @@ import { findPlace, isNearRadius, NEAR_RADII } from '../lib/near';
 import { askSearch, keywordSearch, readSearchAnswer } from '../lib/search';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
 import { chosenYear, defaultYear, overseasRows, regionRows, type MoneyData } from '../lib/money';
+import { chosenFinancialYear, latestFinancialYear, recentFinancialYears, spendRows, type ModSpend } from '../lib/mod-spend';
 import { arcBounds, arcEndsGeoJSON, arcsGeoJSON, overseasArcs, shadedRegions, type RegionShape } from '../lib/money-map';
 import { UK_BOUNDS } from '../lib/map-config';
 import { companiesNearSite, distanceMiles, isRadius, RADII, ringPolygon, type Radius, type SitesData } from '../lib/sites';
@@ -174,18 +175,50 @@ export default function Explorer() {
       // The tables carry every figure; without the shapes the map is simply not shaded.
       .catch(() => setRegionShapes([]));
   }, [moneyOpen, regionShapes]);
+  // MOD's official spend with industry: the second measure, and the scale
+  // line under contract awards. Fetched with the contract money.
+  const [modSpend, setModSpend] = useState<ModSpend | null>(null);
+  const [modSpendFailed, setModSpendFailed] = useState(false);
+  useEffect(() => {
+    if (!moneyOpen || modSpend) return;
+    setModSpendFailed(false);
+    fetch('/data/mod-spend.json')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: ModSpend) => {
+        // A year the data does not hold, or the latest, is dropped from the address.
+        setState((s) => (s.mfy !== null && (!recentFinancialYears(d).includes(s.mfy) || s.mfy === latestFinancialYear(d)) ? { ...s, mfy: null } : s));
+        setModSpend(d);
+      })
+      .catch(() => setModSpendFailed(true));
+  }, [moneyOpen, modSpend, moneyAttempt]);
+  const spendOn = moneyOpen && state.mmeasure === 'spend';
+  const spendYear = modSpend ? chosenFinancialYear(modSpend, state.mfy) : null;
   const moneyYear = money ? chosenYear(money, state.myear) : null;
   const moneyMap = useMemo(() => {
+    if (spendOn) {
+      if (!modSpend || spendYear === null) return null;
+      // The regional figures are UK only: no overseas lines.
+      const rows = spendRows(modSpend, spendYear).map((r) => ({ region: r.region, value: r.value }));
+      return {
+        year: spendYear,
+        measure: 'spend' as const,
+        regions: regionShapes?.length ? shadedRegions(regionShapes, rows as Parameters<typeof shadedRegions>[1]) : null,
+        arcs: arcsGeoJSON([]),
+        ends: arcEndsGeoJSON([]),
+        bounds: null,
+      };
+    }
     if (!moneyOpen || !money || moneyYear === null) return null;
     const arcs = overseasArcs(overseasRows(money, moneyYear));
     return {
-      year: moneyYear,
+      year: String(moneyYear),
+      measure: 'awards' as const,
       regions: regionShapes?.length ? shadedRegions(regionShapes, regionRows(money, moneyYear)) : null,
       arcs: arcsGeoJSON(arcs),
       ends: arcEndsGeoJSON(arcs),
       bounds: arcs.length ? arcBounds(arcs, UK_BOUNDS) : null,
     };
-  }, [moneyOpen, money, moneyYear, regionShapes]);
+  }, [moneyOpen, money, moneyYear, regionShapes, spendOn, modSpend, spendYear]);
   useEffect(() => {
     if (!moneyMap?.bounds) setOverseasShown(false);
   }, [moneyMap?.bounds]);
@@ -475,7 +508,7 @@ export default function Explorer() {
     clearAll();
     setShowList(false);
     setPreset({ what: '', near: '' });
-    setState((s) => ({ ...s, view: 'map', matrix: defaultState().matrix, myear: null }));
+    setState((s) => ({ ...s, view: 'map', matrix: defaultState().matrix, myear: null, mmeasure: 'awards', mfy: null }));
     requestAnimationFrame(() => document.getElementById('search-what')?.focus());
   };
 
@@ -520,7 +553,7 @@ export default function Explorer() {
     if (view !== state.view) setFocusPanel((k) => k + 1);
     // The Money view's year belongs to it; leaving it drops the year.
     if (view !== 'money') setOverseasShown(false);
-    update(view === 'map' ? { view, matrix: defaultState().matrix, myear: null } : view === 'money' ? { view } : { view, myear: null });
+    update(view === 'map' ? { view, matrix: defaultState().matrix, myear: null, mmeasure: 'awards', mfy: null } : view === 'money' ? { view } : { view, myear: null, mmeasure: 'awards', mfy: null });
   };
   const compare = (
     <button type="button" class="link" onClick={() => setView('matrix')}>
@@ -736,6 +769,15 @@ export default function Explorer() {
                 onRetry={() => setMoneyAttempt((k) => k + 1)}
                 year={moneyYear}
                 onYear={(y) => update({ myear: money && y === defaultYear(money) ? null : y })}
+                measure={state.mmeasure}
+                onMeasure={(m) => {
+                  if (m === 'spend') setOverseasShown(false);
+                  update(m === 'spend' ? { mmeasure: 'spend' } : { mmeasure: 'awards', mfy: null });
+                }}
+                modSpend={modSpend}
+                modSpendFailed={modSpendFailed}
+                spendYear={spendYear}
+                onSpendYear={(y) => update({ mfy: modSpend && y === latestFinancialYear(modSpend) ? null : y })}
                 companies={data?.companies ?? null}
                 taxonomy={data?.taxonomy ?? null}
                 overseas={overseasShown}

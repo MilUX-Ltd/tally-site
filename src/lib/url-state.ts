@@ -11,6 +11,7 @@ import { MAX_QUERY_LENGTH } from './search';
 import { DEFAULT_NEAR_RADIUS, inUk, isNearRadius, isPlaceName, type NearRadius, type Place } from './near';
 import { DEFAULT_RADIUS, isRadius, type Radius } from './sites';
 import type { TallyData } from './types';
+import { fyFromParam, fyParam } from './mod-spend';
 
 export interface MapPosition {
   zoom: number;
@@ -65,14 +66,20 @@ export interface ViewState {
   view: View;
   /** Money view: the year shown; null means the data's default (the latest full year). */
   myear: number | null;
+  /** Money view: contract awards (the default) or MOD's official spend with industry. */
+  mmeasure: MoneyMeasure;
+  /** Money view, MOD spend: the financial year shown, as "2025/26"; null means the latest. */
+  mfy: string | null;
 }
+
+export type MoneyMeasure = 'awards' | 'spend';
 
 export type View = 'map' | 'list' | 'matrix' | 'money';
 
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '', flat: false, view: 'map', myear: null };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '', flat: false, view: 'map', myear: null, mmeasure: 'awards', mfy: null };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -172,6 +179,11 @@ export function fromQuery(query: string): ViewState {
   // The year is checked against the data once the Money view has loaded it.
   const myear = p.get('myear');
   if (state.view === 'money' && myear && /^20\d{2}$/.test(myear)) state.myear = Number(myear);
+  // MOD spend and its financial year; the year is checked against the data once loaded.
+  if (state.view === 'money' && p.get('mmeasure') === 'spend') {
+    state.mmeasure = 'spend';
+    state.mfy = fyFromParam(p.get('mfy'));
+  }
   return state;
 }
 
@@ -207,6 +219,10 @@ export function toQuery(state: ViewState): string {
   if (state.flat) add('flat', '1');
   if (state.view !== 'map') add('view', state.view);
   if (state.view === 'money' && state.myear !== null) add('myear', String(state.myear));
+  if (state.view === 'money' && state.mmeasure === 'spend') {
+    add('mmeasure', 'spend');
+    if (state.mfy) add('mfy', fyParam(state.mfy));
+  }
   return parts.join('&');
 }
 
