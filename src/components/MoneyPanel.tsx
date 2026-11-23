@@ -4,6 +4,8 @@
 // money; every figure on the map is also in these tables.
 import { useEffect, useMemo, useRef } from 'preact/hooks';
 import { companyPath, longDate } from '../lib/company-page';
+import { latestFinancialYear, recentFinancialYears, spendRows, type ModSpend } from '../lib/mod-spend';
+import type { MoneyMeasure } from '../lib/url-state';
 import { capabilityRows, formatMoney, overseasRows, regionRows, regionSmeShare, sharePercent, smeTotals, tallyWinners, yearTotals, type MoneyData } from '../lib/money';
 import type { Company, Taxonomy } from '../lib/types';
 
@@ -20,12 +22,21 @@ interface Props {
   overseas: boolean;
   canShowOverseas: boolean;
   onOverseas: (on: boolean) => void;
+  /** Contract awards, or MOD's official spend with industry (card 7475). */
+  measure: MoneyMeasure;
+  onMeasure: (measure: MoneyMeasure) => void;
+  modSpend: ModSpend | null;
+  modSpendFailed: boolean;
+  /** The financial year shown under MOD spend, as "2025/26". */
+  spendYear: string | null;
+  onSpendYear: (year: string) => void;
   /** Goes up by one when the heading should take focus. */
   focus: number;
 }
 
 const contracts = (n: number) => `${n.toLocaleString('en-GB')} ${n === 1 ? 'contract' : 'contracts'}`;
 const notices = (n: number) => `${n.toLocaleString('en-GB')} ${n === 1 ? 'notice' : 'notices'}`;
+const perPerson = (n: number) => `£${Math.round(n).toLocaleString('en-GB')}`;
 const andList = (items: string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
 
 export default function MoneyPanel(p: Props) {
@@ -48,6 +59,21 @@ export default function MoneyPanel(p: Props) {
     };
   }, [money, year, p.companies, p.taxonomy]);
 
+  const spend = p.measure === 'spend';
+  const { modSpend, spendYear } = p;
+  const spendFigures = useMemo(() => (modSpend && spendYear ? { rows: spendRows(modSpend, spendYear), total: modSpend.uk[spendYear] ?? 0 } : null), [modSpend, spendYear]);
+  const subtitle = spend
+    ? spendFigures && spendYear
+      ? `MOD’s direct spend with UK industry in ${spendYear}, by region, from official statistics.`
+      : p.modSpendFailed
+        ? ''
+        : 'Loading the figures.'
+    : figures && year !== null
+      ? `Contracts UK defence buyers awarded in ${year}, by where the supplier is.`
+      : p.failed
+        ? ''
+        : 'Loading the figures.';
+
   return (
     <section class="panel money" aria-labelledby="money-heading">
       <header class="panel-head">
@@ -55,11 +81,29 @@ export default function MoneyPanel(p: Props) {
           <h2 id="money-heading" ref={heading} tabIndex={-1}>
             Defence contract money
           </h2>
-          <p>{figures && year !== null ? `Contracts UK defence buyers awarded in ${year}, by where the supplier is.` : p.failed ? '' : 'Loading the figures.'}</p>
+          <p>{subtitle}</p>
         </div>
       </header>
       <div class="panel-body money-body">
-        {p.failed && !money ? (
+        <div class="money-measure" role="radiogroup" aria-labelledby="money-measure-label">
+          <span id="money-measure-label" class="mono">
+            Measure
+          </span>
+          {(
+            [
+              ['awards', 'Contract awards'],
+              ['spend', 'MOD spend with industry'],
+            ] as const
+          ).map(([value, label]) => (
+            <label key={value} class={p.measure === value ? 'money-year is-on' : 'money-year'}>
+              <input type="radio" name="money-measure" value={value} checked={p.measure === value} onChange={() => p.onMeasure(value)} />
+              {label}
+            </label>
+          ))}
+        </div>
+        {spend ? (
+          <SpendBody {...p} rows={spendFigures?.rows ?? null} total={spendFigures?.total ?? 0} />
+        ) : p.failed && !money ? (
           <div class="empty">
             <p>The contract figures could not be loaded.</p>
             <p>
@@ -70,6 +114,14 @@ export default function MoneyPanel(p: Props) {
           </div>
         ) : !money || !figures || year === null ? null : (
           <>
+            {modSpend && (
+              <p class="money-scale">
+                For scale: MOD spent {formatMoney(modSpend.uk[latestFinancialYear(modSpend)] ?? 0)} with UK industry in {latestFinancialYear(modSpend)} (official statistics).{' '}
+                <button type="button" class="link" onClick={() => p.onMeasure('spend')}>
+                  See MOD spend by region
+                </button>
+              </p>
+            )}
             <dl class="money-totals">
               <div>
                 <dt class="mono">UK regions</dt>
@@ -248,5 +300,96 @@ export default function MoneyPanel(p: Props) {
         )}
       </div>
     </section>
+  );
+}
+
+/** The MOD spend measure: official statistics by region for a financial year. */
+function SpendBody(p: Props & { rows: ReturnType<typeof spendRows> | null; total: number }) {
+  const d = p.modSpend;
+  const year = p.spendYear;
+  if (p.modSpendFailed && !d) {
+    return (
+      <div class="empty">
+        <p>The official spend figures could not be loaded.</p>
+        <p>
+          <button type="button" class="btn" onClick={p.onRetry}>
+            Try again
+          </button>
+        </p>
+      </div>
+    );
+  }
+  if (!d || !year || !p.rows) return null;
+  const choices = [...recentFinancialYears(d)].reverse();
+  return (
+    <>
+      <dl class="money-totals">
+        <div>
+          <dt class="mono">UK total, {year}</dt>
+          <dd>{formatMoney(p.total)}</dd>
+          <dd class="money-count">MOD direct spend with UK industry</dd>
+        </div>
+      </dl>
+
+      <div class="money-controls">
+        <div class="money-years" role="radiogroup" aria-labelledby="money-fy-label">
+          <span id="money-fy-label" class="mono">
+            Financial year
+          </span>
+          {choices.map((y) => (
+            <label key={y} class={y === year ? 'money-year is-on' : 'money-year'}>
+              <input type="radio" name="money-fy" value={y} checked={y === year} onChange={() => p.onSpendYear(y)} />
+              {y}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <table class="money-table">
+        <caption>MOD spend with UK industry by region, {year}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Region</th>
+            <th scope="col" class="num">
+              Spend
+            </th>
+            <th scope="col" class="num">
+              Per person
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {p.rows.map((r) => (
+            <tr key={r.region}>
+              <th scope="row">{r.region}</th>
+              <td class="num">{formatMoney(r.value)}</td>
+              <td class="num">{perPerson(r.per_person)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3>About these figures</h3>
+      <div class="money-about">
+        <p>
+          Official statistics from the Ministry of Defence: <a href={d.source.url}>MOD regional expenditure with industry</a>, published {longDate(d.source.published)}.
+        </p>
+        <p>MOD’s direct spend with UK industry in each financial year (April to March), at current prices: money paid out in the year, not adjusted for inflation.</p>
+        <p>Spend is placed mainly by where the work is done, not where the supplier’s head office is.</p>
+        <p>Money a prime contractor passes on to sub-contractors is counted where the prime contract’s work is recorded, not where the sub-contractor is.</p>
+        <p>Spending overseas, and purchases through US Foreign Military Sales, are not in the regional figures.</p>
+        {d.breaks.length > 0 && (
+          <p>
+            MOD changed its method in {andList(d.breaks)}, so years before and after {d.breaks.length === 1 ? 'that change' : 'those changes'} are not directly comparable.
+          </p>
+        )}
+        <p>
+          This differs from contract awards. Contract awards count a contract’s whole value in the year it is awarded, even when the work runs for several years; these figures count money
+          spent in the year.
+        </p>
+        <p>Spend per person is a region’s spend divided by its population, as MOD publishes it.</p>
+        <p>{d.attribution}</p>
+      </div>
+    </>
   );
 }

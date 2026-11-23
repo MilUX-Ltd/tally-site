@@ -1,7 +1,7 @@
 // Build step: fetch the public Tally data, taxonomy, clusters, events and
 // opportunities from MilUX-Ltd/tally, slim them for the browser and write
 // public/data/tally.json, clusters.json, events.json, opportunities.json and
-// money.json (git-ignored).
+// money.json and mod-spend.json (git-ignored).
 // With TALLY_DATA_SOURCE=fixture it reads tests/fixtures instead, so tests
 // never touch the network.
 // Usage: node scripts/fetch-data.mjs
@@ -18,6 +18,10 @@ const CH_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${CH_REF}/comp
 // Where websites.json is read from: the same rule.
 const WEB_REF = 'main';
 const WEB_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${WEB_REF}/websites.json`;
+// Where mod-spend.json is read from: the data repo's branch while card 7475 is
+// in review; this switches to 'main' before merging (a build from main refuses a branch).
+const MODSPEND_REF = 'feature/mod-spend';
+const MODSPEND_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${MODSPEND_REF}/mod-spend.json`;
 
 // West, south, east, north: the UK map's bounds. Must match UK_BOUNDS in
 // src/lib/map-config.ts (a unit test checks they agree).
@@ -650,6 +654,59 @@ export function applyWebsites(data, web) {
   return { ...data, companies };
 }
 
+// MOD's official direct spend with UK industry by region (card 7475): built by
+// the data repo from MOD's annual official statistics (Open Government
+// Licence v3.0). Checked whole and slimmed to its known fields; a malformed
+// file stops the build.
+const MODSPEND_KEYS = ['attribution', 'breaks', 'generated', 'regions', 'source', 'uk', 'years'];
+const FY_KEY = /^\d{4}\/\d{2}$/;
+const MODSPEND_SOURCE = /^https:\/\/www\.gov\.uk\/government\/statistics\/[a-z0-9-]{1,200}$/;
+function modSpendFail(message) {
+  throw new Error(`mod-spend.json: ${message}; refusing to build`);
+}
+const modSpendText = (v, max, where) =>
+  typeof v === 'string' && v.trim() && v.trim().length <= max && !hasControl(v) ? v.trim() : modSpendFail(`${where} is not plain text of at most ${max} characters`);
+const pounds = (v, where) => (Number.isSafeInteger(v) && v >= 0 ? v : modSpendFail(`${where} is not a whole non-negative number`));
+
+/** Checks mod-spend.json against its contract and keeps only its known fields. Throws on anything malformed. */
+export function slimModSpend(raw) {
+  const plain = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  if (!plain(raw)) modSpendFail('not an object');
+  for (const k of MODSPEND_KEYS) if (!(k in raw)) modSpendFail(`no ${k}`);
+  const attribution = modSpendText(raw.attribution, 300, 'attribution');
+  if (!attribution.includes('Open Government Licence v3.0')) modSpendFail('the attribution does not name the Open Government Licence v3.0');
+  if (!validDate(str(raw.generated))) modSpendFail('generated is not a date');
+  if (!plain(raw.source)) modSpendFail('source is not an object');
+  const source = {
+    title: modSpendText(raw.source.title, 300, 'source.title'),
+    url: MODSPEND_SOURCE.test(str(raw.source.url)) ? str(raw.source.url) : modSpendFail('source.url is not a GOV.UK statistics page'),
+    published: validDate(str(raw.source.published)) ? str(raw.source.published) : modSpendFail('source.published is not a date'),
+  };
+  const years = raw.years;
+  if (!Array.isArray(years) || !years.length || years.length > 60 || !years.every((y) => typeof y === 'string' && FY_KEY.test(y))) modSpendFail('years is not a list of financial years');
+  for (let i = 1; i < years.length; i++) if (years[i - 1] >= years[i]) modSpendFail('years are not in order');
+  if (!Array.isArray(raw.breaks) || !raw.breaks.every((y) => years.includes(y))) modSpendFail('breaks names a year the data does not list');
+  if (!plain(raw.uk) || !plain(raw.regions)) modSpendFail('uk or regions is not an object');
+  /** @type {Record<string, number>} */
+  const uk = {};
+  /** @type {Record<string, Record<string, { value: number, per_person: number }>>} */
+  const regions = {};
+  for (const y of years) {
+    uk[y] = pounds(raw.uk[y], `uk.${y}`);
+    const byRegion = raw.regions[y];
+    if (!plain(byRegion)) modSpendFail(`regions.${y} is not an object`);
+    const names = Object.keys(byRegion);
+    if (names.length !== MONEY_REGIONS.length || !MONEY_REGIONS.every((r) => names.includes(r))) modSpendFail(`regions.${y} does not hold exactly the 12 regions`);
+    regions[y] = {};
+    for (const r of MONEY_REGIONS) {
+      const row = byRegion[r];
+      if (!plain(row)) modSpendFail(`regions.${y}.${r} is not an object`);
+      regions[y][r] = { value: pounds(row.value, `regions.${y}.${r}.value`), per_person: pounds(row.per_person, `regions.${y}.${r}.per_person`) };
+    }
+  }
+  return { attribution, breaks: [...raw.breaks], generated: str(raw.generated), regions, source, uk, years: [...years] };
+}
+
 /**
  * Stops a build from main that would read a data file from anywhere but main.
  * Fixture builds (tests) read no data repo, so they are not stopped.
@@ -671,6 +728,7 @@ async function main() {
   assertMoneyRef(MONEY_REF, process.env.GITHUB_REF, fixture);
   assertDataRef('companies-house.json', CH_REF, process.env.GITHUB_REF, fixture);
   assertDataRef('websites.json', WEB_REF, process.env.GITHUB_REF, fixture);
+  assertDataRef('mod-spend.json', MODSPEND_REF, process.env.GITHUB_REF, fixture);
   const read = (name) => JSON.parse(readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8'));
   const names = ['tally-data.json', 'taxonomy.json', 'clusters.json', 'events.json', 'opportunities.json'];
   const [raw, taxonomy, rawClusters, rawEvents, rawOpportunities] = fixture
@@ -711,6 +769,9 @@ async function main() {
   const money = slimMoney(fixture ? read('money.json') : await fetchJson(MONEY_URL), moneyIds(raw));
   writeFileSync(new URL('money.json', dir), JSON.stringify(money));
   console.log(`Wrote money.json (${money.years.join(', ')}; ${Object.keys(money.companies).length} Tally companies with awards).`);
+  const modSpend = slimModSpend(fixture ? read('mod-spend.json') : await fetchJson(MODSPEND_URL));
+  writeFileSync(new URL('mod-spend.json', dir), JSON.stringify(modSpend));
+  console.log(`Wrote mod-spend.json (${modSpend.years[0]} to ${modSpend.years[modSpend.years.length - 1]}).`);
   console.log(`Wrote opportunities.json (${opportunities.opportunities.length} open funding calls and opportunities).`);
   const signposts = events.events.filter((e) => e.audience === 'members').length;
   console.log(`Wrote clusters.json (${clusters.clusters.length} clusters) and events.json (${events.events.length - signposts} public events, ${signposts} members-only signposts).`);

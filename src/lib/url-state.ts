@@ -65,14 +65,20 @@ export interface ViewState {
   view: View;
   /** Money view: the year shown; null means the data's default (the latest full year). */
   myear: number | null;
+  /** Money view: contract awards (the default) or MOD's official spend with industry. */
+  mmeasure: MoneyMeasure;
+  /** Money view, MOD spend: the financial year shown, as "2025/26"; null means the latest. */
+  mfy: string | null;
 }
+
+export type MoneyMeasure = 'awards' | 'spend';
 
 export type View = 'map' | 'list' | 'matrix' | 'money';
 
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '', flat: false, view: 'map', myear: null };
+  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '', flat: false, view: 'map', myear: null, mmeasure: 'awards', mfy: null };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
@@ -172,6 +178,12 @@ export function fromQuery(query: string): ViewState {
   // The year is checked against the data once the Money view has loaded it.
   const myear = p.get('myear');
   if (state.view === 'money' && myear && /^20\d{2}$/.test(myear)) state.myear = Number(myear);
+  // MOD spend and its financial year; the year is checked against the data once loaded.
+  if (state.view === 'money' && p.get('mmeasure') === 'spend') {
+    state.mmeasure = 'spend';
+    const mfy = /^(\d{4})-(\d{2})$/.exec(p.get('mfy') ?? '');
+    if (mfy) state.mfy = `${mfy[1]}/${mfy[2]}`;
+  }
   return state;
 }
 
@@ -207,6 +219,10 @@ export function toQuery(state: ViewState): string {
   if (state.flat) add('flat', '1');
   if (state.view !== 'map') add('view', state.view);
   if (state.view === 'money' && state.myear !== null) add('myear', String(state.myear));
+  if (state.view === 'money' && state.mmeasure === 'spend') {
+    add('mmeasure', 'spend');
+    if (state.mfy) add('mfy', state.mfy.replace('/', '-'));
+  }
   return parts.join('&');
 }
 
