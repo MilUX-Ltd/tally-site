@@ -20,7 +20,7 @@ const WEB_REF = 'main';
 const WEB_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${WEB_REF}/websites.json`;
 // Where mod-spend.json is read from: the data repo's branch while card 7475 is
 // in review; this switches to 'main' before merging (a build from main refuses a branch).
-const MODSPEND_REF = 'feature/mod-spend';
+const MODSPEND_REF = 'main';
 const MODSPEND_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${MODSPEND_REF}/mod-spend.json`;
 
 // West, south, east, north: the UK map's bounds. Must match UK_BOUNDS in
