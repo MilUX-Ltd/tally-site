@@ -117,7 +117,15 @@ export default function MoneyPanel(p: Props) {
             {modSpend && (
               <p class="money-scale">
                 For scale: MOD spent {formatMoney(modSpend.uk[latestFinancialYear(modSpend)] ?? 0)} with UK industry in {latestFinancialYear(modSpend)} (official statistics).{' '}
-                <button type="button" class="link" onClick={() => p.onMeasure('spend')}>
+                <button
+                  type="button"
+                  class="link"
+                  onClick={() => {
+                    p.onMeasure('spend');
+                    // The button goes with the measure: focus moves to the panel's heading.
+                    requestAnimationFrame(() => heading.current?.focus());
+                  }}
+                >
                   See MOD spend by region
                 </button>
               </p>

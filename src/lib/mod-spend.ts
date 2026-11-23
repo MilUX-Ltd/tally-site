@@ -48,9 +48,9 @@ export function latestFinancialYear(d: ModSpend): string {
   return d.years[d.years.length - 1];
 }
 
-/** The year asked for when the data holds it; otherwise the latest. */
+/** The year asked for when it is one of the years offered; otherwise the latest. */
 export function chosenFinancialYear(d: ModSpend, wanted: string | null): string {
-  return wanted && d.years.includes(wanted) ? wanted : latestFinancialYear(d);
+  return wanted && recentFinancialYears(d).includes(wanted) ? wanted : latestFinancialYear(d);
 }
 
 /** The last few financial years, latest first. */

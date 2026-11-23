@@ -11,6 +11,7 @@ import { MAX_QUERY_LENGTH } from './search';
 import { DEFAULT_NEAR_RADIUS, inUk, isNearRadius, isPlaceName, type NearRadius, type Place } from './near';
 import { DEFAULT_RADIUS, isRadius, type Radius } from './sites';
 import type { TallyData } from './types';
+import { fyFromParam, fyParam } from './mod-spend';
 
 export interface MapPosition {
   zoom: number;
@@ -181,8 +182,7 @@ export function fromQuery(query: string): ViewState {
   // MOD spend and its financial year; the year is checked against the data once loaded.
   if (state.view === 'money' && p.get('mmeasure') === 'spend') {
     state.mmeasure = 'spend';
-    const mfy = /^(\d{4})-(\d{2})$/.exec(p.get('mfy') ?? '');
-    if (mfy) state.mfy = `${mfy[1]}/${mfy[2]}`;
+    state.mfy = fyFromParam(p.get('mfy'));
   }
   return state;
 }
@@ -221,7 +221,7 @@ export function toQuery(state: ViewState): string {
   if (state.view === 'money' && state.myear !== null) add('myear', String(state.myear));
   if (state.view === 'money' && state.mmeasure === 'spend') {
     add('mmeasure', 'spend');
-    if (state.mfy) add('mfy', state.mfy.replace('/', '-'));
+    if (state.mfy) add('mfy', fyParam(state.mfy));
   }
   return parts.join('&');
 }

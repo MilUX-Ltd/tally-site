@@ -24,7 +24,7 @@ import { findPlace, isNearRadius, NEAR_RADII } from '../lib/near';
 import { askSearch, keywordSearch, readSearchAnswer } from '../lib/search';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
 import { chosenYear, defaultYear, overseasRows, regionRows, type MoneyData } from '../lib/money';
-import { chosenFinancialYear, latestFinancialYear, spendRows, type ModSpend } from '../lib/mod-spend';
+import { chosenFinancialYear, latestFinancialYear, recentFinancialYears, spendRows, type ModSpend } from '../lib/mod-spend';
 import { arcBounds, arcEndsGeoJSON, arcsGeoJSON, overseasArcs, shadedRegions, type RegionShape } from '../lib/money-map';
 import { UK_BOUNDS } from '../lib/map-config';
 import { companiesNearSite, distanceMiles, isRadius, RADII, ringPolygon, type Radius, type SitesData } from '../lib/sites';
@@ -186,7 +186,7 @@ export default function Explorer() {
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((d: ModSpend) => {
         // A year the data does not hold, or the latest, is dropped from the address.
-        setState((s) => (s.mfy !== null && (!d.years.includes(s.mfy) || s.mfy === latestFinancialYear(d)) ? { ...s, mfy: null } : s));
+        setState((s) => (s.mfy !== null && (!recentFinancialYears(d).includes(s.mfy) || s.mfy === latestFinancialYear(d)) ? { ...s, mfy: null } : s));
         setModSpend(d);
       })
       .catch(() => setModSpendFailed(true));
