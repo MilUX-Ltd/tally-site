@@ -171,9 +171,9 @@ test('2. One search: a need and a place set the filters, fly the map, draw the r
   const asked = await useOfflineGeocoder(page);
   await page.goto('/');
   await waitForMap(page);
-  // The hint says an AI model turns the words into filters.
-  await expect(search(page)).toContainText(/AI model/);
-  await expect(search(page)).toContainText(/filters/);
+  // The hint says where Tally looks for the words.
+  await expect(search(page)).toContainText(/company names, summaries and tags/);
+  await expect(search(page)).toContainText(/does not keep what you type/);
   const before = await centre(page);
 
   await what(page).fill('cyber companies');

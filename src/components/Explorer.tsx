@@ -375,7 +375,7 @@ export default function Explorer() {
         const q = keywordText(split ? split[1] : what);
         change = { ...reset, filters: emptyFilters(), capMatch: 'any', q };
         if (split) nearText = split[2];
-        messages.push(`We could not turn that into filters, so we searched company names and descriptions for: ${q}.`);
+        messages.push(`Searched company names, summaries and tags for: ${q}.`);
       }
       searchedFor.current = what;
     } else if (!what && state.q) {
