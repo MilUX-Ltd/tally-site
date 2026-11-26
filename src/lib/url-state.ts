@@ -11,7 +11,7 @@ import { MAX_QUERY_LENGTH } from './search';
 import { DEFAULT_NEAR_RADIUS, inUk, isNearRadius, isPlaceName, type NearRadius, type Place } from './near';
 import { DEFAULT_RADIUS, isRadius, type Radius } from './sites';
 import type { TallyData } from './types';
-import { DEFAULT_SCOPE, isScopeValue, regionChoices, scopeBounds, scopeCountries, UNITED_KINGDOM } from './scope';
+import { DEFAULT_SCOPE, isScopeValue, regionChoices, scopeBounds, scopeOpens, UNITED_KINGDOM } from './scope';
 import { fyFromParam, fyParam } from './mod-spend';
 
 export interface MapPosition {
@@ -260,7 +260,7 @@ export function sanitiseState(state: ViewState, data: TallyData): ViewState {
   const t = data.taxonomy;
   const countries = data.countries ?? [UNITED_KINGDOM];
   // A scope must be live in the data; otherwise the explorer opens on the UK.
-  const scope = state.scope !== DEFAULT_SCOPE && scopeCountries(state.scope, countries).length ? state.scope : DEFAULT_SCOPE;
+  const scope = state.scope !== DEFAULT_SCOPE && scopeOpens(state.scope, countries) ? state.scope : DEFAULT_SCOPE;
   const places = regionChoices(scope, countries);
   const known: Record<Facet, Set<string>> = {
     cap: new Set(t.capabilities.map((c) => c.slug)),

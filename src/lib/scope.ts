@@ -66,6 +66,16 @@ export function scopeCountries(scope: string, countries: Country[]): Country[] {
   return live.filter((c) => c.code.toLowerCase() === scope);
 }
 
+/**
+ * Whether a scope can open: one live country, or a bloc with two or more live
+ * countries. A bloc holding only the UK is the UK, so the UK view stays exactly
+ * as it was until a second country is live.
+ */
+export function scopeOpens(scope: string, countries: Country[]): boolean {
+  const n = scopeCountries(scope, countries).length;
+  return (BLOCS as readonly string[]).includes(scope) ? n >= 2 : n === 1;
+}
+
 /** The bounds that hold every live country in the scope; the UK's when there is none. */
 export function scopeBounds(scope: string, countries: Country[]): Bbox {
   const boxes = scopeCountries(scope, countries).map((c) => c.bounds as Bbox);
