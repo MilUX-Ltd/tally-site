@@ -1,6 +1,6 @@
 ---
 // About Tally: what it is, how it works, where the data comes from, how the
-// search uses AI, data sources and licences, how to get listed or correct a
+// search works, data sources and licences, how to get listed or correct a
 // listing, and how it was built. Static, no script.
 import Base from '../layouts/Base.astro';
 import TallyMarks from '../components/TallyMarks.astro';
@@ -16,7 +16,7 @@ const sites = defenceSites().length;
 const updated = longDate(data.generated.slice(0, 10));
 const OGL = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/';
 ---
-<Base title="About Tally: an open directory of UK defence capability" description="What Tally is, how it works, where its data comes from, how the search uses AI, its licences, and how to get your company listed or a listing corrected." counted={false}>
+<Base title="About Tally: an open directory of UK defence capability" description="What Tally is, how it works, where its data comes from, how the search works, its licences, and how to get your company listed or a listing corrected." counted={false}>
   <header class="page-hero about-hero">
     <div class="about-hero-text">
       <h1>
@@ -77,16 +77,15 @@ const OGL = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/ver
   </section>
 
   <section class="about-section about-split" aria-labelledby="ai-heading">
-    <h2 id="ai-heading">How the search uses AI</h2>
+    <h2 id="ai-heading">How the search works</h2>
     <div class="about-body">
-      <p class="about-lead">An AI model (Claude, from Anthropic) turns the words you type into filters. Tally does not keep what you type.</p>
+      <p class="about-lead">Tally looks for the words you type in company names, summaries and capability tags. Tally does not keep what you type.</p>
       <ol class="flow" aria-label="What happens when you search">
         <li><span class="mono">You</span>The words you type</li>
-        <li><span class="mono">AI model</span>Chooses filters from Tally's own lists</li>
-        <li><span class="mono">Tally</span>Checks the filters, then finds the companies</li>
+        <li><span class="mono">Tally</span>Looks for each word in names, summaries and tags</li>
+        <li><span class="mono">Results</span>The companies that match every word</li>
       </ol>
-      <p>When you search in your own words, those words are sent to the model, which Anthropic runs, so that it can choose from Tally's own lists of capabilities, regions, sizes, accreditations, frameworks, memberships and defence sites. Its answer is checked against those lists before it is used. Nothing the model writes is shown to you or stored, and the companies you see always come from Tally's data, not from the model.</p>
-      <p>If the model cannot be used, Tally looks for your words in company names, summaries and tags instead, and says so.</p>
+      <p>A company is shown when every word you type appears in its name, summary or tags, so "drone" also finds "drones". Common words such as "and" or "companies" are ignored. To narrow by region, size, accreditation, framework or membership, use Filters. What you type is not stored and is not sent to anyone else.</p>
     </div>
   </section>
 

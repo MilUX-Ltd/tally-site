@@ -197,7 +197,7 @@ test.describe('about page', () => {
     expect(headings).toEqual([
       'How Tally works',
       'Where the information comes from',
-      'How the search uses AI',
+      'How the search works',
       'Data sources and licences',
       'Get listed',
       'Correct a listing',
@@ -215,10 +215,10 @@ test.describe('about page', () => {
     await expect(page.locator('main .facts')).toContainText(String(data.companies.length));
   });
 
-  test('says how the search uses AI', async ({ page }) => {
+  test('says how the search works', async ({ page }) => {
     await page.goto('/about');
-    const ai = page.locator('section', { has: page.getByRole('heading', { name: 'How the search uses AI' }) });
-    await expect(ai).toContainText('An AI model (Claude, from Anthropic) turns the words you type into filters.');
+    const ai = page.locator('section', { has: page.getByRole('heading', { name: 'How the search works' }) });
+    await expect(ai).toContainText('Tally looks for the words you type in company names, summaries and capability tags.');
     await expect(ai).toContainText('Tally does not keep what you type.');
   });
 

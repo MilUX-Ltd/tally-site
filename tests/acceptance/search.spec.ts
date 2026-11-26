@@ -83,7 +83,7 @@ test('falls back to keyword search and says so', async ({ page }) => {
   await searchBox(page).fill('counter drone');
   await searchBox(page).press('Enter');
 
-  await expect(searchStatus(page)).toContainText(/could not turn that into filters/i);
+  await expect(searchStatus(page)).toContainText(/searched company names, summaries and tags for/i);
   await expect.poll(() => params(page.url()).get('q')).toBe('counter drone');
   await expect(page.locator('#result-count')).toContainText('1 company');
   await matrixView(page);
@@ -115,7 +115,7 @@ test('a failing search route still gives a keyword search', async ({ page }) => 
   await waitForMap(page);
   await searchBox(page).fill('photonics');
   await searchBox(page).press('Enter');
-  await expect(searchStatus(page)).toContainText(/could not turn that into filters/i);
+  await expect(searchStatus(page)).toContainText(/searched company names, summaries and tags for/i);
   await matrixView(page);
   await expect.poll(() => rowNames(page)).toEqual(['Example Photonics']);
   await expectNoAxeViolations(page);

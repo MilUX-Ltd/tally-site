@@ -107,7 +107,7 @@ export default function SearchForm({ compact, busy, keywords, place, radii, with
         ))}
       </datalist>
       <p id="search-hint" class={compact ? 'vh' : 'search-hint'}>
-        An AI model (Claude, from Anthropic) turns your words into filters. Tally does not keep what you type. For Near, try BS16, Bristol or a defence site such as RAF Brize Norton; we send a postcode or town to postcodes.io to find it.
+        Tally looks for your words in company names, summaries and tags, and does not keep what you type. For Near, try BS16, Bristol or a defence site such as RAF Brize Norton; we send a postcode or town to postcodes.io to find it.
       </p>
     </form>
   );
