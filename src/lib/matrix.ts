@@ -1,6 +1,7 @@
 // The capability matrix: companies against top-level capabilities, grouped by
 // the taxonomy's capability groups, a page of rows at a time.
 import { isLocated } from './filters';
+import type { Country } from './scope';
 import type { Capability, Company, Group, Taxonomy } from './types';
 import type { Bbox } from './url-state';
 
@@ -37,10 +38,10 @@ export function matrixPage(companies: Company[], page: number): MatrixPage {
   return { rows: companies.slice((current - 1) * MATRIX_PAGE_SIZE, current * MATRIX_PAGE_SIZE), page: current, pages };
 }
 
-export function inBbox(company: Company, [w, s, e, n]: Bbox): boolean {
-  return isLocated(company) && company.lon >= w && company.lon <= e && company.lat >= s && company.lat <= n;
+export function inBbox(company: Company, [w, s, e, n]: Bbox, countries?: Country[]): boolean {
+  return isLocated(company, countries) && company.lon >= w && company.lon <= e && company.lat >= s && company.lat <= n;
 }
 
-export function companiesInBbox(companies: Company[], bbox: Bbox): Company[] {
-  return companies.filter((c) => inBbox(c, bbox));
+export function companiesInBbox(companies: Company[], bbox: Bbox, countries?: Country[]): Company[] {
+  return companies.filter((c) => inBbox(c, bbox, countries));
 }

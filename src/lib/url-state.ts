@@ -11,6 +11,7 @@ import { MAX_QUERY_LENGTH } from './search';
 import { DEFAULT_NEAR_RADIUS, inUk, isNearRadius, isPlaceName, type NearRadius, type Place } from './near';
 import { DEFAULT_RADIUS, isRadius, type Radius } from './sites';
 import type { TallyData } from './types';
+import { DEFAULT_SCOPE, isScopeValue, regionChoices, scopeBounds, scopeCountries, UNITED_KINGDOM } from './scope';
 import { fyFromParam, fyParam } from './mod-spend';
 
 export interface MapPosition {
@@ -23,6 +24,10 @@ export interface MapPosition {
 export type Bbox = [number, number, number, number];
 
 export interface ViewState {
+  /** Where the explorer looks: 'gb' (the default), a live country's lower-case code, 'europe' or 'north-america'. */
+  scope: string;
+  /** Across several countries, the countries chosen (lower-case codes); the region filter's place. */
+  countries: string[];
   filters: Filters;
   /** Map centre and zoom; null means the default UK view. */
   map: MapPosition | null;
@@ -79,12 +84,14 @@ export type View = 'map' | 'list' | 'matrix' | 'money';
 export type CapMatch = 'any' | 'all';
 
 export function defaultState(): ViewState {
-  return { filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '', flat: false, view: 'map', myear: null, mmeasure: 'awards', mfy: null };
+  return { scope: DEFAULT_SCOPE, countries: [], filters: emptyFilters(), map: null, cell: null, sel: [], area: null, matrix: { group: null, page: 1 }, page: 1, list: [], capMatch: 'any', month: null, site: null, radius: DEFAULT_RADIUS, near: null, within: DEFAULT_NEAR_RADIUS, sites: false, clusters: false, onTop: false, cluster: null, q: '', flat: false, view: 'map', myear: null, mmeasure: 'awards', mfy: null };
 }
 
 const SLUG = /^[a-z0-9]+(?:[-/][a-z0-9]+)*$/;
 const ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const REGION = /^[A-Za-z]+(?: [A-Za-z]+)*$/;
+/** Letters (in any alphabet) and single spaces: "London", "Møre og Romsdal". */
+const REGION = /^\p{L}+(?: \p{L}+)*$/u;
+const COUNTRY = /^[a-z]{2}$/;
 const CELL = /^8[0-9a-f]{14}$/;
 const CLUSTER = /^[A-Za-z]{2,20}$/;
 const MAX_ITEMS = 200;
@@ -132,6 +139,9 @@ export function keywordText(value: string | null): string {
 export function fromQuery(query: string): ViewState {
   const p = new URLSearchParams(query.startsWith('?') ? query.slice(1) : query);
   const state = defaultState();
+  const scope = p.get('scope');
+  if (isScopeValue(scope)) state.scope = scope;
+  state.countries = list(p.get('country'), COUNTRY);
   for (const facet of FACETS) state.filters[facet] = list(p.get(facet), PATTERN[facet]);
 
   const m = numbers(p.get('map'), '/', 3);
@@ -160,11 +170,13 @@ export function fromQuery(query: string): ViewState {
   if (site && ID.test(site)) state.site = site;
   const radius = Number(p.get('radius'));
   if (/^\d+$/.test(p.get('radius') ?? '') && isRadius(radius)) state.radius = radius;
-  // A place needs both its name and its point, inside the UK. One location
-  // filter at a time: with a site chosen, the place is dropped.
+  // A place needs both its name and its point: inside the UK for the UK
+  // scope; inside another scope's bounds, checked once the data is loaded. One
+  // location filter at a time: with a site chosen, the place is dropped.
   const place = p.get('near');
   const at = numbers(p.get('at'), ',', 2);
-  if (!state.site && place && isPlaceName(place) && at && inUk(at[0], at[1])) state.near = { name: place, lat: round(at[0], 4), lon: round(at[1], 4) };
+  const placed = at && (state.scope === DEFAULT_SCOPE ? inUk(at[0], at[1]) : validLat(at[0]) && validLon(at[1]));
+  if (!state.site && place && isPlaceName(place) && at && placed) state.near = { name: place, lat: round(at[0], 4), lon: round(at[1], 4) };
   const within = Number(p.get('within'));
   if (/^\d+$/.test(p.get('within') ?? '') && isNearRadius(within)) state.within = within;
   if (p.get('sites') === '1') state.sites = true;
@@ -193,6 +205,8 @@ const enc = (v: string) => encodeURIComponent(v).replace(/%2C/gi, ',').replace(/
 export function toQuery(state: ViewState): string {
   const parts: string[] = [];
   const add = (key: string, value: string) => parts.push(`${key}=${enc(value)}`);
+  if (state.scope !== DEFAULT_SCOPE) add('scope', state.scope);
+  if (state.countries.length) add('country', state.countries.join(','));
   for (const facet of FACETS) if (state.filters[facet].length) add(facet, state.filters[facet].join(','));
   if (state.map) add('map', [fmt(state.map.zoom, 2), fmt(state.map.lat, 5), fmt(state.map.lon, 5)].join('/'));
   if (state.cell) add('cell', state.cell);
@@ -244,10 +258,15 @@ export function roundPosition(position: MapPosition): MapPosition {
 /** Drops values the data does not know: unknown capabilities, companies, groups and so on. */
 export function sanitiseState(state: ViewState, data: TallyData): ViewState {
   const t = data.taxonomy;
+  const countries = data.countries ?? [UNITED_KINGDOM];
+  // A scope must be live in the data; otherwise the explorer opens on the UK.
+  const scope = state.scope !== DEFAULT_SCOPE && scopeCountries(state.scope, countries).length ? state.scope : DEFAULT_SCOPE;
+  const places = regionChoices(scope, countries);
   const known: Record<Facet, Set<string>> = {
     cap: new Set(t.capabilities.map((c) => c.slug)),
     size: new Set(t.sizes.map((o) => o.slug)),
-    region: new Set(t.regions.map((o) => o.slug)),
+    // The UK keeps the taxonomy's regions; another country offers its own.
+    region: new Set(scope === DEFAULT_SCOPE ? t.regions.map((o) => o.slug) : places.facet === 'region' ? places.options.map((o) => o.slug) : []),
     fw: new Set(t.frameworks.map((o) => o.slug)),
     accr: new Set(t.accreditations.map((o) => o.slug)),
     mbr: new Set(t.memberships.map((o) => o.slug)),
@@ -257,7 +276,12 @@ export function sanitiseState(state: ViewState, data: TallyData): ViewState {
   for (const facet of FACETS) filters[facet] = state.filters[facet].filter((v) => known[facet].has(v));
   const group = state.matrix.group && t.groups.some((g) => g.slug === state.matrix.group) ? state.matrix.group : null;
   const capMatch = filters.cap.length >= 2 ? state.capMatch : 'any';
-  return { ...state, filters, capMatch, sel: state.sel.filter((id) => ids.has(id)), list: state.list.filter((id) => ids.has(id)), matrix: { ...state.matrix, group } };
+  const chosen = places.facet === 'country' ? new Set(places.options.map((o) => o.slug)) : new Set<string>();
+  const [w, s, e, n] = scopeBounds(scope, countries);
+  // A place from a link must lie inside the scope: the UK, or the scope's countries.
+  const inside = (lat: number, lon: number) => (scope === DEFAULT_SCOPE ? inUk(lat, lon) : lon >= w && lon <= e && lat >= s && lat <= n);
+  const near = state.near && !inside(state.near.lat, state.near.lon) ? null : state.near;
+  return { ...state, scope, countries: state.countries.filter((c) => chosen.has(c)), near, filters, capMatch, sel: state.sel.filter((id) => ids.has(id)), list: state.list.filter((id) => ids.has(id)), matrix: { ...state.matrix, group } };
 }
 
 /** Drops a chosen site the defence sites dataset does not know. */

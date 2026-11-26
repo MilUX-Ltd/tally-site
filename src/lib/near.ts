@@ -155,3 +155,45 @@ export async function findPlace(text: string, fetcher: typeof fetch = fetch): Pr
   if (!inUk(found.lat, found.lon)) return { kind: 'outside' };
   return { kind: 'found', place: { name: found.name, lat: round4(found.lat), lon: round4(found.lon) } };
 }
+
+// Outside the UK there is no free geocoder to ask, so a typed place is found
+// in Tally's own data: a town the companies in view give as the first part of
+// their headquarters, at the middle of their points. Nothing leaves the
+// browser.
+
+interface Placed {
+  hq: string;
+  lat: number | null;
+  lon: number | null;
+  location_source: string;
+}
+
+/** A town from the companies that give it, at the mean of their points, or null. */
+export function placeFromData(text: string, companies: Placed[]): Place | null {
+  const value = typeof text === 'string' ? text.replace(/\s+/g, ' ').trim() : '';
+  if (!isPlaceName(value)) return null;
+  const q = fold(value);
+  let name = '';
+  const points: Array<[number, number]> = [];
+  for (const c of companies) {
+    if (typeof c.lat !== 'number' || typeof c.lon !== 'number' || c.location_source === 'region') continue;
+    const town = (c.hq || '').split(',')[0].trim();
+    if (!town || fold(town) !== q || !isPlaceName(town)) continue;
+    name ||= town;
+    points.push([c.lat, c.lon]);
+  }
+  if (!points.length) return null;
+  const mean = (i: 0 | 1) => points.reduce((sum, p) => sum + p[i], 0) / points.length;
+  return { name, lat: round4(mean(0)), lon: round4(mean(1)) };
+}
+
+/**
+ * Finds a typed place for the explorer's scope: postcodes.io for the UK, and
+ * Tally's own data (the companies passed in) everywhere else.
+ */
+export async function findPlaceInScope(text: string, scope: string, companies: Placed[], fetcher: typeof fetch = fetch): Promise<FindResult> {
+  if (scope === 'gb') return findPlace(text, fetcher);
+  if (readPlaceQuery(text).kind === 'invalid') return { kind: 'invalid' };
+  const place = placeFromData(text, companies);
+  return place ? { kind: 'found', place } : { kind: 'not-found' };
+}

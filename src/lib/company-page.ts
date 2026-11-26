@@ -2,7 +2,9 @@
 // location and the small static map, titles and descriptions, the shortlist
 // link and the sitemap. Plain TypeScript with no framework imports; the page
 // (src/pages/companies/[slug].astro) only renders what this returns.
+import { countryMap, hasCountryMap, projectCountry } from './country-map';
 import { isLocated } from './filters';
+import { countryOf, type Country } from './scope';
 import { UK_BOUNDS } from './map-config';
 import { addToShortlist } from './shortlist';
 import { distanceMiles, type Site } from './sites';
@@ -233,13 +235,16 @@ function townOf(company: Company): string[] {
     .filter((part) => part && !skip.has(part.toLowerCase()));
 }
 
-export function companyLocation(company: Company): CompanyLocation {
+export function companyLocation(company: Company, countries?: Country[]): CompanyLocation {
   const overseas = Boolean(company.country) || company.region === 'Overseas';
+  // A company in a live country other than the UK is drawn on its own country's map.
+  const abroad = countries ? companyLocator(company, countries) : null;
   if (overseas) {
     const country = company.country;
     const SHORT: Record<string, string[]> = { 'United States': ['USA', 'US', 'United States of America'], 'United Kingdom': ['UK'] };
     const named = (hq: string, c: string) => hq.includes(c) || (SHORT[c] ?? []).some((s) => hq.split(',').map((p) => p.trim()).includes(s));
     const text = company.hq && (!country || named(company.hq, country)) ? company.hq : [company.hq, country].filter(Boolean).join(', ');
+    if (abroad?.kind === 'point') return { text: text || 'Outside the UK', point: { x: abroad.x, y: abroad.y }, note: '' };
     return { text: text || 'Outside the UK', point: null, note: 'Based outside the UK, so not on the UK map.' };
   }
   if (company.location_source === 'region') {
@@ -303,11 +308,49 @@ export type Locator =
       window: { x: number; y: number; size: number };
       /** The 25 mile ring around the point, in map units: not quite a circle, because the map is drawn for the UK's middle latitude. */
       ring: { rx: number; ry: number };
+      /** For a company in a live country other than the UK: its country's outline and that map's size. Absent for the UK (/maps/uk.svg). */
+      map?: string;
+      width?: number;
+      height?: number;
+      /** The country's name, for the text alternative. */
+      country?: string;
     }
   | { kind: 'region'; region: string; href: string }
   | { kind: 'none' };
 
-export function companyLocator(company: Company): Locator {
+const coordinates = (lat: number, lon: number) => ({
+  north: `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? 'N' : 'S'}`,
+  east: `${Math.abs(lon).toFixed(2)}°${lon >= 0 ? 'E' : 'W'}`,
+});
+
+/** A company in a live country other than the UK: its point on that country's outline, or nothing. */
+function countryLocator(company: Company, countries: Country[]): Locator {
+  const code = countryOf(company);
+  const country = countries.find((c) => c.code === code && c.live);
+  if (!country || !hasCountryMap(code) || !isLocated(company, [country])) return { kind: 'none' };
+  const size = countryMap(code);
+  const { x, y } = projectCountry(code, company.lon, company.lat);
+  if (x <= 0 || y <= 0 || x >= size.width || y >= size.height) return { kind: 'none' };
+  const side = round1((LOCAL_WINDOW_MILES / MILES_PER_DEGREE) * size.scale);
+  const rx = (LOCAL_RING_MILES / (MILES_PER_DEGREE * Math.cos((company.lat * Math.PI) / 180))) * size.xScale;
+  return {
+    kind: 'point',
+    x,
+    y,
+    ...coordinates(company.lat, company.lon),
+    window: { x: round1(x - side / 2), y: round1(y - side / 2), size: side },
+    ring: { rx: round1(rx), ry: round1((LOCAL_RING_MILES / MILES_PER_DEGREE) * size.scale) },
+    map: `/maps/${code.toLowerCase()}.svg`,
+    width: size.width,
+    height: size.height,
+    country: country.name,
+  };
+}
+
+/** What the company page draws. `countries` are the data's countries; without them, only the UK is drawn. */
+export function companyLocator(company: Company, countries?: Country[]): Locator {
+  const code = countryOf(company);
+  if (countries && code && code !== 'GB') return countryLocator(company, countries);
   const overseas = Boolean(company.country) || company.region === 'Overseas';
   if (overseas) return { kind: 'none' };
   if (company.location_source === 'region') {
@@ -401,8 +444,15 @@ export function shortlistHref(id: string, referrer: string, origin: string): str
 
 const xmlEscape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[c] as string);
 
-/** A sitemap (sitemaps.org 0.9) of site paths. */
+/** Refuses any path under /russia/: Russia is never shown on Tally. */
+export function assertNoRussiaPath(paths: string[]): void {
+  const bad = paths.find((p) => /(^|\/)russia(\/|$)/i.test(p));
+  if (bad) throw new Error(`refusing a Russia path (${bad}): Russia is never shown on Tally`);
+}
+
+/** A sitemap (sitemaps.org 0.9) of site paths. Refuses any Russia path. */
 export function sitemapXml(paths: string[]): string {
+  assertNoRussiaPath(paths);
   const urls = paths.map((p) => `  <url><loc>${xmlEscape(canonicalUrl(p))}</loc></url>`).join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }

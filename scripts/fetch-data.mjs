@@ -22,11 +22,15 @@ const WEB_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${WEB_REF}/we
 // in review; this switches to 'main' before merging (a build from main refuses a branch).
 const MODSPEND_REF = 'main';
 const MODSPEND_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${MODSPEND_REF}/mod-spend.json`;
+// Where countries.json is read from: the data repo's branch while the
+// country-aware card is in review; this switches to 'main' before merging (a
+// build from main refuses a branch).
+const COUNTRIES_REF = 'feature/country-aware';
+const COUNTRIES_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${COUNTRIES_REF}/countries.json`;
 
 // West, south, east, north: the UK map's bounds. Must match UK_BOUNDS in
 // src/lib/map-config.ts (a unit test checks they agree).
 export const UK_BOUNDS = [-8.7, 49.8, 1.9, 60.9];
-const inUk = (lat, lon) => lon >= UK_BOUNDS[0] && lon <= UK_BOUNDS[2] && lat >= UK_BOUNDS[1] && lat <= UK_BOUNDS[3];
 
 const str = (v) => (typeof v === 'string' ? v.trim() : '');
 const num = (v, lo, hi) => (typeof v === 'number' && Number.isFinite(v) && v >= lo && v <= hi ? v : null);
@@ -72,18 +76,92 @@ export function companyIds(companies) {
   });
 }
 
-export function slimData(raw, taxonomy) {
+// Countries (countries.json in the data repo). Russia is never shown on Tally:
+// the build refuses it as a live country and refuses any company in it.
+const COUNTRY_CODE = /^[A-Z]{2}$/;
+const COUNTRY_TEXT = /^[\p{L}][\p{L} .,'()-]{1,59}$/u;
+const BLOCS = new Set(['europe', 'north-america', 'other']);
+const NEVER = 'RU';
+const countryFail = (message) => {
+  throw new Error(`countries.json: ${message}; refusing to build`);
+};
+const validBounds = (b) =>
+  Array.isArray(b) && b.length === 4 && b.every((n) => typeof n === 'number' && Number.isFinite(n)) && -180 <= b[0] && b[0] < b[2] && b[2] <= 180 && -90 <= b[1] && b[1] < b[3] && b[3] <= 90;
+
+/** Every country in countries.json, checked, with its aliases; Russia left out. */
+function readCountries(raw) {
+  if (!raw || !Array.isArray(raw.countries)) countryFail('has no countries list');
+  const seen = new Set();
+  const out = [];
+  for (const c of raw.countries) {
+    if (!c || typeof c !== 'object') countryFail('an entry is not an object');
+    const code = c.code;
+    if (typeof code !== 'string' || !COUNTRY_CODE.test(code)) countryFail(`bad code ${JSON.stringify(code)}`);
+    if (seen.has(code)) countryFail(`${code} appears twice`);
+    seen.add(code);
+    if (typeof c.name !== 'string' || !COUNTRY_TEXT.test(c.name)) countryFail(`${code} has a bad name`);
+    const aliases = c.aliases ?? [];
+    if (!Array.isArray(aliases) || aliases.some((a) => typeof a !== 'string' || !COUNTRY_TEXT.test(a))) countryFail(`${code} has bad aliases`);
+    if (!BLOCS.has(c.bloc)) countryFail(`${code} has a bad bloc`);
+    if (typeof c.live !== 'boolean') countryFail(`${code}: live must be true or false`);
+    if (code === NEVER) {
+      if (c.live) countryFail('Russia (RU) is never live on Tally');
+      continue;
+    }
+    if ((c.live || c.bounds !== undefined) && !validBounds(c.bounds)) countryFail(`${code} has bad bounds`);
+    const regions = c.regions ?? [];
+    if (!Array.isArray(regions) || regions.some((r) => typeof r !== 'string' || !COUNTRY_TEXT.test(r)) || new Set(regions).size !== regions.length) countryFail(`${code} has bad regions`);
+    if (c.live && regions.length === 0) countryFail(`${code} is live with no regions`);
+    const entry = { code, name: c.name, bloc: c.bloc, live: c.live };
+    if (c.bounds !== undefined) entry.bounds = [...c.bounds];
+    if (regions.length) entry.regions = [...regions];
+    out.push({ ...entry, aliases: [...aliases] });
+  }
+  return out;
+}
+
+/** countries.json for the browser: each country's code, name, bloc, live flag, and a live country's bounds and regions. */
+export function slimCountries(raw) {
+  return readCountries(raw).map(({ aliases: _aliases, ...c }) => c);
+}
+
+/** The company's country code: its own, or found from its country name; GB for a company with no country. */
+function countryCodeFor(c, byName) {
+  const own = str(c.country_code).toUpperCase();
+  const name = str(c.country);
+  if (own === NEVER || /^russia/i.test(name)) throw new Error(`tally-data.json: ${str(c.name) || 'a company'} is in Russia (RU), which is never shown on Tally; refusing to build`);
+  if (own) {
+    if (!COUNTRY_CODE.test(own)) throw new Error(`tally-data.json: ${str(c.name)} has a bad country_code; refusing to build`);
+    return own;
+  }
+  if (name) return byName.get(name.toLowerCase()) ?? '';
+  return str(c.region) === 'Overseas' ? '' : 'GB';
+}
+
+export function slimData(raw, taxonomy, rawCountries) {
   if (!raw || !Array.isArray(raw.companies)) throw new Error('tally-data.json has no companies array');
+  const countries = rawCountries ? readCountries(rawCountries) : null;
+  const byName = new Map();
+  for (const c of countries ?? []) for (const n of [c.name, ...c.aliases]) byName.set(n.toLowerCase(), c.code);
+  const byCode = new Map((countries ?? []).map((c) => [c.code, c]));
   const ids = companyIds(raw.companies);
   const companies = raw.companies.map((c, i) => {
     const id = ids[i];
-    // A "region" location means the UK location is not published: never map it.
-    // Overseas companies are never mapped, and nor is any point outside the UK.
+    const code = countryCodeFor(c, byName);
+    if (countries && code && !byCode.has(code)) throw new Error(`tally-data.json: ${str(c.name)} has country_code ${code}, which countries.json does not know; refusing to build`);
+    // A "region" location means the town is not published: never map it.
+    // A point is kept only inside its own country while that country is live
+    // (the UK alone when there is no countries list); overseas companies in a
+    // country that is not live are never mapped.
     const unpublished = str(c.location_source) === 'region';
-    const overseas = Boolean(str(c.country)) || str(c.region) === 'Overseas';
-    let lat = unpublished || overseas ? null : num(c.lat, -90, 90);
-    let lon = unpublished || overseas ? null : num(c.lon, -180, 180);
-    if (lat != null && lon != null && !inUk(lat, lon)) lat = lon = null;
+    const country = countries ? byCode.get(code) : code === 'GB' ? { live: true, bounds: UK_BOUNDS } : null;
+    const placeable = !unpublished && str(c.region) !== 'Overseas' && country?.live && (countries || !str(c.country));
+    let lat = placeable ? num(c.lat, -90, 90) : null;
+    let lon = placeable ? num(c.lon, -180, 180) : null;
+    if (lat != null && lon != null) {
+      const [w, s, e, n] = country.bounds;
+      if (!(lon >= w && lon <= e && lat >= s && lat <= n)) lat = lon = null;
+    }
     return {
       id,
       name: str(c.name),
@@ -101,10 +179,13 @@ export function slimData(raw, taxonomy) {
       postcode: str(c.postcode),
       location_source: str(c.location_source),
       country: str(c.country),
+      country_code: code,
     };
   });
   companies.sort((a, b) => a.name.localeCompare(b.name, 'en-GB'));
-  return { generated: str(raw.generated), count: companies.length, taxonomy: slimTaxonomy(taxonomy), companies };
+  const out = { generated: str(raw.generated), count: companies.length, taxonomy: slimTaxonomy(taxonomy), companies };
+  if (countries) out.countries = countries.map(({ aliases: _aliases, ...c }) => c);
+  return out;
 }
 
 // Company page text: two sections of each company's markdown body and the
@@ -729,6 +810,7 @@ async function main() {
   assertDataRef('companies-house.json', CH_REF, process.env.GITHUB_REF, fixture);
   assertDataRef('websites.json', WEB_REF, process.env.GITHUB_REF, fixture);
   assertDataRef('mod-spend.json', MODSPEND_REF, process.env.GITHUB_REF, fixture);
+  assertDataRef('countries.json', COUNTRIES_REF, process.env.GITHUB_REF, fixture);
   const read = (name) => JSON.parse(readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8'));
   const names = ['tally-data.json', 'taxonomy.json', 'clusters.json', 'events.json', 'opportunities.json'];
   const [raw, taxonomy, rawClusters, rawEvents, rawOpportunities] = fixture
@@ -739,7 +821,8 @@ async function main() {
   if (fixture) raw.companies = [...raw.companies, ...read('tally-data-closed.json').companies];
   const ch = slimCompaniesHouse(fixture ? read('companies-house.json') : await fetchJson(CH_URL), moneyIds(raw));
   // Closed companies leave the directory (D-iyz0k); their pages are built from .tally/closed.json.
-  const { open, closed: closedCompanies } = withoutClosed(slimData(raw, taxonomy), ch);
+  const rawCountries = fixture ? read('countries.json') : await fetchJson(COUNTRIES_URL);
+  const { open, closed: closedCompanies } = withoutClosed(slimData(raw, taxonomy, rawCountries), ch);
   // Dead websites lose their link; moved pages link to the home page (D-kzifn).
   const web = slimWebsites(fixture ? read('websites.json') : await fetchJson(WEB_URL), moneyIds(raw));
   const data = applyWebsites(open, web);

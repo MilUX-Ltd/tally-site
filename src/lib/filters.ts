@@ -1,7 +1,7 @@
 // Filter logic. Within a facet, values are alternatives (any); facets combine
 // (all). A capability also matches its sub-capabilities ("cyber" matches
 // "cyber/pen-testing"), but not the other way round.
-import { UK_BOUNDS } from './map-config';
+import { countryOf, UNITED_KINGDOM, type Country } from './scope';
 import type { Company } from './types';
 
 export interface Filters {
@@ -49,16 +49,21 @@ export function filterCompanies(companies: Company[], filters: Filters): Company
 }
 
 /**
- * A company is drawn on the UK map only when it has a point, is not an
- * overseas company, its location is not region-level only, and the point is inside the UK bounds. This is the guard
- * that keeps overseas companies off the map even if the data carries a point.
+ * A company is drawn on the map only when it has a point, its location is not
+ * region-level only, its own country is one of the countries in view (the UK
+ * unless the explorer's scope says otherwise) and is live, and the point is
+ * inside that country's bounds. This is the guard that keeps overseas
+ * companies off the map even if the data carries a point.
  */
-export function isLocated(company: Company): company is Company & { lat: number; lon: number } {
+export function isLocated(company: Company, countries: Country[] = [UNITED_KINGDOM]): company is Company & { lat: number; lon: number } {
   const { lat, lon } = company;
   if (typeof lat !== 'number' || typeof lon !== 'number') return false;
-  if (company.country || company.region === 'Overseas') return false;
-  // A region-level location means the UK location is not published.
+  if (company.region === 'Overseas') return false;
+  // A region-level location means the company's town is not published.
   if (company.location_source === 'region') return false;
-  const [w, s, e, n] = UK_BOUNDS;
+  const code = countryOf(company);
+  const country = countries.find((c) => c.code === code && c.live && c.bounds);
+  if (!country?.bounds) return false;
+  const [w, s, e, n] = country.bounds;
   return lon >= w && lon <= e && lat >= s && lat <= n;
 }

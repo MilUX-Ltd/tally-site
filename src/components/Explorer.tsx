@@ -20,7 +20,8 @@ import { clusterLabels, clusterMembers, eventMarkers, legendEntries, rankedRegio
 import { activeFilterCount, emptyFilters, FACETS, filterCompanies, isLocated, type Facet } from '../lib/filters';
 import { monthLabel } from '../lib/history';
 import { companiesInBbox } from '../lib/matrix';
-import { findPlace, isNearRadius, NEAR_RADII } from '../lib/near';
+import { findPlaceInScope, isNearRadius, NEAR_RADII } from '../lib/near';
+import { countryName, countryOf, DEFAULT_SCOPE, inScope, regionChoices, scopeBounds, scopeCountries, showsCountry, UNITED_KINGDOM } from '../lib/scope';
 import { askSearch, keywordSearch, readSearchAnswer } from '../lib/search';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
 import { chosenYear, defaultYear, overseasRows, regionRows, type MoneyData } from '../lib/money';
@@ -234,6 +235,25 @@ export default function Explorer() {
 
   const update = (change: Partial<ViewState>) => setState((s) => ({ ...s, ...change }));
 
+  // The scope: the UK (the default, exactly as before country-aware Tally),
+  // one other live country, or a bloc of live countries. Outside the UK scope
+  // only the scope's companies are listed and only they are drawn.
+  const countries = useMemo(() => data?.countries ?? [UNITED_KINGDOM], [data]);
+  const ukScope = state.scope === DEFAULT_SCOPE;
+  const drawn = useMemo(() => (ukScope ? [countries.find((c) => c.code === 'GB' && c.live && c.bounds) ?? UNITED_KINGDOM] : scopeCountries(state.scope, countries)), [ukScope, state.scope, countries]);
+  const placeChoices = useMemo(() => (ukScope ? undefined : regionChoices(state.scope, countries)), [ukScope, state.scope, countries]);
+  const scoped = useMemo(() => {
+    if (!data) return [];
+    if (ukScope) return data.companies;
+    const chosen = new Set(state.countries);
+    return data.companies.filter((c) => inScope(c, state.scope, countries) && (!chosen.size || chosen.has(countryOf(c).toLowerCase())));
+  }, [data, ukScope, state.scope, state.countries, countries]);
+  const toggleCountry = (code: string, on: boolean) =>
+    setState((s) => {
+      const rest = s.countries.filter((c) => c !== code);
+      return { ...s, countries: on ? [...rest, code] : rest, page: 1, matrix: { ...s.matrix, page: 1 } };
+    });
+
   // Overlap: with two or more capabilities and "all" chosen, only places where
   // every capability is found. The hexagon module does the work; it loads with
   // the map, or here if the map has not loaded it yet.
@@ -243,10 +263,10 @@ export default function Explorer() {
   }, [overlapOn, binning]);
   const facetFiltered = useMemo(() => {
     if (!data) return [];
-    const all = filterCompanies(data.companies, state.filters);
+    const all = filterCompanies(scoped, state.filters);
     const byCluster = (cluster && clusterMembers(all, cluster)) || all;
     return state.q ? keywordSearch(byCluster, state.q, data.taxonomy) : byCluster;
-  }, [data, state.filters, cluster, state.q]);
+  }, [data, scoped, state.filters, cluster, state.q]);
   const legend = useMemo(
     () => (data && clustersData && state.clusters ? legendEntries(clustersData.clusters, data.companies, upcomingEvents) : null),
     [data, clustersData, upcomingEvents, state.clusters],
@@ -258,32 +278,32 @@ export default function Explorer() {
   const overlapPending = overlapOn && !binning;
   const lastFiltered = useRef<Company[] | null>(null);
   const filtered = useMemo(() => {
-    const near = location ? companiesNearSite(facetFiltered, location, location.miles) : facetFiltered;
+    const near = location ? companiesNearSite(facetFiltered, location, location.miles, drawn) : facetFiltered;
     if (!overlapOn) return near;
     if (!binning) return lastFiltered.current ?? near;
-    return binning.overlapCompanies(near, state.filters.cap);
-  }, [overlapOn, binning, facetFiltered, state.filters.cap, location]);
+    return binning.overlapCompanies(near, state.filters.cap, binning.OVERLAP_RESOLUTION, drawn);
+  }, [overlapOn, binning, facetFiltered, state.filters.cap, location, drawn]);
   lastFiltered.current = filtered;
-  const onMap = useMemo(() => filtered.filter(isLocated).length, [filtered]);
+  const onMap = useMemo(() => filtered.filter((c) => isLocated(c, drawn)).length, [filtered, drawn]);
   const inCluster = cluster?.membership ? ` in the ${cluster.name} cluster` : '';
   const within = `${inCluster}${location ? ` within ${location.miles} miles of ${location.name}` : ''}`;
   const places = useMemo(
-    () => (overlapOn && binning ? binning.binCompanies(filtered, binning.OVERLAP_RESOLUTION).length : 0),
-    [overlapOn, binning, filtered],
+    () => (overlapOn && binning ? binning.binCompanies(filtered, binning.OVERLAP_RESOLUTION, drawn).length : 0),
+    [overlapOn, binning, filtered, drawn],
   );
 
   const areaCompanies = useMemo(() => {
     if (state.cell) {
-      const ids = new Set(binning ? binning.companiesInCell(filtered, state.cell) : []);
+      const ids = new Set(binning ? binning.companiesInCell(filtered, state.cell, drawn) : []);
       return filtered.filter((c) => ids.has(c.id));
     }
     if (state.sel.length) {
       const ids = new Set(state.sel);
       return filtered.filter((c) => ids.has(c.id));
     }
-    if (state.area) return companiesInBbox(filtered, state.area);
+    if (state.area) return companiesInBbox(filtered, state.area, drawn);
     return null;
-  }, [state.cell, state.sel, state.area, binning, filtered]);
+  }, [state.cell, state.sel, state.area, binning, filtered, drawn]);
 
   const toggle = (facet: Facet, value: string, on: boolean) =>
     setState((s) => {
@@ -373,7 +393,7 @@ export default function Explorer() {
           // The distance showing in Within carries over to the site.
           change = { ...change, ...reset, site: named.id, radius: asRadius(site ? state.radius : state.within), near: null };
         } else {
-          const result = await findPlace(nearText);
+          const result = await findPlaceInScope(nearText, state.scope, scoped);
           if (result.kind === 'found') change = { ...change, ...reset, near: result.place, site: null };
           else if (result.kind === 'invalid') messages.push('Type a full postcode, the first part of one, a town or city name, or a defence site, using letters, numbers, spaces, hyphens, full stops and apostrophes.');
           else if (result.kind === 'not-found') messages.push(`We could not find ${nearText}. Try a full postcode, the first part of one, or a town or city name.`);
@@ -450,12 +470,12 @@ export default function Explorer() {
     const from = location;
     const all = (showList ? shortlisted : narrowed).map((company) => ({
       company,
-      miles: from && isLocated(company) ? distanceMiles(from.lat, from.lon, company.lat, company.lon) : null,
+      miles: from && isLocated(company, drawn) ? distanceMiles(from.lat, from.lon, company.lat, company.lon) : null,
     }));
     if (showList) return all;
     const byName = (a: Hit, b: Hit) => a.company.name.localeCompare(b.company.name, 'en-GB');
     return all.sort((a, b) => (a.miles !== null && b.miles !== null ? a.miles - b.miles || byName(a, b) : byName(a, b)));
-  }, [showList, shortlisted, narrowed, location]);
+  }, [showList, shortlisted, narrowed, location, drawn]);
   const labels = useMemo(() => new Map((data?.taxonomy.capabilities ?? []).map((c) => [c.slug, c.label])), [data]);
 
   // The count in words. #result-count always holds it; the status line says it when it changes.
@@ -486,19 +506,21 @@ export default function Explorer() {
     if (!data) return [];
     const out: Chip[] = [];
     const t = data.taxonomy;
-    const options: Record<Facet, Array<{ slug: string; label: string }>> = { cap: t.capabilities, size: t.sizes, region: t.regions, fw: t.frameworks, accr: t.accreditations, mbr: t.memberships };
+    const regionOptions = placeChoices?.facet === 'region' ? placeChoices.options : t.regions;
+    const options: Record<Facet, Array<{ slug: string; label: string }>> = { cap: t.capabilities, size: t.sizes, region: regionOptions, fw: t.frameworks, accr: t.accreditations, mbr: t.memberships };
     if (state.q) out.push({ key: 'q', label: `Keyword: ${state.q}`, onRemove: () => update({ q: '', page: 1 }) });
     for (const facet of FACETS) {
       for (const value of state.filters[facet]) {
         out.push({ key: `${facet}:${value}`, label: options[facet].find((o) => o.slug === value)?.label ?? value, onRemove: () => toggle(facet, value, false) });
       }
     }
+    for (const code of state.countries) out.push({ key: `country:${code}`, label: countryName(code.toUpperCase(), countries), onRemove: () => toggleCountry(code, false) });
     if (overlapOn) out.push({ key: 'capmatch', label: 'All in the same area', onRemove: () => update({ capMatch: 'any', cell: null, page: 1 }) });
     if (location) out.push({ key: 'place', label: `Within ${location.miles} miles of ${location.name}`, onRemove: () => update({ near: null, site: null, cell: null, sel: [], page: 1 }) });
     if (cluster) out.push({ key: 'cluster', label: `${cluster.name} cluster`, onRemove: () => chooseCluster(null) });
     if (areaCompanies) out.push({ key: 'area', label: 'Map area', onRemove: () => update({ cell: null, sel: [], area: null, page: 1 }) });
     return out;
-  }, [data, state.q, state.filters, overlapOn, location, cluster, areaCompanies !== null]);
+  }, [data, state.q, state.filters, overlapOn, location, cluster, areaCompanies !== null, placeChoices, state.countries, countries]);
   const clearAll = () => {
     searchedFor.current = '';
     setBrowsing(false);
@@ -529,8 +551,9 @@ export default function Explorer() {
     }
     const feature = regions?.features.find((f) => f.properties.id === state.cluster);
     if (feature) return { key: `cluster:${feature.properties.id}`, bounds: regionBounds(feature) as Bbox };
+    if (!ukScope) return { key: `scope:${state.scope}`, bounds: scopeBounds(state.scope, countries) };
     return { key: 'uk', bounds: null };
-  }, [settled, ring, regions, state.cluster]);
+  }, [settled, ring, regions, state.cluster, ukScope, state.scope, countries]);
 
   const pick = (change: Partial<ViewState>) => {
     setShowList(false);
@@ -803,6 +826,7 @@ export default function Explorer() {
                   tools={shortlistTools}
                   empty={empty}
                   focus={focusPanel}
+                  countryOf={showsCountry(state.scope, countries) ? (c) => countryName(countryOf(c), countries) : null}
                 />
               ) : (
                 <section class="matrix" aria-labelledby="matrix-heading">
@@ -834,7 +858,7 @@ export default function Explorer() {
                 actions={panelActions}
                 tools={shortlistTools}
               >
-                {mode === 'list' && data && <OverseasList companies={facetFiltered} overlap={overlapOn} actions={shortlistButton} />}
+                {mode === 'list' && data && ukScope && <OverseasList companies={facetFiltered} overlap={overlapOn} actions={shortlistButton} />}
               </ResultsPanel>
             )}
           </>
@@ -874,6 +898,7 @@ export default function Explorer() {
 
       <MapView
         companies={showList ? shortlisted : filtered}
+        countries={drawn}
         sites={state.sites ? (sitesData?.sites ?? null) : site ? [site] : null}
         chosenSite={site?.id ?? null}
         ring={ring}
@@ -937,6 +962,9 @@ export default function Explorer() {
               taxonomy={data.taxonomy}
               filters={state.filters}
               reveal={reveal}
+              places={placeChoices}
+              countries={state.countries}
+              onCountry={toggleCountry}
               onToggle={(facet, value, on) => {
                 searchedFor.current = '';
                 toggle(facet, value, on);

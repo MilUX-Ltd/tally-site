@@ -13,16 +13,19 @@ interface Props {
   sites: NearSite[];
 }
 const { locator, place, sites } = Astro.props;
-const { width, height } = UK_MAP;
-const { lats, lons } = graticule();
 const point = locator.kind === 'point' ? locator : null;
+// A company in a live country other than the UK is drawn on that country's outline, without the UK's graticule or local area.
+const abroad = point?.map ? point : null;
+const width = abroad?.width ?? UK_MAP.width;
+const height = abroad?.height ?? UK_MAP.height;
+const { lats, lons } = abroad ? { lats: [], lons: [] } : graticule();
 const win = point?.window;
 const inWindow = win ? sites.filter((s) => s.x > win.x + 1 && s.x < win.x + win.size - 1 && s.y > win.y + 1 && s.y < win.y + win.size - 1) : [];
 ---
 <div class:list={['locator', { 'locator-region': !point }]}>
   <svg class="locator-uk" viewBox={`0 0 ${width} ${height}`} role="img" aria-labelledby="map-title">
-    <title id="map-title">{point ? `Map of the UK with a marker at ${place}` : `Map of the UK with ${locator.kind === 'region' ? locator.region : place} shaded`}</title>
-    <image href="/maps/uk.svg" width={width} height={height} />
+    <title id="map-title">{point ? `Map of ${abroad?.country ?? 'the UK'} with a marker at ${place}` : `Map of the UK with ${locator.kind === 'region' ? locator.region : place} shaded`}</title>
+    <image href={abroad?.map ?? '/maps/uk.svg'} width={width} height={height} />
     {locator.kind === 'region' && <image href={locator.href} width={width} height={height} />}
     <g class="locator-scale" aria-hidden="true">
       {lats.map((l) => <text x="3" y={l.y - 2.5}>{l.label}</text>)}
@@ -36,7 +39,12 @@ const inWindow = win ? sites.filter((s) => s.x > win.x + 1 && s.x < win.x + win.
       </>
     )}
   </svg>
-  {point && win && (
+  {point && win && abroad && (
+    <div class="locator-side">
+      <slot />
+    </div>
+  )}
+  {point && win && !abroad && (
     <div class="locator-side">
       <svg class="locator-local" viewBox={`${win.x} ${win.y} ${win.size} ${win.size}`} aria-hidden="true" focusable="false">
         <image href="/maps/uk-local.svg" width={width} height={height} />

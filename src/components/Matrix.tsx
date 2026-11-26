@@ -31,11 +31,13 @@ interface Props {
   empty: ComponentChildren;
   /** Goes up by one when the heading should take focus (the view switch, the shortlist opening). */
   focus: number;
+  /** Across several countries: each company's country, shown in its own column. */
+  countryOf?: ((company: Company) => string) | null;
 }
 
 const classes = (...names: Array<string | false>) => names.filter(Boolean).join(' ') || undefined;
 
-export default function Matrix({ taxonomy, companies, selectedCaps, group, page, scope: which, shortlisted, onShortlist, onToggleCap, onGroup, onPage, actions, tools, empty, focus }: Props) {
+export default function Matrix({ taxonomy, companies, selectedCaps, group, page, scope: which, shortlisted, onShortlist, onToggleCap, onGroup, onPage, actions, tools, empty, focus, countryOf }: Props) {
   const heading = useRef<HTMLHeadingElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const groups = useMemo(() => matrixColumns(taxonomy, group), [taxonomy, group]);
@@ -94,13 +96,13 @@ export default function Matrix({ taxonomy, companies, selectedCaps, group, page,
         ) : (
           <table>
             <caption class="vh">Compare capabilities: companies by capability</caption>
-            <colgroup span={2} />
+            <colgroup span={countryOf ? 3 : 2} />
             {groups.map((g) => (
               <colgroup key={g.group.slug} span={g.columns.length} />
             ))}
             <thead>
               <tr>
-                <td class="corner" colSpan={2}>
+                <td class="corner" colSpan={countryOf ? 3 : 2}>
                   <span class="matrix-key">
                     <span class="mark" aria-hidden="true" /> Offers the capability
                   </span>
@@ -115,6 +117,11 @@ export default function Matrix({ taxonomy, companies, selectedCaps, group, page,
                 <th scope="col" class="company-head">
                   Company
                 </th>
+                {countryOf && (
+                  <th scope="col" class="country-head">
+                    Country
+                  </th>
+                )}
                 <th scope="col" class="list-head">
                   <span class="vh">Shortlist</span>
                 </th>
@@ -137,6 +144,7 @@ export default function Matrix({ taxonomy, companies, selectedCaps, group, page,
                     <th scope="row">
                       <a href={companyPath(company.id)}>{company.name}</a>
                     </th>
+                    {countryOf && <td class="country-cell">{countryOf(company)}</td>}
                     <td class="list-cell">
                       <button type="button" class={listed ? 'matrix-add is-selected' : 'matrix-add'} onClick={() => onShortlist(company, !listed)}>
                         <span aria-hidden="true">{listed ? '✓' : '+'}</span>
