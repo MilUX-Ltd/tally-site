@@ -26,6 +26,11 @@ const MODSPEND_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${MODSPE
 // from main refuses any other).
 const COUNTRIES_REF = 'main';
 const COUNTRIES_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${COUNTRIES_REF}/countries.json`;
+// Where norway-register.json is read from: the data repo's branch while the
+// Norway card is in review; this switches to 'main' before merging (a build
+// from main refuses a branch).
+const NORWAY_REF = 'feature/norway';
+const NORWAY_URL = `https://raw.githubusercontent.com/MilUX-Ltd/tally/${NORWAY_REF}/norway-register.json`;
 
 // West, south, east, north: the UK map's bounds. Must match UK_BOUNDS in
 // src/lib/map-config.ts (a unit test checks they agree).
@@ -657,6 +662,81 @@ export function slimCompaniesHouse(raw, ids) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Norway: Norwegian Tally companies deleted from the Brønnøysund register, or
+// in bankruptcy, winding up or compulsory dissolution. Checked against the
+// contract in the data repo's docs/norway-data.md; anything outside it,
+// personal fields included, stops the build.
+// ---------------------------------------------------------------------------
+
+export const NLOD = 'Contains data under the Norwegian licence for Open Government data (NLOD) distributed by the Brønnøysund Register Centre.';
+const NO_KEYS = ['attribution', 'checked', 'closed', 'flagged', 'generated', 'not_found', 'source'];
+export const NO_CLOSED = ['deleted'];
+export const NO_FLAGGED = ['bankruptcy', 'compulsory-dissolution', 'winding-up'];
+const NO_WEIGHTS = [3, 2, 7, 6, 5, 4, 3, 2];
+
+/** A Norwegian organisation number: nine digits, the last a modulus 11 check digit. */
+export function orgNumberValid(value) {
+  if (typeof value !== 'string' || !/^\d{9}$/.test(value)) return false;
+  const remainder = NO_WEIGHTS.reduce((sum, w, i) => sum + w * Number(value[i]), 0) % 11;
+  const check = remainder === 0 ? 0 : 11 - remainder;
+  return check !== 10 && check === Number(value[8]);
+}
+
+function noFail(message) {
+  throw new Error(`norway-register.json: ${message}; refusing to build`);
+}
+function noKeys(v, keys, where) {
+  if (!isObject(v)) noFail(`${where} is not an object`);
+  for (const k of Object.keys(v)) if (!keys.includes(k)) noFail(`${where} carries a field outside the contract (${JSON.stringify(k)})`);
+  for (const k of keys) if (!(k in v)) noFail(`${where} has no ${k}`);
+}
+function noRows(list, where, statuses) {
+  if (!Array.isArray(list)) noFail(`${where} is not a list`);
+  if (list.length > CH_LIMITS.rows) noFail(`${where} has more than ${CH_LIMITS.rows} rows`);
+  for (const row of list) {
+    noKeys(row, ['brreg', 'date', 'name', 'status'], `${where} row`);
+    if (typeof row.name !== 'string' || !row.name.trim() || hasControl(row.name) || row.name.length > 200) noFail(`${where} has a row with a bad name`);
+    if (!orgNumberValid(row.brreg)) noFail(`${where} has a bad organisation number for ${row.name}`);
+    if (!statuses.includes(row.status)) noFail(`${where} ${row.name} has a status outside ${statuses.join(', ')} (${JSON.stringify(row.status)})`);
+    if (row.date !== null && !validDate(str(row.date))) noFail(`${where} ${row.name} has a bad date`);
+  }
+  return list;
+}
+
+/**
+ * Checks norway-register.json and slims it for the build: closed and flagged
+ * companies keyed by Tally id (`ids`, by name, as for Companies House), in the
+ * same shape as slimCompaniesHouse gives, so the two can be merged.
+ */
+export function slimNorwayRegister(raw, ids) {
+  noKeys(raw, NO_KEYS, 'the file');
+  if (str(raw.attribution) !== NLOD) noFail('the attribution is not the NLOD statement');
+  if (!validDate(str(raw.generated))) noFail('generated is not a date');
+  noKeys(raw.checked, ['companies', 'failed', 'found', 'not_found'], 'checked');
+  if (!Array.isArray(raw.not_found) || raw.not_found.some((n) => !orgNumberValid(n))) noFail('not_found is not a list of organisation numbers');
+  /** @type {Record<string, { status: string, date: string | null }>} */
+  const closed = {};
+  for (const row of noRows(raw.closed, 'closed', NO_CLOSED)) {
+    const id = ids.get(str(row.name));
+    if (id) closed[id] = { status: row.status, date: row.date };
+  }
+  /** @type {Record<string, { status: string, detail: null }>} */
+  const flagged = {};
+  for (const row of noRows(raw.flagged, 'flagged', NO_FLAGGED)) {
+    const id = ids.get(str(row.name));
+    if (id && !closed[id]) flagged[id] = { status: row.status, detail: null };
+  }
+  return { attribution: NLOD, closed, flagged, generated: str(raw.generated) };
+}
+
+/** Closed and flagged companies from the UK and Norwegian registers together; the UK trend is kept. */
+export function mergeStatus(ch, no) {
+  const closed = { ...ch.closed, ...no.closed };
+  const flagged = Object.fromEntries(Object.entries({ ...ch.flagged, ...no.flagged }).filter(([id]) => !closed[id]));
+  return { ...ch, closed, flagged };
+}
+
 /** The directory without its closed companies, and the closed ones for their pages. */
 export function withoutClosed(data, ch) {
   const open = data.companies.filter((c) => !ch.closed[c.id]);
@@ -810,6 +890,7 @@ async function main() {
   assertDataRef('websites.json', WEB_REF, process.env.GITHUB_REF, fixture);
   assertDataRef('mod-spend.json', MODSPEND_REF, process.env.GITHUB_REF, fixture);
   assertDataRef('countries.json', COUNTRIES_REF, process.env.GITHUB_REF, fixture);
+  assertDataRef('norway-register.json', NORWAY_REF, process.env.GITHUB_REF, fixture);
   const read = (name) => JSON.parse(readFileSync(new URL(`../tests/fixtures/${name}`, import.meta.url), 'utf8'));
   const names = ['tally-data.json', 'taxonomy.json', 'clusters.json', 'events.json', 'opportunities.json'];
   const [raw, taxonomy, rawClusters, rawEvents, rawOpportunities] = fixture
@@ -818,7 +899,11 @@ async function main() {
   // Fixture builds add the companies only the Companies House tests use, kept
   // apart so the older tests' fixture is unchanged.
   if (fixture) raw.companies = [...raw.companies, ...read('tally-data-closed.json').companies];
-  const ch = slimCompaniesHouse(fixture ? read('companies-house.json') : await fetchJson(CH_URL), moneyIds(raw));
+  // Closed and flagged companies from both registers: Companies House and Norway's.
+  const ch = mergeStatus(
+    slimCompaniesHouse(fixture ? read('companies-house.json') : await fetchJson(CH_URL), moneyIds(raw)),
+    slimNorwayRegister(fixture ? read('norway-register.json') : await fetchJson(NORWAY_URL), moneyIds(raw)),
+  );
   // Closed companies leave the directory (D-iyz0k); their pages are built from .tally/closed.json.
   const rawCountries = fixture ? read('countries.json') : await fetchJson(COUNTRIES_URL);
   const { open, closed: closedCompanies } = withoutClosed(slimData(raw, taxonomy, rawCountries), ch);
