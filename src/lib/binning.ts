@@ -2,6 +2,7 @@
 import { cellToBoundary, getResolution, isValidCell as isValidCellH3, latLngToCell } from 'h3-js';
 import { isLocated } from './filters';
 import { hasCapability } from './matrix';
+import type { Country } from './scope';
 import type { Company } from './types';
 
 /** At and above this zoom the map shows clustered pins instead of hexagons. */
@@ -27,10 +28,11 @@ export interface Bin {
   ids: string[];
 }
 
-export function binCompanies(companies: Company[], resolution: number): Bin[] {
+/** Hexagons of the located companies; `countries` are the countries in view (the UK by default). */
+export function binCompanies(companies: Company[], resolution: number, countries?: Country[]): Bin[] {
   const bins = new Map<string, Bin>();
   for (const c of companies) {
-    if (!isLocated(c)) continue;
+    if (!isLocated(c, countries)) continue;
     const cell = latLngToCell(c.lat, c.lon, resolution);
     let bin = bins.get(cell);
     if (!bin) {
@@ -69,7 +71,7 @@ export function binsToGeoJSON(bins: Bin[], colourFor: (count: number) => string 
 }
 
 /** Ids of the given companies whose point falls in an H3 cell. */
-export function companiesInCell(companies: Company[], cell: string): string[] {
+export function companiesInCell(companies: Company[], cell: string, countries?: Country[]): string[] {
   let res: number;
   try {
     res = getResolution(cell);
@@ -77,7 +79,7 @@ export function companiesInCell(companies: Company[], cell: string): string[] {
     return [];
   }
   if (res < 0) return [];
-  return companies.filter((c) => isLocated(c) && latLngToCell(c.lat, c.lon, res) === cell).map((c) => c.id);
+  return companies.filter((c) => isLocated(c, countries) && latLngToCell(c.lat, c.lon, res) === cell).map((c) => c.id);
 }
 
 export function isValidCell(cell: string): boolean {
@@ -97,12 +99,12 @@ export const OVERLAP_RESOLUTION = 5;
  * least one chosen capability, in input order. With fewer than two
  * capabilities the companies are returned unchanged.
  */
-export function overlapCompanies(companies: Company[], caps: string[], resolution = OVERLAP_RESOLUTION): Company[] {
+export function overlapCompanies(companies: Company[], caps: string[], resolution = OVERLAP_RESOLUTION, countries?: Country[]): Company[] {
   if (caps.length < 2) return companies;
   const cellOf = new Map<string, string>();
   const found = new Map<string, Set<string>>();
   for (const c of companies) {
-    if (!isLocated(c)) continue;
+    if (!isLocated(c, countries)) continue;
     const has = caps.filter((cap) => hasCapability(c, cap));
     if (!has.length) continue;
     const cell = latLngToCell(c.lat, c.lon, resolution);

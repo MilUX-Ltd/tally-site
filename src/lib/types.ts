@@ -1,4 +1,5 @@
 // Shapes of the data the browser receives from the build (scripts/fetch-data.mjs).
+import type { Country } from './scope';
 
 export interface Company {
   id: string;
@@ -17,6 +18,8 @@ export interface Company {
   postcode: string;
   location_source: string;
   country: string;
+  /** ISO 3166-1 alpha-2 code: GB for the UK; '' for an overseas company whose country is not known. */
+  country_code?: string;
 }
 
 export interface Group {
@@ -52,4 +55,6 @@ export interface TallyData {
   count: number;
   taxonomy: Taxonomy;
   companies: Company[];
+  /** The countries Tally knows, with their live flags; absent in older data, which is the UK only. */
+  countries?: Country[];
 }

@@ -8,6 +8,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import type { ExpressionSpecification, GeoJSONSource, Map as MlMap, MapGeoJSONFeature } from 'maplibre-gl';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { isLocated } from '../lib/filters';
+import type { Country } from '../lib/scope';
 import { ATTRIBUTION, FONT, STYLE_URL, UK_BOUNDS } from '../lib/map-config';
 import type { HexCollection } from '../lib/binning';
 import type { Site } from '../lib/sites';
@@ -21,6 +22,8 @@ export type { MapPosition };
 
 interface Props {
   companies: Company[];
+  /** The countries in view, whose companies are drawn; the UK when absent. */
+  countries?: Country[];
   /** Defence sites to draw, or null for none. */
   sites?: Site[] | null;
   /** The chosen site, drawn larger. */
@@ -221,10 +224,10 @@ function companyVisibility(three: boolean, money: boolean): Array<[string, 'visi
 }
 const SELECTED_COLOUR = FOREST;
 
-function pointsGeoJSON(companies: Company[]) {
+function pointsGeoJSON(companies: Company[], countries?: Country[]) {
   return {
     type: 'FeatureCollection' as const,
-    features: companies.filter(isLocated).map((c) => ({
+    features: companies.filter((c) => isLocated(c, countries)).map((c) => ({
       type: 'Feature' as const,
       geometry: { type: 'Point' as const, coordinates: [c.lon, c.lat] },
       properties: { id: c.id, name: c.name },
@@ -263,10 +266,10 @@ export default function MapView(props: Props) {
     const binning = binningRef.current;
     const el = container.current;
     if (!map || !binning || !el || !map.getSource('hexes')) return;
-    const { companies, selectedCell } = propsRef.current;
+    const { companies, selectedCell, countries } = propsRef.current;
     const resolution = propsRef.current.fixedResolution ?? binning.resolutionForZoom(map.getZoom());
     lastResolution.current = resolution;
-    const bins = binning.binCompanies(companies, resolution);
+    const bins = binning.binCompanies(companies, resolution, countries);
     const geo: HexCollection = binning.binsToGeoJSON(bins);
     const centres = geo.features.map((f) => {
       const ring = f.geometry.coordinates[0].slice(0, -1);
@@ -283,7 +286,7 @@ export default function MapView(props: Props) {
         return { ...f, properties: { cell, count, t: Math.min(1, Math.sqrt(count / max)), height: Math.sqrt(count) * unit, on: cell === selectedCell } };
       }),
     } as GeoData);
-    (map.getSource('points') as GeoJSONSource).setData(pointsGeoJSON(companies));
+    (map.getSource('points') as GeoJSONSource).setData(pointsGeoJSON(companies, countries));
     setLegend(bins.length ? 'shown' : 'empty');
     map.once('idle', () => {
       el.dataset.ready = 'true';
@@ -726,7 +729,7 @@ export default function MapView(props: Props) {
 
   useEffect(() => {
     draw();
-  }, [props.companies, props.fixedResolution, props.selectedCell]);
+  }, [props.companies, props.countries, props.fixedResolution, props.selectedCell]);
 
   useEffect(() => {
     const map = mapRef.current;

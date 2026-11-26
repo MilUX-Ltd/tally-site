@@ -1,0 +1,26 @@
+{
+  "generated": "2026-11-26",
+  "note": "Test fixture for card 7479. Only the UK is live; Norway is the fixture country, switched on inside the tests that need it.",
+  "countries": [
+    {
+      "code": "GB",
+      "name": "United Kingdom",
+      "bloc": "europe",
+      "live": true,
+      "bounds": [-8.7, 49.8, 1.9, 60.9],
+      "regions": ["North East", "North West", "Yorkshire and The Humber", "East Midlands", "West Midlands", "East of England", "London", "South East", "South West", "Scotland", "Wales", "Northern Ireland"]
+    },
+    {
+      "code": "NO",
+      "name": "Norway",
+      "bloc": "europe",
+      "live": false,
+      "bounds": [4.5, 57.9, 31.2, 71.2],
+      "regions": ["Agder", "Akershus", "Buskerud", "Finnmark", "Innlandet", "Møre og Romsdal", "Nordland", "Oslo", "Rogaland", "Telemark", "Troms", "Trøndelag", "Vestfold", "Vestland", "Østfold"]
+    },
+    { "code": "DE", "name": "Germany", "bloc": "europe", "live": false },
+    { "code": "EE", "name": "Estonia", "bloc": "europe", "live": false },
+    { "code": "US", "name": "United States", "aliases": ["USA"], "bloc": "north-america", "live": false },
+    { "code": "ZZ", "name": "Country not known", "aliases": ["Europe (country not stated)"], "bloc": "europe", "live": false }
+  ]
+}

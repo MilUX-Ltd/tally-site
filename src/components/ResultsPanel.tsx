@@ -8,6 +8,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { companyPath } from '../lib/company-page';
 import { companyPlace } from '../lib/place';
+import type { Country } from '../lib/scope';
 import type { Company } from '../lib/types';
 
 export const PAGE_SIZE = 20;
@@ -41,11 +42,13 @@ interface Props {
   children?: ComponentChildren;
   /** Goes up by one when the heading should take focus (a map pick, the shortlist opening). */
   focus: number;
+  /** The countries in view, whose located companies are on the map; the UK when absent. */
+  countries?: Country[];
 }
 
 const count = (n: number, one: string, many: string) => `${n.toLocaleString('en-GB')} ${n === 1 ? one : many}`;
 
-function Row({ hit, labels, on, onShortlist, remove }: { hit: Hit; on: boolean; remove: boolean } & Pick<Props, 'labels' | 'onShortlist'>) {
+function Row({ hit, labels, on, onShortlist, remove, countries }: { hit: Hit; on: boolean; remove: boolean } & Pick<Props, 'labels' | 'onShortlist' | 'countries'>) {
   const { company: c, miles } = hit;
   const tags = c.tags.filter((t) => labels.has(t) && !t.includes('/')).slice(0, 3);
   return (
@@ -75,7 +78,7 @@ function Row({ hit, labels, on, onShortlist, remove }: { hit: Hit; on: boolean; 
       )}
       <span class="place">
         {miles !== null && <b class="dist">{Math.round(miles)} mi</b>}
-        {companyPlace(c)}
+        {companyPlace(c, countries)}
       </span>
       {c.summary && <p>{c.summary}</p>}
       {tags.length > 0 && (
@@ -134,7 +137,7 @@ export default function ResultsPanel(p: Props) {
         ) : (
           <ul class={p.kind === 'area' ? 'rows results area' : 'rows results'} aria-label="Results">
             {shown.map((hit) => (
-              <Row key={hit.company.id} hit={hit} labels={p.labels} on={p.shortlisted(hit.company.id)} remove={p.kind === 'shortlist'} onShortlist={p.onShortlist} />
+              <Row key={hit.company.id} hit={hit} labels={p.labels} on={p.shortlisted(hit.company.id)} remove={p.kind === 'shortlist'} onShortlist={p.onShortlist} countries={p.countries} />
             ))}
           </ul>
         )}

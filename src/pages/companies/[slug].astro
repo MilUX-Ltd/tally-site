@@ -24,6 +24,7 @@ import {
 } from '../../lib/company-page';
 import { correctionMailto } from '../../lib/contact';
 import { isLocated } from '../../lib/filters';
+import { countryOf } from '../../lib/scope';
 import { companyAwards, formatMoney } from '../../lib/money';
 import { closedNote, flaggedNote } from '../../lib/companies-house';
 import { certificationChecks, closedCompanies, companiesHouse, companyTexts, defenceSites, moneyData, siteData } from '../../lib/site-data';
@@ -39,8 +40,9 @@ const { company } = Astro.props;
 const { taxonomy } = siteData();
 const text = companyTexts()[company.id] ?? { what: '', products: '', verified: null };
 const groups = capabilityTagGroups(company, taxonomy);
-const where = companyLocation(company);
-const locator = companyLocator(company);
+const countries = siteData().countries;
+const where = companyLocation(company, countries);
+const locator = companyLocator(company, countries);
 const sites = nearestSites(company, defenceSites(), 3);
 const overseas = Boolean(company.country) || company.region === 'Overseas';
 const size = sizeLabel(company, taxonomy);
@@ -56,7 +58,9 @@ const awards = companyAwards(money, company.id);
 const status = companiesHouse();
 const closed = status.closed[company.id];
 const flagged = status.flagged[company.id];
-const onMap = !closed && isLocated(company) ? `/?sel=${company.id}&map=9/${company.lat.toFixed(5)}/${company.lon.toFixed(5)}` : null;
+// A company in a live country other than the UK opens the explorer on its country.
+const abroad = locator.kind === 'point' && locator.map ? `scope=${countryOf(company).toLowerCase()}&` : '';
+const onMap = !closed && (isLocated(company) || abroad) && company.lat !== null && company.lon !== null ? `/?${abroad}sel=${company.id}&map=9/${company.lat.toFixed(5)}/${company.lon.toFixed(5)}` : null;
 const correction = correctionMailto(company.name, canonicalUrl(companyPath(company.id)));
 // The headline ends in the signal full stop unless the name already ends in punctuation.
 const stop = !/[.!?)]$/.test(company.name.trim());

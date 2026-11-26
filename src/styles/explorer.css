@@ -266,6 +266,9 @@ body:has(.find.landing) .topbar { background: transparent; border-bottom-color: 
 .matrix tbody th a:hover { text-decoration: underline; }
 .matrix td { min-width: 30px; height: 30px; text-align: center; }
 .matrix .list-cell { padding: 0 7px; background: var(--white); }
+/* Across several countries: each company's country, after the shortlist button. */
+.matrix .country-head { padding: 0 10px 9px; text-align: left; vertical-align: bottom; font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.matrix .country-cell { padding: 0 10px; font-size: 13px; white-space: nowrap; }
 .matrix-add { display: grid; place-items: center; width: 26px; height: 26px; padding: 0; background: var(--white); border: 1.5px solid var(--ink); border-radius: 0; color: var(--ink); font-size: 15px; font-weight: 700; line-height: 1; cursor: pointer; }
 .matrix-add:hover { background: var(--paper); }
 .matrix-add.is-selected { background: var(--ink); color: var(--white); }

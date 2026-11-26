@@ -2,6 +2,7 @@
 // dataset (public/sites/defence-sites.json); each names its source. Distances
 // are great-circle, in miles.
 import { isLocated } from './filters';
+import type { Country } from './scope';
 import type { Company } from './types';
 
 export interface SiteSource {
@@ -58,11 +59,13 @@ export function distanceMiles(lat1: number, lon1: number, lat2: number, lon2: nu
   return 2 * EARTH_RADIUS_MILES * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-/** Located UK companies within a radius (miles) of a site, in input order. Overseas companies never count. */
-export function companiesNearSite(companies: Company[], site: Pick<Site, 'lat' | 'lon'>, miles: number): Company[] {
-  return companies.filter(
-    (c) => isLocated(c) && !c.country && c.region !== 'Overseas' && distanceMiles(site.lat, site.lon, c.lat, c.lon) <= miles,
-  );
+/**
+ * Located companies within a radius (miles) of a site or place, in input
+ * order. Only companies drawn in the countries in view count (the UK by
+ * default); overseas companies in a country not in view never do.
+ */
+export function companiesNearSite(companies: Company[], site: Pick<Site, 'lat' | 'lon'>, miles: number, countries?: Country[]): Company[] {
+  return companies.filter((c) => isLocated(c, countries) && distanceMiles(site.lat, site.lon, c.lat, c.lon) <= miles);
 }
 
 /** A closed ring of [lon, lat] points at a distance (miles) around a site. */
