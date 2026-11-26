@@ -104,13 +104,16 @@ test('with its flag on, a country has its own scope, map, regions and Near-me', 
   expect(params(page.url()).get('scope')).toBe('no');
   await expect(page.locator('#result-count')).toContainText('4 companies');
   await expect(page.locator('#result-count')).toContainText('3 are on the map');
-  const bounds = await page.locator('#tally-map').evaluate((el) => {
-    const b = (el as unknown as { tallyMap: { getBounds: () => { getWest: () => number; getEast: () => number; getSouth: () => number; getNorth: () => number } } }).tallyMap.getBounds();
-    return [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()];
+  // The map is centred on Norway, not the UK. (The centre, not the bounds:
+  // the default 3D view is tilted, so its bounds run out to the horizon.)
+  const centre = await page.locator('#tally-map').evaluate((el) => {
+    const c = (el as unknown as { tallyMap: { getCenter: () => { lng: number; lat: number } } }).tallyMap.getCenter();
+    return [c.lng, c.lat];
   });
-  // The map shows Norway, not the UK.
-  expect(bounds[0]).toBeGreaterThan(-2);
-  expect(bounds[3]).toBeGreaterThan(65);
+  expect(centre[0]).toBeGreaterThan(4.5);
+  expect(centre[0]).toBeLessThan(31.2);
+  expect(centre[1]).toBeGreaterThan(57.9);
+  expect(centre[1]).toBeLessThan(71.2);
 
   await openFilters(page);
   const filters = page.getByRole('dialog', { name: 'Filters' });
@@ -164,6 +167,8 @@ test('across several countries the region filter becomes a country filter and th
 
   // In the UK scope the matrix has no country column, as today.
   await page.goto('/?view=matrix');
+  // Wait for the table, so the check is not made before the data has loaded.
+  await expect(page.getByRole('table', { name: /compare capabilities/i })).toBeVisible();
   await expect(page.getByRole('table', { name: /compare capabilities/i }).getByRole('columnheader', { name: 'Country' })).toHaveCount(0);
 });
 
