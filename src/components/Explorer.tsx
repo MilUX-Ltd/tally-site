@@ -841,6 +841,7 @@ export default function Explorer() {
               )
             ) : (
               <ResultsPanel
+                countries={drawn}
                 kind={panelKind}
                 hits={hits}
                 page={state.page}

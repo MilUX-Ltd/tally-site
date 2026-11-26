@@ -96,17 +96,19 @@ export default function Matrix({ taxonomy, companies, selectedCaps, group, page,
         ) : (
           <table>
             <caption class="vh">Compare capabilities: companies by capability</caption>
-            <colgroup span={countryOf ? 3 : 2} />
+            <colgroup span={2} />
+            {countryOf && <colgroup span={1} />}
             {groups.map((g) => (
               <colgroup key={g.group.slug} span={g.columns.length} />
             ))}
             <thead>
               <tr>
-                <td class="corner" colSpan={countryOf ? 3 : 2}>
+                <td class="corner" colSpan={2}>
                   <span class="matrix-key">
                     <span class="mark" aria-hidden="true" /> Offers the capability
                   </span>
                 </td>
+                {countryOf && <td class="country-corner" />}
                 {groups.map((g) => (
                   <th key={g.group.slug} scope="colgroup" colSpan={g.columns.length} class="group-head">
                     {g.group.label}
@@ -117,14 +119,14 @@ export default function Matrix({ taxonomy, companies, selectedCaps, group, page,
                 <th scope="col" class="company-head">
                   Company
                 </th>
+                <th scope="col" class="list-head">
+                  <span class="vh">Shortlist</span>
+                </th>
                 {countryOf && (
                   <th scope="col" class="country-head">
                     Country
                   </th>
                 )}
-                <th scope="col" class="list-head">
-                  <span class="vh">Shortlist</span>
-                </th>
                 {columns.map((c) => (
                   <th key={c.slug} scope="col" class={classes('cap-head', c.start && 'start', c.on && 'on')}>
                     <label>
@@ -144,13 +146,13 @@ export default function Matrix({ taxonomy, companies, selectedCaps, group, page,
                     <th scope="row">
                       <a href={companyPath(company.id)}>{company.name}</a>
                     </th>
-                    {countryOf && <td class="country-cell">{countryOf(company)}</td>}
                     <td class="list-cell">
                       <button type="button" class={listed ? 'matrix-add is-selected' : 'matrix-add'} onClick={() => onShortlist(company, !listed)}>
                         <span aria-hidden="true">{listed ? '✓' : '+'}</span>
                         <span class="vh">{listed ? `Remove ${company.name} from shortlist` : `Add ${company.name} to shortlist`}</span>
                       </button>
                     </td>
+                    {countryOf && <td class="country-cell">{countryOf(company)}</td>}
                     {columns.map((c) =>
                       hasCapability(company, c.slug) ? (
                         <td key={c.slug} class={classes('tick', c.start && 'start', c.on && 'on')}>
