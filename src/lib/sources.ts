@@ -9,6 +9,8 @@ export interface DataSource {
   use: string;
   licence: string;
   url: string;
+  /** Attribution the licence asks for, word for word, when it asks for one. */
+  credit?: string;
   /** The country it serves; absent for a source used everywhere. */
   country?: string;
 }
@@ -17,7 +19,7 @@ const SOURCES: DataSource[] = [
   { name: 'Companies House', use: 'Company status and the defence companies formed and dissolved each year', licence: 'Open Government Licence v3.0', url: 'https://find-and-update.company-information.service.gov.uk/', country: 'GB' },
   { name: 'postcodes.io', use: 'Places typed into Near, and postcodes placed on the map', licence: 'Open Government Licence v3.0', url: 'https://postcodes.io', country: 'GB' },
   { name: 'Office for National Statistics', use: 'Region and cluster boundaries', licence: 'Open Government Licence v3.0', url: 'https://geoportal.statistics.gov.uk/', country: 'GB' },
-  { name: 'Brønnøysund Register Centre', use: 'Norwegian company status and registered business address', licence: 'NLOD 2.0', url: 'https://data.brreg.no/', country: 'NO' },
+  { name: 'Brønnøysund Register Centre', use: 'Norwegian company status and registered business address', licence: 'NLOD 2.0', url: 'https://data.brreg.no/', credit: 'Contains data under the Norwegian licence for Open Government data (NLOD) distributed by the Brønnøysund Register Centre.', country: 'NO' },
   { name: 'GeoNames', use: 'Norwegian postcodes placed on the map', licence: 'CC BY 4.0', url: 'https://www.geonames.org/', country: 'NO' },
   { name: 'Natural Earth', use: 'Country outlines on company pages outside the UK', licence: 'Public domain', url: 'https://www.naturalearthdata.com/' },
   { name: 'OpenStreetMap', use: 'The map', licence: 'ODbL', url: 'https://www.openstreetmap.org/copyright' },

@@ -115,3 +115,20 @@ export function showsCountry(scope: string, countries: Country[]): boolean {
 export function countryName(code: string, countries: Country[]): string {
   return countries.find((c) => c.code === code)?.name ?? code;
 }
+
+/**
+ * The Where choice: empty until a second country is live, so the UK view stays
+ * as it was. Then the UK first, each other live country by name, and each bloc
+ * with two or more live countries.
+ */
+export function scopeOptions(countries: Country[]): { value: string; label: string }[] {
+  const live = countries.filter((c) => c.live && c.bounds && c.regions?.length && !NEVER.has(c.code.toLowerCase()));
+  if (live.length < 2) return [];
+  const others = live
+    .filter((c) => c.code !== 'GB')
+    .sort((a, b) => a.name.localeCompare(b.name, 'en-GB'))
+    .map((c) => ({ value: c.code.toLowerCase(), label: c.name }));
+  const BLOC_NAMES: Record<string, string> = { europe: 'Europe', 'north-america': 'North America' };
+  const blocs = BLOCS.filter((b) => scopeOpens(b, countries)).map((b) => ({ value: b, label: BLOC_NAMES[b] }));
+  return [{ value: DEFAULT_SCOPE, label: 'United Kingdom' }, ...others, ...blocs];
+}

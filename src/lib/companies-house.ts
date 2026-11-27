@@ -35,6 +35,8 @@ const CLOSED_WORDS: Record<string, string> = {
   'converted-closed': 'closed',
   closed: 'closed',
   removed: 'removed from the register',
+  // Norwegian register statuses (card 7480).
+  deleted: 'deleted from the register',
 };
 const FLAGGED_WORDS: Record<string, string> = {
   liquidation: 'in liquidation',
@@ -42,19 +44,26 @@ const FLAGGED_WORDS: Record<string, string> = {
   receivership: 'in receivership',
   'insolvency-proceedings': 'in insolvency proceedings',
   'voluntary-arrangement': 'in a voluntary arrangement',
+  bankruptcy: 'in bankruptcy',
+  'winding-up': 'being wound up',
+  'compulsory-dissolution': 'in compulsory dissolution',
 };
+
+/** Statuses only the Norwegian register uses; every other status is Companies House's. */
+const NORWEGIAN = new Set(['deleted', 'bankruptcy', 'winding-up', 'compulsory-dissolution']);
+const registerOf = (status: string) => (NORWEGIAN.has(status) ? 'The Brønnøysund Register Centre' : 'Companies House');
 
 /** "Companies House lists this company as dissolved on 14 May 2024." */
 export function closedNote(rec: ClosedRecord): string {
   const what = CLOSED_WORDS[rec.status] ?? 'closed';
   const when = rec.date ? longDate(rec.date) : null;
-  return `Companies House lists this company as ${what}${when ? ` on ${when}` : ''}.`;
+  return `${registerOf(rec.status)} lists this company as ${what}${when ? ` on ${when}` : ''}.`;
 }
 
 /** "Companies House: in liquidation." */
 export function flaggedNote(rec: FlaggedRecord): string {
   const what = FLAGGED_WORDS[rec.status] ?? (rec.detail === 'active-proposal-to-strike-off' ? 'proposed to be struck off the register' : 'not active');
-  return `Companies House: ${what}.`;
+  return `${registerOf(rec.status)}: ${what}.`;
 }
 
 /** The day before a date, the last complete day a partial year covers. */

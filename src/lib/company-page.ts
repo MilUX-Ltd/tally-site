@@ -244,7 +244,12 @@ export function companyLocation(company: Company, countries?: Country[]): Compan
     const SHORT: Record<string, string[]> = { 'United States': ['USA', 'US', 'United States of America'], 'United Kingdom': ['UK'] };
     const named = (hq: string, c: string) => hq.includes(c) || (SHORT[c] ?? []).some((s) => hq.split(',').map((p) => p.trim()).includes(s));
     const text = company.hq && (!country || named(company.hq, country)) ? company.hq : [company.hq, country].filter(Boolean).join(', ');
-    if (abroad?.kind === 'point') return { text: text || 'Outside the UK', point: { x: abroad.x, y: abroad.y }, note: '' };
+    if (abroad?.kind === 'point') {
+      // Placed from a register postcode: postcode and town, then the region (a Norwegian county), as the UK reads.
+      const town = (company.hq ?? '').split(',')[0].trim();
+      const placed = company.location_source === 'register' && company.postcode && town && company.region && company.region !== 'Overseas';
+      return { text: placed ? `${company.postcode} ${town}, ${company.region}` : text || 'Outside the UK', point: { x: abroad.x, y: abroad.y }, note: '' };
+    }
     return { text: text || 'Outside the UK', point: null, note: 'Based outside the UK, so not on the UK map.' };
   }
   if (company.location_source === 'region') {

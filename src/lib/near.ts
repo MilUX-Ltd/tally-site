@@ -197,3 +197,12 @@ export async function findPlaceInScope(text: string, scope: string, companies: P
   const place = placeFromData(text, companies);
   return place ? { kind: 'found', place } : { kind: 'not-found' };
 }
+
+/**
+ * The Near hint under the search box. Only the UK scope sends a typed place to
+ * postcodes.io; elsewhere a place is found from the towns Tally's companies give.
+ */
+export function nearHint(scope: string): string {
+  if (scope === 'gb') return 'For Near, try BS16, Bristol or a defence site such as RAF Brize Norton; we send a postcode or town to postcodes.io to find it.';
+  return 'For Near, type a town; we find it from the towns the companies in Tally give, and send it nowhere else.';
+}

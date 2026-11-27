@@ -7,6 +7,7 @@ import TallyMarks from '../components/TallyMarks.astro';
 import { longDate } from '../lib/company-page';
 import { CONTACT_EMAIL, getListedMailto } from '../lib/contact';
 import { clusterCount, defenceSites, siteData } from '../lib/site-data';
+import { dataSources } from '../lib/sources';
 import '../styles/editorial.css';
 
 const data = siteData();
@@ -15,6 +16,8 @@ const companies = data.companies.length;
 const sites = defenceSites().length;
 const updated = longDate(data.generated.slice(0, 10));
 const OGL = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/';
+// Sources for live countries beyond the UK, from the one list in src/lib/sources.ts; none while only the UK is live.
+const abroad = dataSources(data.countries ?? []).filter((s) => s.country !== 'GB' && s.name !== 'OpenStreetMap');
 ---
 <Base title="About Tally: an open directory of UK defence capability" description="What Tally is, how it works, where its data comes from, how the search uses AI, its licences, and how to get your company listed or a listing corrected." counted={false}>
   <header class="page-hero about-hero">
@@ -66,6 +69,7 @@ const OGL = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/ver
       <ul class="tags about-sources">
         <li class="tag">Company websites</li>
         <li class="tag">Companies House</li>
+        {abroad.filter((s) => s.country).map((s) => <li class="tag">{s.name}</li>)}
         <li class="tag">LinkedIn company pages</li>
         <li class="tag">Published framework lists</li>
         <li class="tag">Published accreditation lists</li>
@@ -108,6 +112,12 @@ const OGL = 'https://www.nationalarchives.gov.uk/doc/open-government-licence/ver
           <p>Places from Ordnance Survey and Office for National Statistics open data, Royal Mail and Crown copyright and database right, licensed <a href={OGL} rel="noopener noreferrer">Open Government Licence v3.0</a>.</p>
         </dd>
       </div>
+      {abroad.map((s) => (
+        <div class="card-row">
+          <dt class="mono">{s.name}</dt>
+          <dd>{s.use}: <a href={s.url} rel="noopener noreferrer">{s.name}</a>, licensed {s.licence}.{s.credit && ` ${s.credit}`}</dd>
+        </div>
+      ))}
       <div class="card-row">
         <dt class="mono">Defence sites</dt>
         <dd>{sites} widely published sites, each checked against its source. Locations from Wikipedia contributors, licensed <a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="noopener noreferrer">CC BY-SA 4.0</a>.</dd>

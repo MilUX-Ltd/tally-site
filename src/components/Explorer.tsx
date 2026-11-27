@@ -20,8 +20,8 @@ import { clusterLabels, clusterMembers, eventMarkers, legendEntries, rankedRegio
 import { activeFilterCount, emptyFilters, FACETS, filterCompanies, isLocated, type Facet } from '../lib/filters';
 import { monthLabel } from '../lib/history';
 import { companiesInBbox } from '../lib/matrix';
-import { findPlaceInScope, isNearRadius, NEAR_RADII } from '../lib/near';
-import { countryName, countryOf, DEFAULT_SCOPE, inScope, regionChoices, scopeBounds, scopeCountries, showsCountry, UNITED_KINGDOM } from '../lib/scope';
+import { findPlaceInScope, isNearRadius, NEAR_RADII, nearHint } from '../lib/near';
+import { countryName, countryOf, DEFAULT_SCOPE, inScope, regionChoices, scopeBounds, scopeCountries, scopeOptions, showsCountry, UNITED_KINGDOM } from '../lib/scope';
 import { askSearch, keywordSearch, readSearchAnswer } from '../lib/search';
 import { addToShortlist, removeFromShortlist } from '../lib/shortlist';
 import { chosenYear, defaultYear, overseasRows, regionRows, type MoneyData } from '../lib/money';
@@ -569,6 +569,13 @@ export default function Explorer() {
     if (site && isRadius(miles)) update({ radius: miles, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } });
     else if (!site && isNearRadius(miles)) update({ within: miles, cell: null, sel: [], page: 1, matrix: { ...state.matrix, page: 1 } });
   };
+  // Where: a new scope starts clean of places that belong to the old one.
+  const whereOptions = useMemo(() => scopeOptions(countries), [countries]);
+  const setScope = (scope: string) => {
+    if (!data || scope === state.scope) return;
+    setState((s) => sanitiseState({ ...s, scope, countries: [], filters: { ...s.filters, region: [] }, map: null, area: null, near: null, site: null, cell: null, sel: [], page: 1, matrix: { ...s.matrix, page: 1 } }, data));
+  };
+  const scopeName = ukScope ? '' : scopeCountries(state.scope, countries).length === 1 ? scopeCountries(state.scope, countries)[0].name : '';
   const setView = (view: ViewState['view']) => {
     // Having looked at the list or the matrix, the map comes back with the results beside it.
     if (view !== 'map') setBrowsing(true);
@@ -710,14 +717,14 @@ export default function Explorer() {
   );
 
   return (
-    <div class={`find ${mode === 'landing' ? 'landing' : mode === 'matrix' ? 'as-list as-matrix' : mode === 'list' ? 'as-list' : mode === 'money' ? 'with-results as-money' : 'with-results'}${layersOpen ? ' layers-open' : ''}`}>
+    <div class={`find ${mode === 'landing' ? 'landing' : mode === 'matrix' ? 'as-list as-matrix' : mode === 'list' ? 'as-list' : mode === 'money' ? 'with-results as-money' : 'with-results'}${layersOpen ? ' layers-open' : ''}${whereOptions.length ? ' has-where' : ''}`}>
       <p id="result-count" class="vh">
         {countSentence}
       </p>
       <div class={mode === 'landing' ? 'lead hero' : 'lead'}>
         {mode === 'landing' && <p class="mono kicker">Open directory · public sources · free to use</p>}
         <h1 class={mode === 'landing' ? 'display' : 'vh'}>
-          Find UK defence capability<span class="stop">.</span>
+          {scopeName ? `Find defence capability in ${scopeName}` : 'Find UK defence capability'}<span class="stop">.</span>
         </h1>
         {mode === 'landing' && <p class="lede">Companies, clusters and defence sites on one map. Search by capability and place, shortlist the companies you want and share the list.</p>}
         <SearchForm
@@ -731,6 +738,7 @@ export default function Explorer() {
           preset={preset}
           onSubmit={(query) => void submit(query)}
           onWithin={setWithin}
+          nearHint={nearHint(state.scope)}
         />
         {state.month && (
           <p class="moved">
@@ -870,6 +878,20 @@ export default function Explorer() {
         <button type="button" class="btn" aria-haspopup="dialog" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(true)}>
           Filters{filterCount > 0 && <span class="count"> {filterCount}</span>}
         </button>
+        {whereOptions.length > 0 && (
+          <div class="where">
+            <label class="mono" for="where-pick">
+              Where
+            </label>
+            <select id="where-pick" value={state.scope} onChange={(e) => setScope((e.target as HTMLSelectElement).value)}>
+              {whereOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div class="seg" role="group" aria-label="View">
           <button type="button" class="btn" aria-pressed={state.view === 'map'} onClick={() => setView('map')}>
             Map
